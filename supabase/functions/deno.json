@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "@thuluth/shared": "../../packages/shared/src/index.ts",
+    "@thuluth/shared/": "../../packages/shared/src/",
+    "@thuluth/ai-core": "../../packages/ai-core/src/index.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "zod": "npm:zod@3.25.76"
+  },
+  "compilerOptions": { "strict": true, "noUncheckedIndexedAccess": true },
+  "lint": { "rules": { "tags": ["recommended"] } },
+  "fmt": { "lineWidth": 110, "singleQuote": true }
+}
