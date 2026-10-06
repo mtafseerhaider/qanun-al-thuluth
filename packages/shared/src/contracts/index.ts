@@ -6,3 +6,5 @@ export * from './ai-intake-assess.ts';
 export * from './ai-generate-plan.ts';
 export * from './ai-adjust-plan.ts';
 export * from './grocery-generate.ts';
+export * from './prices-refresh.ts';
+export * from './notifications-dispatch.ts';
