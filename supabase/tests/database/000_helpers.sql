@@ -188,6 +188,21 @@ begin
   select v_hid, fm.id, 'lunch', 'Daal chawal' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
   insert into public.ramadan_plans (household_id, hijri_year, start_date, end_date)
   values (v_hid, 1448, date '2027-02-08', date '2027-03-09');
+  -- Sprint 6 growth, picky/autism, exports and AI job rows (S6-02, 0018b)
+  insert into public.growth_tracking (household_id, family_member_id, measured_on, height_cm, weight_kg)
+  select v_hid, fm.id, current_date, 122.0, 23.5 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Son';
+  insert into public.exposure_ladders (household_id, family_member_id, target_ingredient_id, strategy)
+  select v_hid, fm.id, i.id, 'food_chaining'
+    from public.family_members fm, public.ingredients i where fm.household_id = v_hid and fm.name = 'Daughter' and i.name = 'Onion';
+  insert into public.exposure_ladder_steps (ladder_id, household_id, step_no, stage, food_label, criteria)
+  select el.id, v_hid, 1, 'look', 'Onion rings on the table', 'Two calm sessions at this stage'
+    from public.exposure_ladders el where el.household_id = v_hid;
+  insert into public.food_exposures (household_id, family_member_id, ingredient_id, stage, acceptance, context, ladder_step_id)
+  select v_hid, el.family_member_id, el.target_ingredient_id, 'look', '1_tolerated', 'family_meal', s.id
+    from public.exposure_ladders el join public.exposure_ladder_steps s on s.ladder_id = el.id where el.household_id = v_hid;
+  insert into public.exports (household_id, user_id, kind, params)
+  values (v_hid, p_owner, 'grocery_list', '{"paper":"A4"}');
+  insert into public.ai_jobs (household_id, user_id, kind) values (v_hid, p_owner, 'plan_generate');
   -- audit_log rows are written by the audit triggers above
   perform set_config('app.bypass_entitlements', 'off', true);
   insert into tests.rls_fixture_coverage (table_name)
@@ -199,7 +214,9 @@ begin
                              'meal_plans','daily_meals','daily_meal_servings','plan_recommendations',
                              'grocery_lists','shopping_items','budget_entries','pantry_items','hydration_logs',
                              'fasting_logs','weight_tracking','nutrition_journal','notifications','alpha_feedback',
-                             'chat_sessions','chat_messages','ai_memories','meal_logs','ramadan_plans']) t
+                             'chat_sessions','chat_messages','ai_memories','meal_logs','ramadan_plans',
+                             'growth_tracking','exposure_ladders','exposure_ladder_steps','food_exposures',
+                             'exports','ai_jobs']) t
   on conflict do nothing;
   return v_hid;
 end $$;

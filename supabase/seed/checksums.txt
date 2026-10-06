@@ -1,0 +1,10 @@
+# supabase/seed/checksums.txt
+# sha256 of the published source files that seed generators read (05 section 19). Checked by
+# tooling/scripts/gen-growth-lms-seed.py before it writes supabase/seed/catalog/060_growth_reference_lms.sql.
+# Format: <sha256>  <reference>/<file>. Recorded 2026-10-06 from the URLs in the generator docstring.
+bc15a6a623dd1d5beaeed1497666332aa54bc4ccd15ff9658c487d79694ab77b  who_2006/weianthro.txt
+709f7a11881451daf7820f022d363d5bdb93746b5361d6bd9218af6ff838e0c2  who_2006/lenanthro.txt
+78a4364e99303114fb2c458d28d64c6d10ac33832a5d5b2d437bc5cea1c93a0d  who_2006/bmianthro.txt
+e794e46f06b91223ad2c6435148dc08794a1d75b67613a652c3151201a98bf7c  who_2006/hcanthro.txt
+ca09deabdf3ba3b6acc9d120f0603d9b36ca883528653e05ff1117cfb365ac34  who_2007/sysdata.rda
+# TODO(S6-02, CDC): add cdc_2000/wtage.csv, cdc_2000/statage.csv, cdc_2000/bmiage.csv after downloading from cdc.gov
