@@ -1,0 +1,65 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote",
+    "promptToConfigurePushNotifications": false
+  },
+  "build": {
+    "base": {
+      "node": "22.22.0",
+      "pnpm": "10.28.0",
+      "env": { "SENTRY_ORG": "thuluth" },
+      "android": { "image": "latest" },
+      "ios": { "image": "latest", "resourceClass": "m-medium" }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "environment": "development",
+      "env": { "APP_ENV": "development", "APP_VARIANT": "development" },
+      "android": { "buildType": "apk" }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": { "simulator": true }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "staging",
+      "environment": "preview",
+      "env": { "APP_ENV": "staging", "APP_VARIANT": "preview" },
+      "android": { "buildType": "apk" }
+    },
+    "e2e": {
+      "extends": "preview",
+      "withoutCredentials": true,
+      "ios": { "simulator": true },
+      "android": { "buildType": "apk" },
+      "env": { "APP_ENV": "staging", "APP_VARIANT": "preview", "EXPO_PUBLIC_E2E": "1" }
+    },
+    "staging-store": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "staging",
+      "environment": "preview",
+      "autoIncrement": true,
+      "env": { "APP_ENV": "staging", "APP_VARIANT": "preview" }
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "production",
+      "environment": "production",
+      "autoIncrement": true,
+      "env": { "APP_ENV": "production", "APP_VARIANT": "production" },
+      "android": { "buildType": "app-bundle" }
+    }
+  },
+  "submit": {
+    "staging-store": {},
+    "production": {}
+  }
+}

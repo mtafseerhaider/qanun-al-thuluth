@@ -2,3 +2,8 @@ docs/
 pnpm-lock.yaml
 supabase/migrations/
 packages/shared/src/db/database.types.ts
+supabase/seed/
+supabase/tests/database/
+apps/mobile/assets/
+apps/mobile/global.css
+**/*.lock

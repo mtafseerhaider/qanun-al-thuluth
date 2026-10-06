@@ -1,0 +1,14 @@
+{
+  "extends": "@thuluth/config/tsconfig/expo.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared": ["../../packages/shared/src/index.ts"],
+      "@shared/*": ["../../packages/shared/src/*"],
+      "@locales/*": ["locales/*"],
+      "@assets/*": ["assets/*"]
+    }
+  },
+  "include": ["src", "index.ts", "app.config.ts", "nativewind-env.d.ts", "locales/**/*.json"]
+}

@@ -1,0 +1,21 @@
+{
+  "appearance": {
+    "title": "Appearance",
+    "theme": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "themeHint": "Changes the colours used across the app."
+  },
+  "language": {
+    "title": "Language",
+    "english": "English",
+    "urdu": "اردو",
+    "hint": "Changing between English and Urdu restarts the app to switch layout direction."
+  },
+  "developer": {
+    "title": "Developer",
+    "openDebug": "Open debug tools",
+    "signOutGuest": "Leave guest session"
+  }
+}

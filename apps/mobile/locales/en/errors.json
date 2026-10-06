@@ -1,0 +1,10 @@
+{
+  "generic": {
+    "title": "Something went wrong",
+    "body": "Please try again. If it keeps happening, restart the app."
+  },
+  "network": "You appear to be offline.",
+  "notConfigured": "This build is not connected to a server yet.",
+  "unauthenticated": "Please sign in to continue.",
+  "invalidResponse": "The server sent a response we could not read."
+}

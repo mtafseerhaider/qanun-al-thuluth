@@ -1,0 +1,91 @@
+/* Generated from @thuluth/config/tokens (docs/03-design-system.md §11.4). ThemeProvider overrides these
+   defaults with NativeWind vars() at runtime so the calm palettes work without extra selectors. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: 251 248 242;
+  --color-surface-raised: 255 255 255;
+  --color-surface-sunken: 243 238 228;
+  --color-ink: 29 37 33;
+  --color-ink-muted: 74 86 80;
+  --color-ink-subtle: 99 110 104;
+  --color-line: 221 213 199;
+  --color-line-strong: 127 135 129;
+  --color-primary: 31 111 92;
+  --color-primary-pressed: 23 85 70;
+  --color-on-primary: 255 255 255;
+  --color-primary-soft: 227 241 236;
+  --color-on-primary-soft: 20 80 67;
+  --color-secondary: 138 79 46;
+  --color-on-secondary: 255 255 255;
+  --color-accent: 217 162 58;
+  --color-on-accent: 43 30 5;
+  --color-accent-ink: 138 95 18;
+  --color-success: 37 107 66;
+  --color-on-success: 255 255 255;
+  --color-success-soft: 227 243 232;
+  --color-on-success-soft: 30 90 55;
+  --color-warning: 138 83 0;
+  --color-on-warning: 255 255 255;
+  --color-warning-soft: 255 241 214;
+  --color-on-warning-soft: 107 65 0;
+  --color-danger: 179 54 43;
+  --color-on-danger: 255 255 255;
+  --color-danger-soft: 252 232 229;
+  --color-on-danger-soft: 140 42 34;
+  --color-info: 47 102 144;
+  --color-on-info: 255 255 255;
+  --color-info-soft: 227 238 247;
+  --color-on-info-soft: 35 77 109;
+  --color-focus: 47 102 144;
+  --color-plate-veg: 63 138 88;
+  --color-plate-protein: 180 87 63;
+  --color-plate-carb: 176 122 28;
+  --color-water: 47 125 179;
+  --color-plate-space: 230 224 211;
+}
+
+.dark:root {
+  --color-surface: 15 21 19;
+  --color-surface-raised: 24 32 29;
+  --color-surface-sunken: 33 43 39;
+  --color-ink: 236 239 234;
+  --color-ink-muted: 180 190 184;
+  --color-ink-subtle: 141 152 146;
+  --color-line: 44 54 50;
+  --color-line-strong: 110 122 116;
+  --color-primary: 92 195 166;
+  --color-primary-pressed: 125 211 186;
+  --color-on-primary: 8 32 26;
+  --color-primary-soft: 22 58 49;
+  --color-on-primary-soft: 168 227 209;
+  --color-secondary: 227 154 114;
+  --color-on-secondary: 42 19 7;
+  --color-accent: 232 182 90;
+  --color-on-accent: 43 30 5;
+  --color-accent-ink: 232 182 90;
+  --color-success: 108 203 142;
+  --color-on-success: 11 38 21;
+  --color-success-soft: 19 48 31;
+  --color-on-success-soft: 163 224 184;
+  --color-warning: 240 180 76;
+  --color-on-warning: 46 30 0;
+  --color-warning-soft: 58 44 16;
+  --color-on-warning-soft: 246 205 130;
+  --color-danger: 242 135 124;
+  --color-on-danger: 43 8 5;
+  --color-danger-soft: 58 23 20;
+  --color-on-danger-soft: 247 176 168;
+  --color-info: 125 183 227;
+  --color-on-info: 10 31 48;
+  --color-info-soft: 20 43 61;
+  --color-on-info-soft: 169 209 240;
+  --color-focus: 125 183 227;
+  --color-plate-veg: 108 191 133;
+  --color-plate-protein: 229 142 116;
+  --color-plate-carb: 226 180 86;
+  --color-water: 108 178 230;
+  --color-plate-space: 58 68 63;
+}

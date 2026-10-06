@@ -1,0 +1,17 @@
+{
+  "tabs": {
+    "today": "Today",
+    "plan": "Plan",
+    "chat": "Ask",
+    "family": "Family",
+    "more": "More"
+  },
+  "screens": {
+    "dashboard": "Today",
+    "mealPlans": "Meal plans",
+    "chatThread": "Ask Thuluth",
+    "familyManagement": "Family",
+    "moreHome": "More",
+    "debug": "Debug tools"
+  }
+}

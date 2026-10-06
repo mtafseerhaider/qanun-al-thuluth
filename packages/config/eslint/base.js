@@ -9,10 +9,17 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['../../*'], message: 'Use an alias instead of deep relative paths.' }] },
+        {
+          patterns: [
+            { group: ['../../*'], message: 'Use an alias instead of deep relative paths.' },
+          ],
+        },
       ],
     },
   },
