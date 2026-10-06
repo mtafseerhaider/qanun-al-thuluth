@@ -1,0 +1,63 @@
+# Sprint 4 (S4-08, S4-17): hydration logging offline.
+# Opens More -> Water, goes offline, logs a glass for everyone, sees it queued, then syncs. Also
+# opens the dehydration check (S4-09) and returns. Airplane mode is Android only.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 10 hydration log offline
+tags:
+  - trackers
+  - offline
+  - sprint-4
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- tapOn:
+    id: 'settings-more-home.hydration-button'
+- extendedWaitUntil:
+    visible:
+      id: 'hydration.screen'
+    timeout: 10000
+
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible:
+      id: 'hydration.offline'
+    timeout: 10000
+- tapOn:
+    id: 'hydration.family-glass'
+- scrollUntilVisible:
+    element:
+      id: 'hydration.today.row-0.queued'
+    direction: DOWN
+- takeScreenshot: 10-hydration-offline
+
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: 'hydration.today.row-0.queued'
+    timeout: 60000
+- assertVisible:
+    id: 'hydration.today.row-0'
+
+# S4-09: the symptom check opens as a sheet and closes without a red flag
+- scrollUntilVisible:
+    element:
+      id: 'hydration.symptoms'
+    direction: DOWN
+- tapOn:
+    id: 'hydration.symptoms'
+- extendedWaitUntil:
+    visible:
+      id: 'dehydration.screen'
+    timeout: 10000
+- tapOn:
+    id: 'dehydration.sign.headache'
+- tapOn:
+    id: 'dehydration.submit'
+- assertVisible:
+    id: 'dehydration.mild'
+- takeScreenshot: 10-symptoms-mild

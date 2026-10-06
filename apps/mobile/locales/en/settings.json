@@ -25,7 +25,13 @@
   "home": {
     "account": "Account",
     "open": "Settings",
-    "profile": "Profile and preferences"
+    "profile": "Profile and preferences",
+    "track": "Track",
+    "hydration": "Water",
+    "fasting": "Fasting",
+    "weight": "Weight log",
+    "budget": "Food budget",
+    "notifications": "Notifications"
   },
   "profile": {
     "displayName": "Display name",

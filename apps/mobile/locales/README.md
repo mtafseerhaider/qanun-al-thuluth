@@ -30,3 +30,14 @@ i18next resources for `@thuluth/mobile`, one JSON file per namespace (docs/07 §
 > keys. Their Urdu strings are drafts for a native reviewer. The guidance lines (water timing, the
 > 70 to 80 percent stop point, the children's "seconds welcome" framing) also need the content team,
 > and "Sunnah food" / "Bismillah" wording needs the Islamic content reviewer (docs/13).
+
+> **Sprint 4 additions needing review.** `hydration.json` (tracker, kid cup view, dehydration check
+> and red-flag sheet), `fasting.json` (fasting tracker, Ramadan grid, qada and fidya notes, child
+> rules, the clinician card for insulin or sulfonylurea), `grocery.json`, `budget.json`,
+> `notifications.json` (inbox, settings, every notification kind, the push pre-prompt) and
+> `tracking.json` (adult weight log, daily reflection) are new namespaces; `today.json`,
+> `settings.json`, `plan.json` and `navigation.json` gained keys. All Urdu strings are drafts. The
+> red-flag and break-the-fast copy and the 1122 emergency line need clinical review; the fasting,
+> qada, fidya, adab of drinking and "May Allah accept it" wording need the Islamic content reviewer
+> (docs/13); aisle and unit names (سبزی، گٹھی، ڈھیری) need a native speaker familiar with local
+> markets.

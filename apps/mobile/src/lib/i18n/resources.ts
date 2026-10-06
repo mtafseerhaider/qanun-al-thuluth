@@ -14,6 +14,12 @@ import enPlan from '@locales/en/plan.json';
 import enRecipes from '@locales/en/recipes.json';
 import enSettings from '@locales/en/settings.json';
 import enToday from '@locales/en/today.json';
+import enHydration from '@locales/en/hydration.json';
+import enFasting from '@locales/en/fasting.json';
+import enGrocery from '@locales/en/grocery.json';
+import enBudget from '@locales/en/budget.json';
+import enNotifications from '@locales/en/notifications.json';
+import enTracking from '@locales/en/tracking.json';
 import urAuth from '@locales/ur/auth.json';
 import urCommon from '@locales/ur/common.json';
 import urDebug from '@locales/ur/debug.json';
@@ -30,6 +36,12 @@ import urPlan from '@locales/ur/plan.json';
 import urRecipes from '@locales/ur/recipes.json';
 import urSettings from '@locales/ur/settings.json';
 import urToday from '@locales/ur/today.json';
+import urHydration from '@locales/ur/hydration.json';
+import urFasting from '@locales/ur/fasting.json';
+import urGrocery from '@locales/ur/grocery.json';
+import urBudget from '@locales/ur/budget.json';
+import urNotifications from '@locales/ur/notifications.json';
+import urTracking from '@locales/ur/tracking.json';
 export const NAMESPACES = [
   'common',
   'auth',
@@ -47,6 +59,12 @@ export const NAMESPACES = [
   'help',
   'errors',
   'debug',
+  'hydration',
+  'fasting',
+  'grocery',
+  'budget',
+  'notifications',
+  'tracking',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -68,6 +86,12 @@ export const resources = {
     help: enHelp,
     errors: enErrors,
     debug: enDebug,
+    hydration: enHydration,
+    fasting: enFasting,
+    grocery: enGrocery,
+    budget: enBudget,
+    notifications: enNotifications,
+    tracking: enTracking,
   },
   ur: {
     common: urCommon,
@@ -86,5 +110,11 @@ export const resources = {
     help: urHelp,
     errors: urErrors,
     debug: urDebug,
+    hydration: urHydration,
+    fasting: urFasting,
+    grocery: urGrocery,
+    budget: urBudget,
+    notifications: urNotifications,
+    tracking: urTracking,
   },
 } as const;

@@ -163,6 +163,9 @@ export type MoreStackParamList = {
   HelpCenter: { query?: string };
   HelpArticle: { slug: string };
   About: undefined;
+  /** Sprint 4 additions: budget settings (FR-GRO-07) and the adult weight log (FR-TRK-06). */
+  BudgetSettings: undefined;
+  WeightLog: { familyMemberId?: Uuid };
   /** Sprint 3 addition (24 S3-17): internal alpha feedback form. */
   AlphaFeedback: undefined;
   /** Sprint 0 addition: hidden debug tools (development builds or `debug_menu` flag). */
@@ -206,6 +209,8 @@ export type RootStackParamList = {
   RamadanSetup: NavigatorScreenParams<RamadanSetupStackParamList>;
   // Sheets (formSheet)
   LogHydrationSheet: { familyMemberId?: Uuid };
+  /** Sprint 4 addition (24 S4-09, FR-HYD-05): dehydration symptom check and red-flag sheet. */
+  DehydrationCheckSheet: { familyMemberId?: Uuid };
   AcceptanceSheet: { dailyMealServingId: Uuid };
   SwapMealSheet: { dailyMealId: Uuid };
   FastLogSheet: { familyMemberId?: Uuid; date?: IsoDate; kind?: FastKind };

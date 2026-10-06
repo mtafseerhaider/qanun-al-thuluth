@@ -159,13 +159,113 @@ export const EventSchemas = {
   recipe_opened: z.object({ recipe_source: z.enum(['curated', 'ai_generated', 'user']) }).strict(),
   recommendation_opened: z.object({ surface: z.enum(['dashboard', 'plan', 'recipe']) }).strict(),
   dashboard_section_tapped: z
-    .object({ section: z.enum(['meals', 'tip', 'quick_log', 'plan', 'feedback']) })
+    .object({
+      section: z.enum([
+        'meals',
+        'tip',
+        'quick_log',
+        'plan',
+        'feedback',
+        'hydration',
+        'budget',
+        'grocery',
+        'fasting',
+        'notifications',
+      ]),
+    })
     .strict(),
   alpha_feedback_sent: z
     .object({ category: z.enum(['bug', 'idea', 'content', 'other']), has_screen: z.boolean() })
     .strict(),
   setting_changed: z
-    .object({ key: z.enum(['display_name', 'locale', 'units', 'tradition', 'theme']) })
+    .object({
+      key: z.enum([
+        'display_name',
+        'locale',
+        'units',
+        'tradition',
+        'theme',
+        'notifications',
+        'quiet_hours',
+        'budget',
+      ]),
+    })
+    .strict(),
+  // Sprint 4: grocery and budget (02 §7.6.6 to §7.6.8, §7.12.9), trackers (02 §7.12.2 to §7.12.5),
+  // notifications (02 §7.13.1, §7.2.6), weight log and journal (02 §7.5.4). Enums and counts only.
+  grocery_generate_requested: z
+    .object({ source: z.enum(['lists', 'plan', 'dashboard']), optimize: z.boolean() })
+    .strict(),
+  grocery_item_checked: z.object({ source: z.enum(['detail', 'shopping']) }).strict(),
+  grocery_item_added: z.object({}).strict(),
+  grocery_list_shared: z.object({ items: z.number().int().min(0).max(500) }).strict(),
+  grocery_substitution_viewed: z.object({ premium: z.boolean() }).strict(),
+  shopping_started: z.object({}).strict(),
+  shopping_finished: z
+    .object({
+      items: z.number().int().min(0).max(500),
+      checked: z.number().int().min(0).max(500),
+      has_actuals: z.boolean(),
+    })
+    .strict(),
+  price_reported: z.object({ count: z.number().int().min(0).max(500) }).strict(),
+  budget_viewed: z.object({ month_offset: z.number().int().min(-24).max(1) }).strict(),
+  budget_entry_added: z
+    .object({
+      category: z
+        .string()
+        .regex(/^[a-z_]+$/)
+        .max(32),
+      source: z.enum(['manual', 'grocery']),
+    })
+    .strict(),
+  hydration_logged: z
+    .object({
+      volume_ml_bucket: z.enum(['lt150', '150_249', '250_499', '500_plus']),
+      beverage: z.enum(['water', 'milk', 'laban', 'juice', 'tea', 'other']),
+      timing: z.enum(['pre_meal', 'with_meal', 'post_meal', 'other']),
+      members_count: z.number().int().min(1).max(20),
+    })
+    .strict(),
+  hydration_symptom_check: z.object({ red_flag: z.boolean(), fasting: z.boolean() }).strict(),
+  fast_logged: z
+    .object({
+      kind: z.enum([
+        'ramadan',
+        'sunnah_monday_thursday',
+        'ayyam_al_bid',
+        'arafah',
+        'ashura',
+        'qada',
+        'nafl',
+        'intermittent',
+      ]),
+      completed: z.boolean(),
+      has_exemption: z.boolean(),
+      practice: z.boolean(),
+    })
+    .strict(),
+  fasting_blocked: z
+    .object({ reason: z.enum(['under_7', 'clinician', 'intermittent_minor']) })
+    .strict(),
+  push_permission_result: z.object({ granted: z.boolean() }).strict(),
+  push_preprompt: z.object({ action: z.enum(['shown', 'allow', 'not_now']) }).strict(),
+  notification_opened: z
+    .object({
+      kind: z
+        .string()
+        .regex(/^[a-z_]+$/)
+        .max(40),
+      channel: z.enum(['push', 'in_app']),
+    })
+    .strict(),
+  weight_logged: z.object({ has_waist: z.boolean() }).strict(),
+  reflection_saved: z
+    .object({
+      thuluth_adherence: z.number().int().min(0).max(3).nullable(),
+      has_notes: z.boolean(),
+      minor: z.boolean(),
+    })
     .strict(),
 } as const;
 

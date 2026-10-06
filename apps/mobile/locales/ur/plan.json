@@ -28,7 +28,8 @@
     "dates": "{{from}} سے {{to}}",
     "version": "ورژن {{version}}",
     "history": "پچھلے پلان",
-    "openA11y": "{{title}} کھولیں"
+    "openA11y": "{{title}} کھولیں",
+    "grocery": "خریداری کی فہرستیں"
   },
   "detail": {
     "week": "ہفتہ {{number}}",

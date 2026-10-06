@@ -1,0 +1,59 @@
+{
+  "weight": {
+    "member": "Who",
+    "minorTitle": "Weight isn't logged for {{name}}",
+    "minorBody": "Children and teens under 18 aren't weighed here. Their growth is followed on growth charts in their profile, with care and without numbers to chase.",
+    "noAdults": "The weight log is for adults in the family.",
+    "addToday": "Today's weight",
+    "updateToday": "Update today's weight",
+    "weight": "Weight",
+    "weightError": "Enter a weight between 20 and 400 kg.",
+    "waist": "Waist",
+    "waistHint": "Optional.",
+    "waistError": "Enter a waist between 30 and 250 cm.",
+    "save": "Save",
+    "change": "Change over 30 days: {{value}}",
+    "history": "History",
+    "empty": "No entries yet.",
+    "kg": "kg",
+    "lb": "lb",
+    "cm": "cm",
+    "note": "Weigh at the same time of day, once a week is enough. Health is more than a number."
+  },
+  "journal": {
+    "member": "Who",
+    "date": "For {{date}}",
+    "mood": "Mood",
+    "moodHint": "1 low, 5 great",
+    "energy": "Energy",
+    "energyHint": "1 low, 5 great",
+    "digestion": "Digestion",
+    "digestionHint": "1 uncomfortable, 5 comfortable",
+    "scale": {
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5"
+    },
+    "adherence": "How close to the thirds?",
+    "adherenceHint": "A third food, a third drink, a third air.",
+    "adherenceScale": {
+      "0": "Not today",
+      "1": "A little",
+      "2": "Mostly",
+      "3": "Yes"
+    },
+    "childNote": "Children aren't scored on what they eat. Note how the day felt instead.",
+    "notes": "Notes",
+    "save": "Save",
+    "update": "Update",
+    "recent": "Recent days",
+    "summary": {
+      "mood": "Mood {{value}}",
+      "energy": "Energy {{value}}",
+      "digestion": "Digestion {{value}}",
+      "adherence": "Thirds {{value}}/3"
+    }
+  }
+}

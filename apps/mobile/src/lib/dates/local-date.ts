@@ -91,3 +91,10 @@ export function dayNumber(date: IsoDate): number {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
   return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
 }
+
+/** 'HH:mm' of an instant in `timeZone` (device time when unknown); Western digits (03 §5.5). */
+export function instantTime(iso: string, timeZone: string | null | undefined): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${pad(Math.floor(localMinutes(timeZone, d) / 60))}:${pad(localMinutes(timeZone, d) % 60)}`;
+}

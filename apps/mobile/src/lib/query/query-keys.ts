@@ -1,8 +1,10 @@
-/** Query key factory (09 §3). Sprint 3 subset; later sprints extend it in place. */
+/** Query key factory (09 §3). Sprint 4 subset; later sprints extend it in place. */
 type Id = string;
 
 export const qk = {
   me: () => ['me'] as const,
+  notifications: () => [...qk.me(), 'notifications'] as const,
+  notificationPreferences: () => [...qk.me(), 'notification-preferences'] as const,
   profile: () => [...qk.me(), 'profile'] as const,
   consents: () => [...qk.me(), 'consents'] as const,
   subscription: () => [...qk.me(), 'subscription'] as const,
@@ -29,10 +31,23 @@ export const qk = {
       dailyMealsRange: (planId: Id, from: string, to: string) =>
         [...base, 'daily-meals', planId, from, to] as const,
       dailyMeal: (dailyMealId: Id) => [...base, 'daily-meals', 'one', dailyMealId] as const,
+      /** Sprint 4: grocery, budget and trackers. */
+      groceryLists: () => [...base, 'grocery-lists'] as const,
+      groceryList: (listId: Id) => [...base, 'grocery-lists', listId] as const,
+      priceProfile: () => [...base, 'price-profile'] as const,
+      budgetEntries: (month: string) => [...base, 'budget-entries', month] as const,
+      hydrationTargets: () => [...base, 'hydration-targets'] as const,
+      hydrationLogs: (from: string) => [...base, 'hydration-logs', from] as const,
+      fastingLogs: () => [...base, 'fasting-logs'] as const,
+      fastingSafety: () => [...base, 'fasting-safety'] as const,
+      qadaBalance: () => [...base, 'qada-balance'] as const,
+      weightLogs: (memberId: Id) => [...base, 'weight-logs', memberId] as const,
+      journal: (memberId: Id) => [...base, 'journal', memberId] as const,
     };
   },
   catalog: {
     allergens: () => ['catalog', 'allergens'] as const,
+    budgetCategories: () => ['catalog', 'budget-categories'] as const,
     mealAlternatives: (mealId: Id) => ['catalog', 'meal-alternatives', mealId] as const,
     recipe: (recipeId: Id) => ['catalog', 'recipe', recipeId] as const,
     mealRecipes: (mealId: Id) => ['catalog', 'meal-recipes', mealId] as const,

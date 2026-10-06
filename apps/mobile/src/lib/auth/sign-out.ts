@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { analytics } from '@/lib/analytics/track';
+import { logoutPush } from '@/lib/push/push';
 import { queryClient } from '@/lib/query/query-client';
 import { setSentryUser } from '@/lib/sentry/init';
 import { getSensitiveStorage } from '@/lib/storage/sensitive-key';
@@ -96,6 +97,8 @@ export async function signOut(
       await settle(() => unregisterDevice());
       await settle(() => supabase?.auth.signOut({ scope: 'local' }));
     }
+    // Unlink the install from the user so pushes stop arriving here (24 S4-12).
+    logoutPush();
     await purgeLocalUserData({ keepPendingInvite: opts.keepPendingInvite ?? false });
   } finally {
     userInitiated = false;

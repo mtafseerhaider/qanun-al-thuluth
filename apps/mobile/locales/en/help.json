@@ -13,7 +13,7 @@
     "messageHint": "Please don't include health details about your family.",
     "send": "Send feedback",
     "thanksTitle": "Thank you",
-    "thanksBody": "Your feedback is saved on this phone and will reach the team in a later update.",
-    "privacy": "Feedback is stored encrypted on this phone for now. Nothing is sent until the feedback service is ready."
+    "thanksBody": "Your feedback is on its way to the team. If you're offline, it's sent when you reconnect.",
+    "privacy": "Feedback goes to the Thuluth team with the app version, phone type and language. Please keep family health details out of it."
   }
 }

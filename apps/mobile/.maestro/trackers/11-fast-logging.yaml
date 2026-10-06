@@ -1,0 +1,50 @@
+# Sprint 4 (S4-11, S4-17): log a voluntary fast for the first adult.
+# Opens More -> Fasting, opens the log sheet, logs a completed nafl fast for today and sees it in
+# recent fasts. Under-7 members get no log button and practice-age children see practice kinds only
+# (covered by Jest). Needs an adult without insulin or sulfonylurea as the first family member.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 11 fast logging
+tags:
+  - trackers
+  - sprint-4
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- tapOn:
+    id: 'settings-more-home.fasting-button'
+- extendedWaitUntil:
+    visible:
+      id: 'fasting.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'fasting.(times|times.unknown)'
+- tapOn:
+    id: 'fasting.log'
+- extendedWaitUntil:
+    visible:
+      id: 'fast-log.screen'
+    timeout: 10000
+- tapOn:
+    id: 'fast-log.kind.nafl'
+- tapOn:
+    id: 'fast-log.outcome.completed'
+- scrollUntilVisible:
+    element:
+      id: 'fast-log.save'
+    direction: DOWN
+- tapOn:
+    id: 'fast-log.save'
+- extendedWaitUntil:
+    visible:
+      id: 'fasting.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'fasting.recent.row-0'
+    direction: DOWN
+- takeScreenshot: 11-fast-logged

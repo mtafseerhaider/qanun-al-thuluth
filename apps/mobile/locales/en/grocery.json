@@ -1,0 +1,94 @@
+{
+  "loading": "Loading the list…",
+  "status": {
+    "open": "To buy",
+    "shopping": "Shopping now",
+    "done": "Done"
+  },
+  "aisle": {
+    "sabzi": "Vegetables (sabzi)",
+    "fruit": "Fruit",
+    "meat": "Meat, chicken and fish",
+    "dairy": "Milk and dairy",
+    "dry_goods": "Atta, rice, daal and dry goods",
+    "spices": "Spices",
+    "other": "Other"
+  },
+  "unit": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "piece": "pcs",
+    "dozen": "dozen",
+    "bunch": "bunch",
+    "lot": "lot",
+    "bottle": "bottle",
+    "pack": "pack"
+  },
+  "lists": {
+    "generateTitle": "This week's shopping",
+    "generateBody": "Make a list from your active plan for {{from}} to {{to}}.",
+    "replaceNote": "There's already an open list for this week. It will be updated, and anything you added by hand stays.",
+    "generate": "Make the list",
+    "regenerate": "Update the list",
+    "offline": "Making a list needs a connection. Your saved lists still open offline.",
+    "noPlan": "Create a meal plan first, then the list is made from it.",
+    "empty": "No grocery lists yet.",
+    "dates": "{{from}} to {{to}}",
+    "estimate": "About {{amount}}",
+    "openA11y": "Open the list for {{from}} to {{to}}"
+  },
+  "detail": {
+    "missing": "This list isn't available.",
+    "progress": "{{checked}} of {{total}} in the basket",
+    "estimate": "Estimated: {{amount}}",
+    "noPrices": "No prices for your area yet, so there is no estimate.",
+    "actual": "Paid so far: {{amount}}",
+    "pending": "Some changes are saved on this phone and will sync.",
+    "share": "Share as text",
+    "startShopping": "Start shopping",
+    "finish": "Finish shopping",
+    "basket_one": "In the basket ({{count}})",
+    "basket_other": "In the basket ({{count}})"
+  },
+  "finish": {
+    "title": "Finish this trip?",
+    "fromActuals": "{{amount}} from the prices you entered will be added to this month's budget.",
+    "total": "What did you spend in total?",
+    "totalHint": "Optional. Added to this month's budget.",
+    "noBudget": "Set a monthly budget to track spending.",
+    "confirm": "Finish",
+    "cancel": "Not yet"
+  },
+  "item": {
+    "edit": "Edit",
+    "editA11y": "Edit {{label}}",
+    "quantity": "Quantity",
+    "actual": "Price paid",
+    "actualHint": "Helps keep prices in your area up to date.",
+    "save": "Save",
+    "delete": "Remove"
+  },
+  "manual": {
+    "open": "Add an item",
+    "label": "Item",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "aisle": "Section",
+    "add": "Add",
+    "cancel": "Cancel"
+  },
+  "share": {
+    "title": "Shopping list, {{from}} to {{to}}"
+  },
+  "subs": {
+    "title": "Cheaper swaps",
+    "show_one": "See {{count}} swap",
+    "show_other": "See {{count}} swaps",
+    "row": "{{from}} → {{to}}",
+    "saves": "Saves about {{amount}}",
+    "upsellTitle": "Save on your shopping with Premium",
+    "upsellBody": "Premium suggests cheaper swaps with the same nourishment, like seasonal sabzi or daal for part of the meat."
+  }
+}
