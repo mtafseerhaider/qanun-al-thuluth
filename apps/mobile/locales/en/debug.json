@@ -13,15 +13,6 @@
     "sent": "Flushed {{count}} events.",
     "failed": "Flush failed: {{message}}"
   },
-  "aiSmoke": {
-    "title": "AI smoke test",
-    "promptLabel": "Prompt",
-    "defaultPrompt": "Say salaam in one short sentence.",
-    "send": "Call ai-smoke",
-    "reply": "Reply",
-    "meta": "{{provider}} · {{model}} · {{route}} · {{tokensIn}} in / {{tokensOut}} out · {{latency}} ms",
-    "error": "Error {{code}}: {{message}}"
-  },
   "flags": {
     "title": "Feature flags",
     "debugMenu": "debug_menu: {{value}}"
@@ -30,7 +21,7 @@
   "session": {
     "title": "Dev session",
     "signedIn": "Signed in as {{userId}}",
-    "signedOut": "No Supabase session. Analytics and ai-smoke need one.",
+    "signedOut": "No Supabase session. Analytics needs one.",
     "signIn": "Sign in as seeded dev user (local)"
   }
 }

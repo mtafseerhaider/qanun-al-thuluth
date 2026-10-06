@@ -135,3 +135,43 @@ export async function invokeEdge<TReq, TRes>(
   }
   return parsed.data;
 }
+
+/**
+ * GET on an Edge Function with query parameters (e.g. `export-pdf?export_id=`), validated like
+ * `invokeEdge`. Used for status polling and refreshing a signed URL.
+ */
+export async function getEdge<TRes>(
+  name: string,
+  query: Record<string, string>,
+  responseSchema: z.ZodType<TRes, z.ZodTypeDef, unknown>,
+  opts: InvokeEdgeOptions = {},
+): Promise<TRes> {
+  const { url, headers } = await edgeRequestInit(name, opts);
+  const qs = new URLSearchParams(query).toString();
+  let res: Response;
+  try {
+    res = await (opts.fetchImpl ?? fetch)(`${url}?${qs}`, {
+      method: 'GET',
+      headers,
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    });
+  } catch (error) {
+    throw new AppError(
+      'NETWORK_ERROR',
+      error instanceof Error ? error.message : 'Network request failed.',
+    );
+  }
+  let json: unknown = null;
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
+  }
+  if (!res.ok) throw edgeErrorFrom(name, res.status, json);
+  const parsed = responseSchema.safeParse(json);
+  if (!parsed.success)
+    throw new AppError('INVALID_RESPONSE', `Edge function ${name} returned an unexpected shape.`, {
+      status: res.status,
+    });
+  return parsed.data;
+}

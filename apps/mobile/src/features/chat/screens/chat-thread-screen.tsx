@@ -267,6 +267,7 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
                   thread.setProposal(turn.clientMessageId, p.id, status),
                 )
               }
+              onReview={proposals.review}
               onRetry={() => thread.retry(turn.clientMessageId)}
               onOpenCitation={(c) => navigation.navigate('SourceDetailSheet', sourceSheetParams(c))}
               onFollowUp={(text) => send(text)}

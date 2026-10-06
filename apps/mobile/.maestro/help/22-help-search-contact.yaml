@@ -1,0 +1,78 @@
+# Sprint 6 (S6-12): help center. More -> Help -> search "delete" -> open the article -> mark it
+# helpful -> Contact support with the diagnostic bundle shown for the user to check -> About lists
+# reviewer roles only. Sending opens the mail app, so the flow stops before Send.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 22 help search and contact
+tags:
+  - help
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- scrollUntilVisible:
+    element:
+      id: 'settings-more-home.help-button'
+    direction: DOWN
+- tapOn:
+    id: 'settings-more-home.help-button'
+- extendedWaitUntil:
+    visible:
+      id: 'help.screen'
+    timeout: 5000
+- tapOn:
+    id: 'help.search'
+- inputText: 'delete'
+- extendedWaitUntil:
+    visible:
+      id: 'help.result.delete-my-account'
+    timeout: 5000
+- tapOn:
+    id: 'help.result.delete-my-account'
+- extendedWaitUntil:
+    visible:
+      id: 'help-article.screen'
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: 'help-article.yes'
+    direction: DOWN
+- tapOn:
+    id: 'help-article.yes'
+- assertVisible:
+    id: 'help-article.thanks'
+- back
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: 'help.contact'
+    direction: DOWN
+- tapOn:
+    id: 'help.contact'
+- extendedWaitUntil:
+    visible:
+      id: 'contact.screen'
+    timeout: 5000
+- tapOn:
+    id: 'contact.message'
+- inputText: 'Maestro test message'
+- hideKeyboard
+- assertVisible:
+    id: 'contact.diagnostics'
+- takeScreenshot: 22-contact-diagnostics
+- back
+- scrollUntilVisible:
+    element:
+      id: 'help.about'
+    direction: DOWN
+- tapOn:
+    id: 'help.about'
+- extendedWaitUntil:
+    visible:
+      id: 'about.reviewers'
+    timeout: 5000
+- takeScreenshot: 22-about

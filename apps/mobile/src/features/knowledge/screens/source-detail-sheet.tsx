@@ -138,6 +138,23 @@ export function SourceDetailSheet({ route, navigation }: Props) {
       <Text variant="caption" tone="muted">
         {t('knowledge:guidanceNotCure')}
       </Text>
+      {active.data ? (
+        <Button
+          label={t('knowledge:report.open')}
+          variant="ghost"
+          onPress={() =>
+            navigation.navigate(
+              'ReportSourceSheet',
+              recommendationId
+                ? { recommendationId }
+                : islamicSourceId
+                  ? { islamicSourceId }
+                  : { scientificEvidenceId: scientificEvidenceId as string },
+            )
+          }
+          testID="sheet.source-detail.report"
+        />
+      ) : null}
       <Button
         label={t('knowledge:close')}
         variant="secondary"

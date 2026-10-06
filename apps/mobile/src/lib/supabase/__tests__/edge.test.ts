@@ -1,7 +1,17 @@
-import { AiSmokeResponse } from '@shared/contracts';
+import { z } from 'zod';
 
 import { AppError } from '../app-error';
 import { invokeEdge } from '../edge';
+
+/** A local response schema, so this test does not depend on any one Edge Function contract. */
+const EchoResponse = z.object({
+  reply: z.string(),
+  provider: z.string(),
+  model: z.string(),
+  route_key: z.string(),
+  usage: z.object({ tokens_in: z.number(), tokens_out: z.number() }),
+  latency_ms: z.number(),
+});
 
 const okBody = {
   reply: 'Salaam!',
@@ -27,13 +37,13 @@ const opts = { baseUrl: 'https://example.supabase.co', anonKey: 'anon', accessTo
 describe('invokeEdge', () => {
   it('posts JSON with auth headers and parses the response schema', async () => {
     const fetchImpl = fetchReturning(200, okBody);
-    const res = await invokeEdge('ai-smoke', { prompt: 'hi' }, AiSmokeResponse, {
+    const res = await invokeEdge('echo', { prompt: 'hi' }, EchoResponse, {
       ...opts,
       fetchImpl,
     });
     expect(res.reply).toBe('Salaam!');
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://example.supabase.co/functions/v1/ai-smoke');
+    expect(url).toBe('https://example.supabase.co/functions/v1/echo');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer jwt');
     expect(init.body).toBe(JSON.stringify({ prompt: 'hi' }));
   });
@@ -43,7 +53,7 @@ describe('invokeEdge', () => {
       error: { code: 'QUOTA_EXCEEDED', message: 'Daily limit', details: { limit: 20 } },
     });
     await expect(
-      invokeEdge('ai-smoke', { prompt: 'hi' }, AiSmokeResponse, { ...opts, fetchImpl }),
+      invokeEdge('echo', { prompt: 'hi' }, EchoResponse, { ...opts, fetchImpl }),
     ).rejects.toMatchObject({
       code: 'QUOTA_EXCEEDED',
       status: 429,
@@ -54,13 +64,13 @@ describe('invokeEdge', () => {
   it('flags responses that do not match the schema', async () => {
     const fetchImpl = fetchReturning(200, { reply: 1 });
     await expect(
-      invokeEdge('ai-smoke', {}, AiSmokeResponse, { ...opts, fetchImpl }),
+      invokeEdge('echo', {}, EchoResponse, { ...opts, fetchImpl }),
     ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
   });
 
   it('reports NOT_CONFIGURED without Supabase settings', async () => {
     await expect(
-      invokeEdge('ai-smoke', {}, AiSmokeResponse, { baseUrl: '', anonKey: '' }),
+      invokeEdge('echo', {}, EchoResponse, { baseUrl: '', anonKey: '' }),
     ).rejects.toBeInstanceOf(AppError);
   });
 
@@ -69,7 +79,7 @@ describe('invokeEdge', () => {
       throw new TypeError('Network request failed');
     });
     await expect(
-      invokeEdge('ai-smoke', {}, AiSmokeResponse, { ...opts, fetchImpl }),
+      invokeEdge('echo', {}, EchoResponse, { ...opts, fetchImpl }),
     ).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
   });
 });

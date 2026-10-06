@@ -15,5 +15,77 @@
     "thanksTitle": "Thank you",
     "thanksBody": "Your feedback is on its way to the team. If you're offline, it's sent when you reconnect.",
     "privacy": "Feedback goes to the Thuluth team with the app version, phone type and language. Please keep family health details out of it."
+  },
+  "center": {
+    "title": "Help",
+    "search": "Search help",
+    "draft": "This translation is a draft and is waiting for review.",
+    "results_one": "{{count}} article",
+    "results_other": "{{count}} articles",
+    "contact": "Contact support",
+    "about": "About Thuluth"
+  },
+  "categories": {
+    "getting_started": "Getting started",
+    "plans": "Plans, meals and groceries",
+    "health": "Growth, picky eating and autism",
+    "ramadan": "Ramadan and fasting",
+    "privacy": "Privacy and your data",
+    "subscription": "Premium",
+    "safety": "Safety"
+  },
+  "article": {
+    "missing": "This article isn't available.",
+    "back": "Back to help",
+    "helpful": "Was this helpful?",
+    "yes": "Yes",
+    "no": "No",
+    "thanks": "Thanks for letting us know."
+  },
+  "contact": {
+    "title": "Contact support",
+    "intro": "Tell us what happened. We reply by email, usually within two working days.",
+    "message": "Your message",
+    "messageHint": "Please don't include health details about your family.",
+    "include": "Attach technical details",
+    "includeHint": "Only what is shown below. It helps us find the problem and contains no names, health details or household names.",
+    "send": "Write email",
+    "subject": "Thuluth support",
+    "noMail": "No mail app was found. Please email us at {{email}}.",
+    "emergency": "Support can't help in an emergency. If someone is seriously unwell, call your local emergency number."
+  },
+  "about": {
+    "title": "About Thuluth",
+    "body": "Thuluth helps families eat well following the Prophetic guidance of a third for food, a third for drink and a third for breath, alongside current nutrition science.",
+    "reviewersTitle": "Who reviews our content",
+    "reviewersBody": "Guidance is checked by qualified reviewers in these roles before release. Their names will appear here once their reviews are signed off.",
+    "roles": {
+      "clinical": {
+        "title": "Clinical nutrition reviewer",
+        "scope": "Nutrition targets, medical safety rules and red-flag guidance"
+      },
+      "paediatric": {
+        "title": "Paediatric reviewer",
+        "scope": "Child growth, growth alerts and children's fasting"
+      },
+      "feeding": {
+        "title": "Feeding therapy reviewer",
+        "scope": "Picky eating, autism support, ladders and food chaining"
+      },
+      "islamic": {
+        "title": "Islamic content reviewer",
+        "scope": "Hadith sources, grades, fasting rulings and wording"
+      },
+      "urdu": {
+        "title": "Urdu language reviewer",
+        "scope": "All Urdu text in the app and in help"
+      },
+      "privacy": {
+        "title": "Privacy and security reviewer",
+        "scope": "Consents, data handling, exports and account deletion"
+      }
+    },
+    "sources": "Every recommendation links to its sources, so you can see where guidance comes from.",
+    "version": "Version {{version}}"
   }
 }

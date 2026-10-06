@@ -1,0 +1,47 @@
+# Sprint 6 (S6-09): export the meal plan as a PDF and open the share sheet.
+# More -> Exports -> New export: meal plan, Urdu, A4 -> Create. With the renderer configured the
+# PDF opens in the native share sheet (WhatsApp, email, print); without it the screen shows the
+# friendly "not available yet" message, which this flow accepts. Premium only.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 21 export and share
+tags:
+  - exports
+  - premium
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- tapOn:
+    id: 'settings-more-home.exports-button'
+- extendedWaitUntil:
+    visible:
+      id: 'exports.screen'
+    timeout: 10000
+- tapOn:
+    id: 'exports.new'
+- extendedWaitUntil:
+    visible:
+      id: 'export-create.screen'
+    timeout: 5000
+- tapOn:
+    id: 'export-create.kind.meal_plan'
+- tapOn:
+    id: 'export-create.locale.ur'
+- tapOn:
+    id: 'export-create.paper.A4'
+- scrollUntilVisible:
+    element:
+      id: 'export-create.submit'
+    direction: DOWN
+- tapOn:
+    id: 'export-create.submit'
+- extendedWaitUntil:
+    visible:
+      id: 'export-create.not-available|exports.screen'
+    timeout: 90000
+- takeScreenshot: 21-export-result

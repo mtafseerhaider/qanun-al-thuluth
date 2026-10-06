@@ -1,0 +1,44 @@
+# Sprint 6 (S6-14): report a source. Today -> tip card -> See sources -> Report a problem: choose a
+# reason, add a note and send (saved through RLS into source_reports). A second report on the same
+# source shows "already reported". Needs a published tip with sources in the seeded catalog.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 24 report a source
+tags:
+  - knowledge
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: 'today.tip.card.details'
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: 'today.tip.card.details'
+- extendedWaitUntil:
+    visible:
+      id: 'sheet.source-detail.report'
+    timeout: 10000
+- tapOn:
+    id: 'sheet.source-detail.report'
+- extendedWaitUntil:
+    visible:
+      id: 'report-source.screen'
+    timeout: 5000
+- tapOn:
+    id: 'report-source.reason.wrong_citation'
+- tapOn:
+    id: 'report-source.note'
+- inputText: 'Maestro test report'
+- hideKeyboard
+- tapOn:
+    id: 'report-source.submit'
+- extendedWaitUntil:
+    visible:
+      id: 'report-source.thanks|report-source.already'
+    timeout: 10000
+- takeScreenshot: 24-report-sent

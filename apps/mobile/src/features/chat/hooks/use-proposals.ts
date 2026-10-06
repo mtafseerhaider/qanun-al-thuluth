@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 
 import { hijriIso, toHijri } from '@shared/prayer/hijri';
 
+import { useSaveLadder } from '@/features/exposures';
 import { useFamilyMembers } from '@/features/family';
 import { logFast } from '@/features/fasting';
 import { logHydration } from '@/features/hydration';
@@ -31,11 +32,17 @@ export function useProposalActions(householdId: string | null) {
   const navigation = useNavigation();
   const members = useFamilyMembers(householdId);
   const clock = useHouseholdClock(householdId);
+  const saveLadder = useSaveLadder(householdId);
 
   const actionFor = useCallback(
     (p: ChatProposal): ProposalAction => {
       const action = proposalAction(p.card);
-      if (action.kind === 'unsupported' || action.kind === 'plan_adjust') return action;
+      if (
+        action.kind === 'unsupported' ||
+        action.kind === 'plan_adjust' ||
+        action.kind === 'ladder'
+      )
+        return action;
       const m = (members.data ?? []).find((x) => x.id === action.memberId);
       return guardForMember(action, m ? memberAge(m, clock.today) : null);
     },
@@ -105,6 +112,18 @@ export function useProposalActions(householdId: string | null) {
               qadaForHijriYear: null,
             });
             break;
+          case 'ladder':
+            if (!action.targetIngredientId) return;
+            await saveLadder.mutateAsync({
+              ladderId: null,
+              familyMemberId: action.memberId,
+              targetIngredientId: action.targetIngredientId,
+              strategy: action.strategy,
+              steps: action.steps,
+              links: new Set(action.steps.map((s) => s.foodLabel)).size - 1,
+              suggested: true,
+            });
+            break;
           case 'plan_adjust': {
             const res = await applyPlanAdjustment({
               mealPlanId: action.mealPlanId,
@@ -128,10 +147,12 @@ export function useProposalActions(householdId: string | null) {
         setStatus('failed', code);
         track('chat_proposal_resolved', { kind, action: 'failed' });
         if (code === 'PREMIUM_REQUIRED')
-          navigation.navigate('PaywallModal', { trigger: 'plan_adjust' });
+          navigation.navigate('PaywallModal', {
+            trigger: kind === 'ladder' ? 'exposure_ladder' : 'plan_adjust',
+          });
       }
     },
-    [actionFor, clock.nowMinutes, clock.today, householdId, navigation, qc],
+    [actionFor, clock.nowMinutes, clock.today, householdId, navigation, qc, saveLadder],
   );
 
   const dismiss = useCallback(
@@ -144,5 +165,24 @@ export function useProposalActions(householdId: string | null) {
     [actionFor],
   );
 
-  return { actionFor, memberName, confirm, dismiss };
+  /** Opens the ladder editor with the proposal so the parent can change steps before saving. */
+  const review = useCallback(
+    (p: ChatProposal) => {
+      if (p.card.kind !== 'exposure_ladder_proposal') return;
+      navigation.navigate('Main', {
+        screen: 'FamilyTab',
+        params: {
+          screen: 'FoodChaining',
+          params: {
+            familyMemberId: p.card.family_member_id,
+            strategy: p.card.strategy,
+            proposal: JSON.stringify(p.card),
+          },
+        },
+      });
+    },
+    [navigation],
+  );
+
+  return { actionFor, memberName, confirm, dismiss, review };
 }

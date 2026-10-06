@@ -55,6 +55,7 @@
   "premiumNeeded": "This needs Premium.",
   "proposal": {
     "applying": "Saving…",
+    "chain": "Food chain toward {{food}} for {{name}}, {{count}} steps",
     "confirm": "Confirm",
     "dismiss": "Not now",
     "dismissed": "Dismissed. Nothing was changed.",
@@ -62,6 +63,11 @@
     "fast": "Log a fast for {{name}} on {{date}}",
     "hydration": "Log {{ml}} ml of water for {{name}}",
     "invalid": "This suggestion could not be read.",
+    "ladder": "Exposure ladder for {{food}} for {{name}}, {{count}} steps",
+    "ladderPickFood": "Pick the food from the catalog before saving: tap Review.",
+    "ladderSaved": "Ladder saved. Find it in the autism module.",
+    "ladderStep": "{{n}}. {{food}}: {{criteria}}",
+    "ladderTitle": "Suggested ladder",
     "logTitle": "Suggested log",
     "logged": "Logged.",
     "mealLog": "Log {{meal}} for {{name}}: {{description}}",
@@ -70,7 +76,8 @@
     "planAdjust": "Change the plan: {{summary}}",
     "planApplied": "Your plan is being updated.",
     "planTitle": "Suggested plan change",
-    "practiceFast": "Log a practice fast for {{name}} on {{date}}"
+    "practiceFast": "Log a practice fast for {{name}} on {{date}}",
+    "review": "Review and edit"
   },
   "quota": {
     "seePremium": "See Premium",

@@ -43,7 +43,21 @@ jest.mock('expo-image-manipulator', () => ({
   SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
   ImageManipulator: { manipulate: jest.fn() },
 }));
-jest.mock('expo-file-system', () => ({
-  File: jest.fn().mockImplementation((uri: string) => ({ uri, size: 0 })),
+jest.mock('expo-file-system', () => {
+  const File = Object.assign(
+    jest.fn().mockImplementation((...parts: unknown[]) => ({
+      uri: parts.map(String).join('/'),
+      size: 0,
+      exists: false,
+      delete: jest.fn(),
+    })),
+    { downloadFileAsync: jest.fn(async (_url: string, dest: { uri: string }) => dest) },
+  );
+  const Directory = jest.fn().mockImplementation(() => ({ exists: true, create: jest.fn() }));
+  return { File, Directory, Paths: { cache: 'cache', document: 'document' } };
+});
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: jest.fn(async () => true),
+  shareAsync: jest.fn(async () => undefined),
 }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));

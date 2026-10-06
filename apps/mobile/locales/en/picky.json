@@ -1,0 +1,173 @@
+{
+  "premium": "Premium",
+  "disclaimer": "If eating is very limited, meals cause distress, or growth worries you, talk to your child's doctor or a feeding therapist.",
+  "stages": {
+    "tolerate_on_table": "On the table",
+    "look": "Looked at it",
+    "touch": "Touched it",
+    "smell": "Smelled it",
+    "lick": "Licked it",
+    "taste": "Tasted it",
+    "chew_spit": "Chewed and spat out",
+    "eat_small": "Ate a little",
+    "eat_portion": "Ate a portion"
+  },
+  "contexts": {
+    "family_meal": "Family meal",
+    "snack": "Snack",
+    "cooking_together": "Cooking together",
+    "grocery_trip": "Grocery trip",
+    "play": "Play",
+    "school": "School",
+    "other": "Other"
+  },
+  "lifecycle": {
+    "introduced": "Just introduced",
+    "exposing": "Getting familiar",
+    "tasting": "Tasting",
+    "accepted": "Accepted",
+    "paused": "Taking a break"
+  },
+  "picker": {
+    "hint": "Type at least 2 letters.",
+    "none": "No foods found. Try another spelling.",
+    "change": "Change",
+    "changeA11y": "Change food, {{food}} selected"
+  },
+  "log": {
+    "title": "A food try for {{name}}",
+    "viewer": "Only parents and caregivers can log tries.",
+    "food": "Food",
+    "needFood": "Pick a food.",
+    "howItWent": "How did it go for {{name}}?",
+    "needScore": "Pick how it went. \"Not today\" is a fine answer.",
+    "stage": "What happened? (optional)",
+    "stageHint": "Leave it empty and we will work it out from how it went.",
+    "stageFixed": "Ladder step: {{stage}}",
+    "context": "Where? (optional)",
+    "notes": "Notes (optional)",
+    "notesHint": "Only your household can see notes.",
+    "calm": "Every calm try counts, even when the food stays on the plate.",
+    "save": "Save try"
+  },
+  "hub": {
+    "title": "Picky eating: {{name}}",
+    "intro": "You decide what, when and where. {{name}} decides whether and how much. Small, calm, repeated tries do the work.",
+    "pairTitle": "This week's new food",
+    "pairNone": "No new food planned this week. The next meal plan pairs one new food with a familiar one.",
+    "pairLine": "{{food}}, served next to {{familiar}}",
+    "pairSlots": "Planned for: {{slots}}",
+    "pairNote": "Put it on the table without asking for a bite. Seeing it often is progress.",
+    "logPair": "Log a try with {{food}}",
+    "logTry": "Log a try",
+    "recentTitle": "Last 90 days",
+    "recentEmpty": "No tries logged yet for {{name}}.",
+    "recentLine_one": "{{count}} food, {{tries}} tries",
+    "recentLine_other": "{{count}} foods, {{tries}} tries",
+    "dor": "Division of Responsibility",
+    "dorHint": "Who decides what, with phrases to try",
+    "log": "Foods tried",
+    "logHint": "Every food and how it is going",
+    "analytics": "Acceptance over time",
+    "analyticsHint": "Weekly trends and foods getting easier",
+    "tipsTitle": "Coaching tips",
+    "tipsNone": "No reviewed tips for this age yet.",
+    "upsellTitle": "Weekly coaching tips",
+    "upsellBody": "Premium adds reviewed coaching tips for {{name}}'s age and acceptance trends."
+  },
+  "dor": {
+    "title": "Division of Responsibility",
+    "intro": "Feeding goes best when parents and children each do their own jobs. Pressure, bribes and praise for eating usually make picky eating last longer.",
+    "parentTitle": "Your jobs",
+    "parent": {
+      "what": "What food is offered, including one food your child usually eats.",
+      "when": "When meals and snacks happen, on a steady rhythm.",
+      "where": "Where food is eaten, ideally together at the table without screens.",
+      "company": "Making meals pleasant: calm talk, no comments on how much is eaten."
+    },
+    "childTitle": "Your child's jobs",
+    "child": {
+      "whether": "Whether to eat what is offered.",
+      "howMuch": "How much to eat, from what is on the table."
+    },
+    "scriptsTitle": "Phrases to try",
+    "bullet": "• {{text}}",
+    "try": "Try: \"{{text}}\"",
+    "instead": "Instead of: \"{{text}}\"",
+    "scripts": {
+      "refuses": {
+        "when": "They refuse the meal",
+        "say": "You don't have to eat it. The next food is at snack time.",
+        "avoid": "Just one more bite, then you can go."
+      },
+      "onlyWants": {
+        "when": "They only want one food",
+        "say": "Rice is here, and there is chicken too. You can choose from what is on the table.",
+        "avoid": "Fine, I'll make you something else."
+      },
+      "reward": {
+        "when": "You want to offer a reward",
+        "say": "Dessert is part of dinner today, and it comes with the meal.",
+        "avoid": "Eat your vegetables and you get a sweet."
+      },
+      "grazing": {
+        "when": "They ask for snacks all day",
+        "say": "The kitchen is closed for now. Snack is at four, after Asr.",
+        "avoid": "Here, take some chips so you stop asking."
+      },
+      "newFood": {
+        "when": "A new food is on the table",
+        "say": "This is spinach. It's a bit soft and a bit salty. You can look at it or pass it to me.",
+        "avoid": "Just try it, you'll like it."
+      },
+      "sweets": {
+        "when": "They ask for sweets",
+        "say": "Sweets are with the meal today. Let's put one on your plate.",
+        "avoid": "No sweets until you finish everything."
+      },
+      "cleanPlate": {
+        "when": "They stop eating early",
+        "say": "Is your tummy full? Then you can say Alhamdulillah and go play.",
+        "avoid": "Finish your plate, there are children with nothing to eat."
+      },
+      "sibling": {
+        "when": "A sibling eats well",
+        "say": "Everyone eats in their own way and at their own pace.",
+        "avoid": "Look at your sister, she ate it all."
+      }
+    },
+    "source": "Based on Ellyn Satter's Division of Responsibility in Feeding. Draft content, pending review by the content team."
+  },
+  "exposureLog": {
+    "title": "Foods {{name}} has tried",
+    "empty": "No tries logged yet. Log the first one when a new food is on the table.",
+    "line_one": "{{stage}} · {{count}} try · last: {{last}} on {{date}}",
+    "line_other": "{{stage}} · {{count}} tries · last: {{last}} on {{date}}",
+    "pausedHint": "Lots of tries without tasting. A food chain from a food they already like may help.",
+    "suggestTitle": "Ready to become safe foods",
+    "makeSafe": "Add to safe foods",
+    "note": "A food counts as accepted after eating some of it on 3 occasions within 30 days."
+  },
+  "analytics": {
+    "title": "Acceptance over time: {{name}}",
+    "upsellTitle": "See acceptance trends",
+    "upsellBody": "Premium shows weekly acceptance, foods getting easier and a 30-day summary.",
+    "serverUnavailable": "The 30-day summary isn't available right now. The weekly view below uses your logs on this device.",
+    "last30": "Last 30 days",
+    "acceptedFoods_one": "{{count}} accepted food",
+    "acceptedFoods_other": "{{count}} accepted foods",
+    "tries_one": "{{count}} try logged",
+    "tries_other": "{{count}} tries logged",
+    "newAccepted_one": "{{count}} new food accepted",
+    "newAccepted_other": "{{count}} new foods accepted",
+    "mealRate": "Planned meals eaten at least in part: {{value}}%",
+    "weeklyTitle": "Weekly acceptance",
+    "weekNone": "Week of {{week}}: nothing logged",
+    "weekLine_one": "Week of {{week}}: {{count}} log, average {{avg}} of 5",
+    "weekLine_other": "Week of {{week}}: {{count}} logs, average {{avg}} of 5",
+    "index": "Acceptance index: {{value}} of 100 (recent tries count more)",
+    "easierTitle": "Getting easier",
+    "easierNone": "Keep logging tries; foods that are getting easier will show here.",
+    "deviceNote": "The weekly bars, the index and \"getting easier\" are calculated on this device from your own logs."
+  }
+}

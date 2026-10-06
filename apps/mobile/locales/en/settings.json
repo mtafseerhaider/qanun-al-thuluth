@@ -34,7 +34,13 @@
     "notifications": "Notifications",
     "ramadan": "Ramadan planner",
     "premium": "Thuluth Premium",
-    "memory": "What Thuluth remembers"
+    "memory": "What Thuluth remembers",
+    "insights": "Insights",
+    "exports": "Exports (PDF)",
+    "privacy": "Privacy and data",
+    "helpTitle": "Help",
+    "help": "Help center",
+    "contact": "Contact support"
   },
   "profile": {
     "displayName": "Display name",

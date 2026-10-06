@@ -41,3 +41,17 @@ i18next resources for `@thuluth/mobile`, one JSON file per namespace (docs/07 §
 > qada, fidya, adab of drinking and "May Allah accept it" wording need the Islamic content reviewer
 > (docs/13); aisle and unit names (سبزی، گٹھی، ڈھیری) need a native speaker familiar with local
 > markets.
+
+> **Sprint 6 additions needing review.** `growth.json` (growth dashboard, add measurement, the eight
+> growth alert texts and the plan-paused banner), `picky.json` (picky-eating hub, division of
+> responsibility guide and its parent scripts, exposure log, acceptance analytics), `autism.json`
+> (safe foods, sensory profile, exposure ladders, food chaining, first-then cards), `exports.json`,
+> `insights.json` and `privacy.json` (consents, analytics opt-out, account deletion and its grace
+> countdown, the email code step-up) are new namespaces. `help.json`, `chat.json`, `knowledge.json`
+> (report a source), `family.json`, `settings.json`, `navigation.json` and `errors.json` gained keys.
+> All Urdu strings are drafts. The 30 help articles are bundled TypeScript content, not JSON
+> (`src/features/help/content/en.ts` and `ur.ts`). The Urdu set is flagged `draft: true`, and the
+> app shows a "draft translation" notice until a native reviewer signs it off. Reviews needed:
+> clinical review of the growth alert copy, the "see a doctor" wording and the emergency numbers in
+> the `emergency-help` article; content-team review of the DoR scripts, ladder stage criteria and
+> first-then activities; Islamic content review of the Ramadan and fasting help articles (docs/13).

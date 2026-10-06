@@ -58,5 +58,25 @@
   "withdrawn": "This source has been withdrawn for review.",
   "scholarNotice": "For religious rulings, please ask a qualified scholar you trust.",
   "guidanceNotCure": "Sources are shared as guidance, not as a cure or medical claim.",
-  "close": "Close"
+  "close": "Close",
+  "report": {
+    "open": "Report a problem with this source",
+    "title": "Report a problem",
+    "intro": "Tell us what looks wrong. Our content reviewers check every report.",
+    "reason": "What is the problem?",
+    "reasons": {
+      "wrong_citation": "Wrong reference",
+      "wrong_translation": "Translation is wrong",
+      "wrong_grade": "Grade is wrong",
+      "tradition_label": "Tradition label is wrong",
+      "offensive": "Offensive or inappropriate",
+      "other": "Something else"
+    },
+    "note": "Details (optional)",
+    "noteHint": "For example the correct reference. Up to 1000 characters.",
+    "submit": "Send report",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your report is with our content reviewers.",
+    "already": "You have already reported this source. Our reviewers are looking at it."
+  }
 }

@@ -5,6 +5,7 @@ import { track } from '@/lib/analytics/track';
 import { isSupabaseConfigured } from '@/lib/env';
 import { registerOutboxHandler, useOutboxStore, type OutboxEntry } from '@/lib/offline/outbox';
 import { qk } from '@/lib/query/query-keys';
+import { selectFlag, useFeatureFlagStore } from '@/stores/use-feature-flag-store';
 import { useSessionStore } from '@/stores/use-session-store';
 
 import {
@@ -93,7 +94,11 @@ export function openNotification(
     kind: n.kind && /^[a-z_]+$/.test(n.kind) ? n.kind : 'unknown',
     channel,
   });
-  openNotificationTarget(targetForNotification(n));
+  openNotificationTarget(
+    targetForNotification(n, {
+      ramadanPlanner: selectFlag('ramadan_planner')(useFeatureFlagStore.getState()),
+    }),
+  );
 }
 
 export function usePreferences() {

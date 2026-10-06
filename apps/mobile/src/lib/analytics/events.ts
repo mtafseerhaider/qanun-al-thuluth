@@ -26,6 +26,8 @@ const PAYWALL_TRIGGER = z.enum([
   'member_limit',
 ]);
 
+const LIFE_STAGE = z.enum(['infant', 'toddler', 'child', 'teen', 'adult', 'older_adult']);
+
 export const EventSchemas = {
   app_opened: z.object({ cold_start: z.boolean() }).strict(),
   screen_viewed: z
@@ -209,6 +211,7 @@ export const EventSchemas = {
         'notifications',
         'quiet_hours',
         'budget',
+        'analytics',
       ]),
     })
     .strict(),
@@ -319,7 +322,7 @@ export const EventSchemas = {
     .strict(),
   chat_proposal_resolved: z
     .object({
-      kind: z.enum(['hydration', 'meal_log', 'fast', 'plan_adjust']),
+      kind: z.enum(['hydration', 'meal_log', 'fast', 'plan_adjust', 'ladder']),
       action: z.enum(['confirmed', 'dismissed', 'failed']),
     })
     .strict(),
@@ -376,6 +379,110 @@ export const EventSchemas = {
     .object({ trigger: PAYWALL_TRIGGER, seconds_open: z.number().int().min(0).max(86_400) })
     .strict(),
   upsell_tapped: z.object({ trigger: PAYWALL_TRIGGER }).strict(),
+
+  // Sprint 6: growth (02 §7.9), picky eater (§7.11), autism (§7.10), exports, privacy, help,
+  // insights and source reports. No measurement values, food names or free text (18 §14).
+  growth_measurement_added: z
+    .object({ indicator_count: z.number().int().min(0).max(3), life_stage: LIFE_STAGE })
+    .strict(),
+  growth_alert_shown: z
+    .object({ red_flag: z.boolean(), count: z.number().int().min(1).max(10) })
+    .strict(),
+  growth_chart_viewed: z.object({ indicator: z.enum(['wfa', 'hfa', 'bmi', 'hc']) }).strict(),
+  red_flag_acknowledged: z.object({}).strict(),
+  safe_food_added: z.object({ source: z.enum(['manual', 'suggestion']) }).strict(),
+  safe_food_lost: z.object({}).strict(),
+  sensory_profile_updated: z.object({}).strict(),
+  exposure_logged: z
+    .object({
+      stage: z.enum([
+        'tolerate_on_table',
+        'look',
+        'touch',
+        'smell',
+        'lick',
+        'taste',
+        'chew_spit',
+        'eat_small',
+        'eat_portion',
+      ]),
+      score: z.number().int().min(0).max(5),
+      on_ladder: z.boolean(),
+      module: z.enum(['picky', 'autism']),
+    })
+    .strict(),
+  ladder_started: z
+    .object({
+      strategy: z.enum(['exposure_ladder', 'food_chaining']),
+      steps: z.number().int().min(1).max(40),
+    })
+    .strict(),
+  ladder_step_changed: z.object({ direction: z.enum(['up', 'down']) }).strict(),
+  ladder_completed: z.object({}).strict(),
+  food_chain_created: z
+    .object({ links: z.number().int().min(0).max(10), suggested: z.boolean() })
+    .strict(),
+  autism_hub_viewed: z.object({}).strict(),
+  picky_hub_viewed: z.object({ has_pair: z.boolean() }).strict(),
+  dor_guide_viewed: z.object({}).strict(),
+  acceptance_analytics_viewed: z.object({ premium: z.boolean() }).strict(),
+  first_then_viewed: z.object({}).strict(),
+  export_requested: z
+    .object({
+      kind: z.enum(['meal_plan', 'grocery_list', 'growth_report']),
+      locale: z.enum(['en', 'ur']),
+      paper: z.enum(['A4', 'Letter']),
+    })
+    .strict(),
+  export_shared: z
+    .object({ kind: z.enum(['meal_plan', 'grocery_list', 'growth_report']) })
+    .strict(),
+  export_failed: z
+    .object({
+      code: z
+        .string()
+        .regex(/^[A-Z_]+$/)
+        .max(48),
+    })
+    .strict(),
+  account_export_requested: z.object({}).strict(),
+  account_delete_requested: z.object({}).strict(),
+  account_delete_cancelled: z.object({}).strict(),
+  help_search: z.object({ results: z.number().int().min(0).max(100) }).strict(),
+  help_article_viewed: z
+    .object({
+      slug: z
+        .string()
+        .regex(/^[a-z0-9-]+$/)
+        .max(60),
+    })
+    .strict(),
+  help_article_feedback: z
+    .object({
+      slug: z
+        .string()
+        .regex(/^[a-z0-9-]+$/)
+        .max(60),
+      helpful: z.boolean(),
+    })
+    .strict(),
+  support_contact_opened: z.object({ diagnostics: z.boolean() }).strict(),
+  insights_viewed: z
+    .object({ premium: z.boolean(), source: z.enum(['server', 'device']) })
+    .strict(),
+  source_reported: z
+    .object({
+      reason: z.enum([
+        'wrong_citation',
+        'wrong_translation',
+        'wrong_grade',
+        'tradition_label',
+        'offensive',
+        'other',
+      ]),
+      target: z.enum(['islamic', 'scientific', 'recommendation']),
+    })
+    .strict(),
 } as const;
 
 export type EventName = keyof typeof EventSchemas;

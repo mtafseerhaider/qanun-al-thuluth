@@ -23,6 +23,8 @@ export interface PreferencesState {
   showArabicWithTranslation: boolean;
   hijriDateDisplay: boolean;
   lastSyncedAt: number | null;
+  /** Product analytics opt-out (02 §7.13.4, FR-SET-07); mirrored to `users.analytics_opt_out`. */
+  analyticsOptOut: boolean;
 }
 
 export interface PreferencesActions {
@@ -33,6 +35,7 @@ export interface PreferencesActions {
   setHaptics(on: boolean): void;
   setUnits(units: PreferencesState['units']): void;
   setTraditionPreference(tradition: PreferencesState['traditionPreference']): void;
+  setAnalyticsOptOut(on: boolean): void;
   /** Copies server profile fields after sign-in (11 §9 step 2). Locale is applied by the caller. */
   hydrateFromProfile(profile: { units: string; tradition_preference: string }): void;
 }
@@ -49,6 +52,7 @@ export const initialPreferences: PreferencesState = {
   showArabicWithTranslation: true,
   hijriDateDisplay: true,
   lastSyncedAt: null,
+  analyticsOptOut: false,
 };
 
 export const PREFERENCES_STORE_VERSION = 1;
@@ -69,6 +73,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
         setHaptics: (haptics) => set({ haptics }),
         setUnits: (units) => set({ units }),
         setTraditionPreference: (traditionPreference) => set({ traditionPreference }),
+        setAnalyticsOptOut: (analyticsOptOut) => set({ analyticsOptOut }),
         hydrateFromProfile: ({ units, tradition_preference }) =>
           set((s) => ({
             units: units === 'imperial' || units === 'metric' ? units : s.units,
@@ -97,6 +102,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
           showArabicWithTranslation,
           hijriDateDisplay,
           lastSyncedAt,
+          analyticsOptOut,
         }) => ({
           theme,
           locale,
@@ -109,6 +115,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
           showArabicWithTranslation,
           hijriDateDisplay,
           lastSyncedAt,
+          analyticsOptOut,
         }),
       },
     ),

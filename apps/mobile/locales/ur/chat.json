@@ -55,6 +55,7 @@
   "premiumNeeded": "اس کے لیے پریمیم درکار ہے۔",
   "proposal": {
     "applying": "محفوظ ہو رہا ہے…",
+    "chain": "{{name}} کے لیے {{food}} کی طرف فوڈ چین، {{count}} مراحل",
     "confirm": "تصدیق کریں",
     "dismiss": "ابھی نہیں",
     "dismissed": "رد کر دیا۔ کچھ نہیں بدلا۔",
@@ -62,6 +63,11 @@
     "fast": "{{name}} کا {{date}} کا روزہ درج کریں",
     "hydration": "{{name}} کے لیے {{ml}} ملی لیٹر پانی درج کریں",
     "invalid": "یہ تجویز پڑھی نہیں جا سکی۔",
+    "ladder": "{{name}} کے لیے {{food}} کی سیڑھی، {{count}} مراحل",
+    "ladderPickFood": "محفوظ کرنے سے پہلے فہرست سے کھانا چنیں: جائزہ پر ٹیپ کریں۔",
+    "ladderSaved": "سیڑھی محفوظ ہو گئی۔ یہ آٹزم ماڈیول میں ملے گی۔",
+    "ladderStep": "{{n}}. {{food}}: {{criteria}}",
+    "ladderTitle": "تجویز کردہ سیڑھی",
     "logTitle": "تجویز کردہ اندراج",
     "logged": "درج ہو گیا۔",
     "mealLog": "{{name}} کے لیے {{meal}} درج کریں: {{description}}",
@@ -70,7 +76,8 @@
     "planAdjust": "پلان میں تبدیلی: {{summary}}",
     "planApplied": "آپ کا پلان اپ ڈیٹ ہو رہا ہے۔",
     "planTitle": "پلان میں تجویز کردہ تبدیلی",
-    "practiceFast": "{{name}} کا {{date}} کا مشقی روزہ درج کریں"
+    "practiceFast": "{{name}} کا {{date}} کا مشقی روزہ درج کریں",
+    "review": "جائزہ اور ترمیم"
   },
   "quota": {
     "seePremium": "پریمیم دیکھیں",

@@ -1,0 +1,88 @@
+{
+  "title": "Privacy and data",
+  "cancel": "Cancel",
+  "countdown": {
+    "title": "Your account is scheduled for deletion",
+    "body_one": "It will be deleted in {{count}} day, on {{date}}. You can cancel until then.",
+    "body_other": "It will be deleted in {{count}} days, on {{date}}. You can cancel until then.",
+    "inProgressTitle": "Your account is being deleted",
+    "inProgressBody": "The grace period has ended and deletion has started. It can no longer be cancelled.",
+    "tooLate": "Deletion has already started, so it can't be cancelled now.",
+    "cancel": "Cancel deletion"
+  },
+  "analytics": {
+    "title": "Product analytics",
+    "body": "Anonymous usage events help us improve the app. They never include health values, food names, notes or children's details.",
+    "optOut": "Don't send usage analytics"
+  },
+  "consents": {
+    "title": "Your consents",
+    "body": "You can withdraw optional consents at any time. Terms and the privacy policy end only by deleting your account.",
+    "since": "Given on {{date}}",
+    "withdraw": "Withdraw",
+    "withdrawA11y": "Withdraw {{kind}}",
+    "required": "Required",
+    "kinds": {
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "health_data": "Health information",
+      "child_data": "Children's information",
+      "ai_processing": "AI assistant processing",
+      "marketing": "News and offers"
+    },
+    "effects": {
+      "marketing": "You will stop receiving news and offers. Nothing else changes.",
+      "ai_processing": "The assistant, meal photo analysis and AI plan changes stop working until you agree again. The app will ask next time you open it.",
+      "health_data": "Health-based planning stops until you agree again, and the app will ask next time you open it. Your saved data stays until you delete it.",
+      "child_data": "Children's profiles in this household can't be updated until you agree again. Their saved data stays until you delete it."
+    }
+  },
+  "export": {
+    "title": "Download my data",
+    "body": "We prepare a file with everything you can see in the app and email you a link that works for 24 hours. For your security, we may ask for a code first.",
+    "start": "Request my data",
+    "confirm": "Verify and request",
+    "sent": "Requested. Check your email for the download link; it works for 24 hours."
+  },
+  "deleteCard": {
+    "title": "Delete account",
+    "body": "Permanently delete your account and data after a 30-day grace period.",
+    "open": "Delete account"
+  },
+  "reauth": {
+    "title": "Confirm it's you",
+    "body": "We'll send a 6-digit code to {{email}}.",
+    "send": "Send code",
+    "code": "Code",
+    "resend": "Send a new code"
+  },
+  "delete": {
+    "title": "Delete account",
+    "intro": "Your account will be deleted after {{days}} days. Until then you can still sign in and cancel.",
+    "whatGoesTitle": "What will be deleted",
+    "bullet": "• {{text}}",
+    "whatGoes": {
+      "profile": "Your profile and settings",
+      "family": "Family members you added, in households you own alone",
+      "health": "Health profiles, growth records and food tries",
+      "logs": "Meal, water, fasting and weight logs",
+      "chat": "Assistant chats and memories"
+    },
+    "households": "If you own a household with other members, make one of them the owner first.",
+    "subscriptions": "Store subscriptions aren't cancelled automatically. Manage them in the App Store or Google Play.",
+    "reason": "Why are you leaving? (optional)",
+    "reasonHint": "This helps us improve. It is not required.",
+    "reasons": {
+      "privacy": "Privacy",
+      "not_useful": "Not useful for us",
+      "too_expensive": "Too expensive",
+      "other": "Something else"
+    },
+    "confirm": "Verify and delete",
+    "reauthAgain": "That took a little long. Please confirm with a new code.",
+    "transferTitle": "Transfer ownership first",
+    "transferBody": "You own {{households}}, which has other members. Make someone else the owner in household settings, then try again.",
+    "yourHouseholds": "a household",
+    "subscriptionWarning": "You still have an active store subscription. Cancel it in the App Store or Google Play so you aren't charged."
+  }
+}
