@@ -4,9 +4,8 @@ import {
   catalogSeedSql,
   catalogViolations,
 } from '@thuluth/shared/analytics/catalog.ts';
+import { EventSchemas } from '@thuluth/shared/analytics/events.ts';
 import { TrackEventsArgs } from '@thuluth/shared/contracts/track-events.ts';
-
-import { EventSchemas as MobileEventSchemas } from '../../../apps/mobile/src/lib/analytics/events.ts';
 
 /** Prop keys per event of a registry, for comparing the shared and app copies. */
 function shape(reg: Record<string, unknown>): Record<string, string[]> {
@@ -17,10 +16,21 @@ function shape(reg: Record<string, unknown>): Record<string, string[]> {
   );
 }
 
-Deno.test('analytics catalog: the shared registry and the app registry match', () => {
-  const shared = Object.fromEntries(analyticsCatalog().map((e) => [e.event, e.allowed_props]));
-  assertEquals(shared, shape(MobileEventSchemas));
+Deno.test('analytics catalog: the allow-list matches the shared registry', () => {
+  const catalog = Object.fromEntries(analyticsCatalog().map((e) => [e.event, e.allowed_props]));
+  assertEquals(catalog, shape(EventSchemas));
 });
+
+Deno.test(
+  'analytics catalog: the app re-exports the shared registry instead of keeping a copy',
+  async () => {
+    const src = await Deno.readTextFile(
+      new URL('../../../apps/mobile/src/lib/analytics/events.ts', import.meta.url),
+    );
+    assertEquals(src.includes("export * from '@shared/analytics/events'"), true);
+    assertEquals(/export const EventSchemas/.test(src), false);
+  },
+);
 
 Deno.test('analytics catalog: names and props follow the 18 §14 privacy rules', () => {
   assertEquals(catalogViolations(), []);
