@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { flushPendingNotification } from '@/features/notifications';
 import { registerNavigationContainer, Sentry } from '@/lib/sentry/init';
 import { linking } from '@/navigation/linking';
 import { navigationRef } from '@/navigation/navigation-ref';
@@ -38,10 +39,21 @@ function usePendingInviteNavigation(ready: boolean) {
   }, [ready, status, token]);
 }
 
+/** Opens a notification tapped before the signed-in app was mounted (cold start, 02 §3.4). */
+function usePendingNotificationNavigation(ready: boolean) {
+  const status = useSessionStore((s) => s.status);
+  useEffect(() => {
+    if (!ready || status !== 'signed_in') return;
+    const id = setTimeout(() => flushPendingNotification(), 0);
+    return () => clearTimeout(id);
+  }, [ready, status]);
+}
+
 function Navigation() {
   const theme = useNavigationTheme();
   const [ready, setReady] = useState(false);
   usePendingInviteNavigation(ready);
+  usePendingNotificationNavigation(ready);
   return (
     <NavigationContainer
       ref={navigationRef}

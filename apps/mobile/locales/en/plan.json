@@ -28,7 +28,8 @@
     "dates": "{{from}} to {{to}}",
     "version": "Version {{version}}",
     "history": "Earlier plans",
-    "openA11y": "Open {{title}}"
+    "openA11y": "Open {{title}}",
+    "grocery": "Grocery lists"
   },
   "detail": {
     "week": "Week {{number}}",

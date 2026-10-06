@@ -64,6 +64,7 @@ export function riskFlagKey(flag: string): string {
     'pregnancy_complication',
     'severe_allergy_reaction',
     'insulin_or_sulfonylurea_fasting',
+    'teen_pregnancy',
   ];
   return known.includes(code) ? `riskFlags.${code}` : 'riskFlags.other';
 }

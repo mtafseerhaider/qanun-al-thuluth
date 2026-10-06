@@ -13,6 +13,7 @@ import type { HouseholdRole } from '@thuluth/shared';
 
 import { INGREDIENTS, MEALS } from '../../../packages/ai-core/test/planning-fixtures.ts';
 import { fromPostgrestError } from '../../functions/_shared/errors.ts';
+import type { NotificationRow } from '../../functions/_shared/notifications/templates.ts';
 import type {
   AssessmentFacts,
   MealPlanRow,
@@ -141,6 +142,10 @@ export function memoryStore(opts: MemoryOptions = {}) {
     safety: [] as SafetyEventInsert[],
     audits: [] as string[],
     enqueued: [] as string[],
+    /** Delivery count per queued plan id (pgmq `read_ct`); default 1. */
+    readCt: new Map<string, number>(),
+    acked: [] as number[],
+    notifications: [] as NotificationRow[],
     counters: new Map<string, number>(),
     idem: new Map<
       string,
@@ -257,9 +262,30 @@ export function memoryStore(opts: MemoryOptions = {}) {
     },
     dequeue: async () => {
       const id = state.enqueued.shift();
-      return id ? [{ msg_id: 1, read_ct: 1, message: { meal_plan_id: id } }] : [];
+      return id
+        ? [{ msg_id: 1, read_ct: state.readCt.get(id) ?? 1, message: { meal_plan_id: id } }]
+        : [];
     },
-    ack: async () => {},
+    ack: async (msgId) => {
+      state.acked.push(msgId);
+    },
+    stuckPlans: async (olderThan, limit) =>
+      [...state.plans.values()]
+        // Rows without updated_at count as fresh (tests set it to simulate a stall).
+        .filter(
+          (p) =>
+            p.status === 'generating' && p.updated_at !== undefined && p.updated_at < olderThan,
+        )
+        .slice(0, limit),
+    notify: async (row) => {
+      if (
+        !state.notifications.some(
+          (r) => r.user_id === row.user_id && r.dedupe_key === row.dedupe_key,
+        )
+      ) {
+        state.notifications.push(row);
+      }
+    },
     writePlanWeek: async (planId, week) => {
       const p = state.plans.get(planId);
       if (!p || p.status !== 'generating') throw new Error('CONFLICT');

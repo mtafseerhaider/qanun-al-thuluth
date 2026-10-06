@@ -67,6 +67,7 @@ import type { LifeStage } from '@thuluth/shared';
 
 import { matchRecommendations } from '../../ai-intake-assess/assess.ts';
 import { HttpError } from '../errors.ts';
+import { notificationRow, routeFor } from '../notifications/templates.ts';
 import type {
   AssessmentFacts,
   BudgetProfileRow,
@@ -578,7 +579,7 @@ async function guardedRationale(
   return { text: draft.trim(), replaced: false };
 }
 
-const progress = (
+export const progress = (
   phase: string,
   plan: MealPlanRow,
   extra: Record<string, unknown> = {},
@@ -590,6 +591,42 @@ const progress = (
   attempt: Number(plan.generation_progress.attempt ?? 0),
   ...extra,
 });
+
+/**
+ * `plan_ready` / `plan_failed` for the user who asked (04 §5.3 step 4, 06 §4.15). The dispatcher
+ * sends it; copy is lock-screen safe (no reason, no member). Never fails the job.
+ */
+export async function notifyPlanOutcome(
+  deps: PipelineDeps,
+  plan: MealPlanRow,
+  outcome: 'plan_ready' | 'plan_failed',
+): Promise<void> {
+  const userId = (plan.generation_meta.user_id as string | undefined) ?? plan.created_by_user_id;
+  if (!userId) return;
+  try {
+    await deps.store.notify(
+      notificationRow({
+        key: outcome,
+        user_id: userId,
+        household_id: plan.household_id,
+        locale: plan.generation_meta.locale as string | undefined,
+        scheduled_for: deps.now(),
+        dedupe_key: `${outcome}:${plan.id}`,
+        route: routeFor(outcome, { meal_plan_id: plan.id }),
+        data: { meal_plan_id: plan.id },
+      }),
+    );
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        msg: 'plan_notification_failed',
+        meal_plan_id: plan.id,
+        error: String(err),
+      }),
+    );
+  }
+}
 
 /** The failure path (06 §4.3): status failed, a reason, and the error code for the client. */
 export async function failPlan(
@@ -638,6 +675,7 @@ export async function failPlan(
       diff: { status: 'failed', error_code: code, reason: reason.slice(0, 200) },
     })
     .catch(() => {});
+  await notifyPlanOutcome(deps, plan, 'plan_failed');
 }
 
 const SAFETY_CATEGORY: Record<EscalationReason, string> = {
@@ -703,6 +741,7 @@ export async function runGeneration(deps: PipelineDeps, planId: string): Promise
   try {
     if (meta.job === 'adjust') await runAdjustJob(deps, plan, meta);
     else await generate(deps, plan, meta);
+    await notifyPlanOutcome(deps, plan, 'plan_ready');
   } catch (err) {
     const code: ErrorCode = err instanceof HttpError ? err.code : 'INTERNAL';
     if (!(err instanceof HttpError)) {

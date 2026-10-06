@@ -25,6 +25,18 @@
     "planGenerationProgress": "New plan",
     "swapMeal": "Swap meal",
     "alphaFeedback": "Feedback",
-    "firstPlan": "Your first week"
+    "firstPlan": "Your first week",
+    "groceryLists": "Grocery lists",
+    "groceryListDetail": "Grocery list",
+    "notificationsCenter": "Notifications",
+    "dailyReflection": "Daily reflection",
+    "hydration": "Water",
+    "fasting": "Fasting",
+    "budget": "Budget",
+    "budgetSettings": "Budget settings",
+    "weightLog": "Weight log",
+    "settingsNotifications": "Notifications",
+    "fastLog": "Log a fast",
+    "dehydrationCheck": "Dehydration check"
   }
 }

@@ -3,6 +3,9 @@ import type { ChatRequest } from '@thuluth/ai-core';
 
 import { createAdjustPlanHandler } from '../../functions/ai-adjust-plan/handler.ts';
 import { createGeneratePlanHandler } from '../../functions/ai-generate-plan/handler.ts';
+import { budgetDelta } from '../../functions/_shared/grocery/budget-delta.ts';
+import type { MealRecipe } from '../../functions/_shared/grocery/engine.ts';
+import type { GroceryCatalogStore } from '../../functions/_shared/grocery/store.ts';
 import {
   fakeDeps,
   HH,
@@ -52,7 +55,51 @@ interface PromptRefs {
   family: Array<{ ref: string; minor: boolean }>;
 }
 
-function setup(opts: MemoryOptions & { edits?: (p: PromptRefs) => Edits } = {}) {
+/** A price book over the plan catalog: each meal is 100 g of each of its ingredients per adult. */
+function priceBook(
+  catalog: ReturnType<typeof memoryStore>['catalog'],
+  opts: { currency?: string; chickenPerKg?: number } = {},
+): GroceryCatalogStore {
+  return {
+    planServings: async () => [],
+    mealRecipes: async (ids) =>
+      new Map(
+        ids.map((id): [string, MealRecipe] => [
+          id,
+          {
+            meal_id: id,
+            adult_portion_grams: null,
+            components: (catalog.meals.get(id)?.ingredientIds ?? []).map((ing) => ({
+              kind: 'ingredient' as const,
+              ingredient_ids: [ing],
+              grams_per_adult: 100,
+            })),
+          },
+        ]),
+      ),
+    ingredients: async () => new Map(),
+    priceProfiles: async () => [
+      {
+        id: 'pp-lahore',
+        region_id: 'r-pb',
+        city: 'Lahore',
+        currency: opts.currency ?? 'PKR',
+        effective_from: '2026-10-01',
+      },
+    ],
+    prices: async () => {
+      const out = new Map<string, number>();
+      for (const m of catalog.meals.values()) for (const i of m.ingredientIds) out.set(i, 40_000);
+      out.set('i-chicken', opts.chickenPerKg ?? 120_000);
+      return out;
+    },
+    memberStages: async () => new Map(),
+  };
+}
+
+function setup(
+  opts: MemoryOptions & { edits?: (p: PromptRefs) => Edits; grocery?: 'pkr' | 'usd' } = {},
+) {
   const mem = memoryStore(opts);
   const ai = fakeDeps((req, model) => {
     if (model === 'model-plan.generate') {
@@ -84,6 +131,9 @@ function setup(opts: MemoryOptions & { edits?: (p: PromptRefs) => Edits } = {}) 
     writeUsage: ai.writeUsage,
     kick: bg.kick,
     now: () => NOW,
+    grocery: opts.grocery
+      ? priceBook(mem.catalog, { currency: opts.grocery === 'pkr' ? 'PKR' : 'USD' })
+      : undefined,
   });
   return { handler, generate, bg, ...mem, ...ai };
 }
@@ -409,3 +459,91 @@ Deno.test('fail closed: an unresolved allergy refuses the adjustment (sync and j
   );
   assertEquals(ctx.state.plans.get(id)?.status, 'active');
 });
+
+// ---- Sprint 4: budget_delta_minor from the price book (Sprint 3 leftover) -------------------------
+
+Deno.test(
+  'budget_delta_minor: dropping chicken on two days lowers the cost at current prices',
+  async () => {
+    const ctx = setup({
+      premium: true,
+      grocery: 'pkr',
+      edits: (p) => ({ avoid_ingredients: [p.ingredient('Chicken')].filter(Boolean) }),
+    });
+    const id = await activePlan(ctx);
+    const res = await ctx.handler(
+      post({
+        meal_plan_id: id,
+        change_request: 'No chicken on Monday and Tuesday',
+        scope: { from_date: '2026-10-12', to_date: '2026-10-13' },
+        dry_run: true,
+      }),
+    );
+    assertEquals(res.status, 200);
+    const body = (await res.json()) as Completed & { budget_delta_minor: number; currency: string };
+    assert(body.diff.length > 0);
+    assert(body.budget_delta_minor < 0, `expected a saving, got ${body.budget_delta_minor}`);
+    assertEquals(body.currency, 'PKR');
+  },
+);
+
+Deno.test(
+  'budget_delta_minor: 0 without a price book in the household currency or without the dep',
+  async () => {
+    for (const grocery of ['usd', undefined] as const) {
+      const ctx = setup({
+        premium: true,
+        grocery,
+        edits: (p) => ({ avoid_ingredients: [p.ingredient('Chicken')].filter(Boolean) }),
+      });
+      const id = await activePlan(ctx);
+      const res = await ctx.handler(
+        post({
+          meal_plan_id: id,
+          change_request: 'No chicken on Monday and Tuesday',
+          scope: { from_date: '2026-10-12', to_date: '2026-10-13' },
+          dry_run: true,
+        }),
+      );
+      assertEquals(((await res.json()) as { budget_delta_minor: number }).budget_delta_minor, 0);
+    }
+  },
+);
+
+Deno.test(
+  'budgetDelta: unchanged meals cancel; life stages and batch multipliers scale',
+  async () => {
+    const ctx = setup({ premium: true });
+    const id = await activePlan(ctx);
+    const meals = ctx.state.meals.get(id) ?? [];
+    const book = priceBook(ctx.catalog);
+    const week = {
+      week: 1,
+      recommendations: [],
+      days: [...new Set(meals.map((m) => m.plan_date))].map((plan_date) => ({
+        plan_date,
+        meals: meals
+          .filter((m) => m.plan_date === plan_date)
+          .map((m) => ({ ...m, source_daily_meal_id: null })),
+      })),
+    };
+    const input = {
+      household: { id: HH, region_id: 'r-pb', currency: 'PKR' },
+      today: '2026-10-06',
+      from: '2026-10-12',
+      to: '2026-10-18',
+      parentMeals: meals,
+    };
+    assertEquals(await budgetDelta(book, { ...input, payloads: [week] }), 0);
+    const doubled = {
+      ...week,
+      days: week.days.map((d) => ({
+        ...d,
+        meals: d.meals.map((m) => ({ ...m, batch_multiplier: 2 })),
+      })),
+    };
+    const base = await budgetDelta(book, { ...input, payloads: [] });
+    assert(base < 0, 'removing every meal saves the whole week');
+    assertEquals(await budgetDelta(book, { ...input, payloads: [doubled] }), -base);
+  },
+);

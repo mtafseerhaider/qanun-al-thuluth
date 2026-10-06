@@ -12,7 +12,10 @@ import { useSessionStore } from '@/stores/use-session-store';
 import { LanguageToggle } from '../components/language-toggle';
 import { ThemeToggle } from '../components/theme-toggle';
 
-/** M1 More: account settings, appearance and language, plus the hidden debug entry. */
+/**
+ * M1 More: trackers (water, fasting, weight, budget; Sprint 4), account and notification settings,
+ * appearance and language, feedback, plus the hidden debug entry.
+ */
 export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
   const { t } = useTranslation(['navigation', 'settings']);
   const debugEnabled = useDebugMenuEnabled();
@@ -25,6 +28,37 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
       edges={['top']}
       testID="settings-more-home.screen"
     >
+      <Card testID="settings-more-home.track">
+        <Text variant="overline" tone="muted">
+          {t('settings:home.track')}
+        </Text>
+        <View className="gap-2">
+          <Button
+            label={t('settings:home.hydration')}
+            variant="secondary"
+            onPress={() => navigation.navigate('HydrationTracker', {})}
+            testID="settings-more-home.hydration-button"
+          />
+          <Button
+            label={t('settings:home.fasting')}
+            variant="secondary"
+            onPress={() => navigation.navigate('FastingTracker', {})}
+            testID="settings-more-home.fasting-button"
+          />
+          <Button
+            label={t('settings:home.weight')}
+            variant="secondary"
+            onPress={() => navigation.navigate('WeightLog', {})}
+            testID="settings-more-home.weight-button"
+          />
+          <Button
+            label={t('settings:home.budget')}
+            variant="secondary"
+            onPress={() => navigation.navigate('BudgetDashboard', {})}
+            testID="settings-more-home.budget-button"
+          />
+        </View>
+      </Card>
       {!isDevGuest ? (
         <Card>
           <Text variant="overline" tone="muted">
@@ -35,6 +69,12 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
             variant="secondary"
             onPress={() => navigation.navigate('Settings')}
             testID="settings-more-home.settings-button"
+          />
+          <Button
+            label={t('settings:home.notifications')}
+            variant="secondary"
+            onPress={() => navigation.navigate('SettingsNotifications')}
+            testID="settings-more-home.notifications-button"
           />
         </Card>
       ) : null}

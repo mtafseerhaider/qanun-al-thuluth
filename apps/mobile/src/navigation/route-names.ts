@@ -35,6 +35,18 @@ export const ROUTES = {
   PlanGenerationProgress: 'PlanGenerationProgress',
   SwapMealSheet: 'SwapMealSheet',
   AlphaFeedback: 'AlphaFeedback',
+  GroceryLists: 'GroceryLists',
+  GroceryListDetail: 'GroceryListDetail',
+  NotificationsCenter: 'NotificationsCenter',
+  DailyReflection: 'DailyReflection',
+  HydrationTracker: 'HydrationTracker',
+  FastingTracker: 'FastingTracker',
+  BudgetDashboard: 'BudgetDashboard',
+  BudgetSettings: 'BudgetSettings',
+  WeightLog: 'WeightLog',
+  SettingsNotifications: 'SettingsNotifications',
+  FastLogSheet: 'FastLogSheet',
+  DehydrationCheckSheet: 'DehydrationCheckSheet',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

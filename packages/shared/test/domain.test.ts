@@ -82,3 +82,36 @@ describe('intake', () => {
     ).toBe(true);
   });
 });
+
+describe('trackers', () => {
+  it('rejects a completed fast with an exemption and bad hydration volumes', async () => {
+    const { FastingLogInput, HydrationLogInput } = await import('../src/domain/tracking.ts');
+    const id = '00000000-0000-4000-8000-000000000001';
+    expect(
+      FastingLogInput.safeParse({
+        id,
+        fast_date: '2026-10-12',
+        kind: 'sunnah_monday_thursday',
+        completed: true,
+        exemption_reason: 'travel',
+      }).success,
+    ).toBe(false);
+    expect(
+      HydrationLogInput.safeParse({ id, logged_at: '2026-10-12T07:00:00Z', volume_ml: 5 }).success,
+    ).toBe(false);
+    expect(
+      HydrationLogInput.parse({ id, logged_at: '2026-10-12T07:00:00+05:00', volume_ml: 250 })
+        .beverage,
+    ).toBe('water');
+  });
+});
+
+describe('pregnant teens', () => {
+  it('may pick pregnancy support only with the pregnancy module and from 13', async () => {
+    const { goalAllowedForAge } = await import('../src/domain/intake.ts');
+    expect(goalAllowedForAge('pregnancy_support', 16, ['pregnancy'])).toBe(true);
+    expect(goalAllowedForAge('pregnancy_support', 16)).toBe(false);
+    expect(goalAllowedForAge('pregnancy_support', 12, ['pregnancy'])).toBe(false);
+    expect(goalAllowedForAge('weight_loss', 16, ['pregnancy'])).toBe(false);
+  });
+});

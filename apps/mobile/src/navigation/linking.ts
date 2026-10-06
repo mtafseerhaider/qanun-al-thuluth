@@ -31,12 +31,21 @@ export const linking: LinkingOptions<RootStackParamList> = {
     screens: {
       Main: {
         screens: {
-          TodayTab: { screens: { Dashboard: 'today', MealDetail: 'meal/:dailyMealId' } },
+          TodayTab: {
+            screens: {
+              Dashboard: 'today',
+              MealDetail: 'meal/:dailyMealId',
+              NotificationsCenter: 'notifications',
+              DailyReflection: 'journal',
+            },
+          },
           PlanTab: {
             screens: {
               MealPlans: 'plans',
               MealPlanDetail: 'plan/:mealPlanId',
               RecipeDetail: 'recipe/:recipeId',
+              GroceryLists: 'grocery',
+              GroceryListDetail: 'grocery/:groceryListId',
             },
           },
           ChatTab: { screens: { ChatThread: 'chat/:sessionId?' } },
@@ -47,6 +56,11 @@ export const linking: LinkingOptions<RootStackParamList> = {
               Debug: 'debug',
               Settings: 'settings',
               AlphaFeedback: 'feedback',
+              // Sprint 4 notification targets (the dispatcher's `routeFor`, FR-NOT-04).
+              HydrationTracker: 'hydration',
+              FastingTracker: { path: 'fasting', alias: ['ramadan'] },
+              BudgetDashboard: 'budget',
+              SettingsNotifications: 'settings/notifications',
             },
           },
         },

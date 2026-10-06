@@ -2,7 +2,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { BootScreen } from '@/features/auth';
+import { FastLogSheet } from '@/features/fasting';
 import { AcceptInviteScreen, InviteCaregiverScreen } from '@/features/household';
+import { DehydrationCheckSheet } from '@/features/hydration';
 import { SourceDetailSheet } from '@/features/knowledge';
 import { SwapMealSheet } from '@/features/meals';
 import { PlanGenerationProgressScreen } from '@/features/plan';
@@ -94,6 +96,24 @@ export function RootNavigator() {
                   title: t('screens.swapMeal'),
                   presentation: 'formSheet',
                   sheetAllowedDetents: [0.7, 1],
+                }}
+              />
+              <Stack.Screen
+                name="FastLogSheet"
+                component={FastLogSheet}
+                options={{
+                  title: t('screens.fastLog'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.8, 1],
+                }}
+              />
+              <Stack.Screen
+                name="DehydrationCheckSheet"
+                component={DehydrationCheckSheet}
+                options={{
+                  title: t('screens.dehydrationCheck'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.8, 1],
                 }}
               />
             </>

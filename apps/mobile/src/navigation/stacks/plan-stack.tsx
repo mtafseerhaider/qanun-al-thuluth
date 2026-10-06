@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
+import { GroceryListDetailScreen, GroceryListsScreen } from '@/features/grocery';
 import { MealDetailScreen } from '@/features/meals';
 import { MealPlanDetailScreen, MealPlansScreen } from '@/features/plan';
 import { RecipeDetailScreen } from '@/features/recipes';
@@ -28,6 +29,16 @@ export function PlanStack() {
         name="RecipeDetail"
         component={RecipeDetailScreen}
         options={{ title: t('screens.recipeDetail') }}
+      />
+      <Stack.Screen
+        name="GroceryLists"
+        component={GroceryListsScreen}
+        options={{ title: t('screens.groceryLists') }}
+      />
+      <Stack.Screen
+        name="GroceryListDetail"
+        component={GroceryListDetailScreen}
+        options={{ title: t('screens.groceryListDetail') }}
       />
     </Stack.Navigator>
   );

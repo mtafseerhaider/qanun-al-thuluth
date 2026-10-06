@@ -25,7 +25,13 @@
   "home": {
     "account": "اکاؤنٹ",
     "open": "ترتیبات",
-    "profile": "پروفائل اور ترجیحات"
+    "profile": "پروفائل اور ترجیحات",
+    "track": "ریکارڈ",
+    "hydration": "پانی",
+    "fasting": "روزہ",
+    "weight": "وزن کا ریکارڈ",
+    "budget": "کھانے کا بجٹ",
+    "notifications": "اطلاعات"
   },
   "profile": {
     "displayName": "ظاہری نام",

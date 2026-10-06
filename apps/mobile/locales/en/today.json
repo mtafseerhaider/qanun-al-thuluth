@@ -32,7 +32,10 @@
     "title": "Quick actions",
     "logMeal": "Log a meal",
     "askThuluth": "Ask Thuluth",
-    "openPlan": "See the week"
+    "openPlan": "See the week",
+    "water": "Log water",
+    "grocery": "Shopping list",
+    "reflect": "Daily reflection"
   },
   "pendingSync_one": "{{count}} change saved on this phone, will sync",
   "pendingSync_other": "{{count}} changes saved on this phone, will sync",
@@ -40,5 +43,23 @@
   "feedback": {
     "title": "Help us improve Thuluth",
     "body": "You're using an early version. Tell us what works and what doesn't."
+  },
+  "hydration": {
+    "title": "Water today",
+    "amount": "{{consumed}} of {{target}} for the family",
+    "a11y": "Family water today: {{percent}} percent. Open the water tracker."
+  },
+  "fasting": {
+    "title_one": "{{count}} person fasting today",
+    "title_other": "{{count}} people fasting today",
+    "iftar": "Iftar at {{time}}"
+  },
+  "budget": {
+    "line": "Food budget: {{spent}} of {{budget}} this month"
+  },
+  "bell": {
+    "label": "Notifications",
+    "unread_one": "Notifications, {{count}} unread",
+    "unread_other": "Notifications, {{count}} unread"
   }
 }

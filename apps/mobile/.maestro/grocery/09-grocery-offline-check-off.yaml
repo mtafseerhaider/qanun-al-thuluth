@@ -1,0 +1,44 @@
+# Sprint 4 (S4-05, S4-17): offline check-off and sync.
+# Makes a list (flow 08), goes offline, checks items off in shopping mode, sees them saved on the
+# phone, goes back online and waits for the queue to sync. Airplane mode is Android only; on iOS
+# run with the network link conditioner off/on manually around the marked steps.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 09 grocery offline check-off sync
+tags:
+  - grocery
+  - offline
+  - sprint-4
+---
+- runFlow: 08-grocery-from-plan.yaml
+- scrollUntilVisible:
+    element:
+      id: 'grocery-detail.summary'
+    direction: UP
+- tapOn:
+    id: 'grocery-detail.start-shopping'
+- assertVisible:
+    id: 'grocery-detail.status.shopping'
+
+# Offline from here
+- setAirplaneMode: enabled
+- tapOn:
+    id: 'grocery-detail.item\..*-0\.check'
+- extendedWaitUntil:
+    visible:
+      id: 'grocery-detail.basket'
+    timeout: 5000
+- assertVisible:
+    id: 'grocery-detail.item\.basket-0\.queued'
+- assertVisible:
+    id: 'grocery-detail.pending'
+- takeScreenshot: 09-offline-checked
+
+# Back online: the outbox replays and the "saved on this phone" marks clear
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: 'grocery-detail.pending'
+    timeout: 60000
+- assertVisible:
+    id: 'grocery-detail.basket'
+- takeScreenshot: 09-synced

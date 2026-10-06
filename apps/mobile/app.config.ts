@@ -6,6 +6,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  * audio and local authentication are added in later sprints. Google sign-in's plugin is added only
  * when EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID is set (it needs the reversed client id as a URL scheme);
  * without it the Google button is hidden at runtime.
+ * OneSignal's plugin is added only when EXPO_PUBLIC_ONESIGNAL_APP_ID is set (24 S4-12); without it
+ * the push SDK is never initialised at runtime and builds stay free of the APNs entitlement.
  * The New Architecture is the only architecture in Expo SDK 55+, so there is no `newArchEnabled` flag.
  */
 type AppEnv = 'development' | 'staging' | 'production';
@@ -41,6 +43,7 @@ export function googleIosUrlScheme(iosClientId: string | undefined): string | nu
   return match ? `com.googleusercontent.apps.${match[1]}` : null;
 }
 const GOOGLE_IOS_URL_SCHEME = googleIosUrlScheme(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
+const ONESIGNAL_ENABLED = Boolean(process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID?.trim());
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -116,6 +119,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           [
             '@react-native-google-signin/google-signin',
             { iosUrlScheme: GOOGLE_IOS_URL_SCHEME },
+          ] as [string, unknown],
+        ]
+      : []),
+    ...(ONESIGNAL_ENABLED
+      ? [
+          [
+            'onesignal-expo-plugin',
+            { mode: APP_ENV === 'production' ? 'production' : 'development' },
           ] as [string, unknown],
         ]
       : []),

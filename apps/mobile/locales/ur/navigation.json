@@ -25,6 +25,18 @@
     "planGenerationProgress": "نیا پلان",
     "swapMeal": "کھانا بدلیں",
     "alphaFeedback": "رائے",
-    "firstPlan": "آپ کا پہلا ہفتہ"
+    "firstPlan": "آپ کا پہلا ہفتہ",
+    "groceryLists": "سودا سلف کی فہرستیں",
+    "groceryListDetail": "سودا سلف کی فہرست",
+    "notificationsCenter": "اطلاعات",
+    "dailyReflection": "روزانہ جائزہ",
+    "hydration": "پانی",
+    "fasting": "روزہ",
+    "budget": "بجٹ",
+    "budgetSettings": "بجٹ کی ترتیبات",
+    "weightLog": "وزن کا ریکارڈ",
+    "settingsNotifications": "اطلاعات",
+    "fastLog": "روزہ درج کریں",
+    "dehydrationCheck": "پانی کی کمی کی جانچ"
   }
 }

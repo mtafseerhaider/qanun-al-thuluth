@@ -1,0 +1,133 @@
+{
+  "member": "Who",
+  "times": {
+    "suhoorEnds": "Suhoor ends",
+    "iftar": "Iftar",
+    "note": "Times are calculated for your city. Follow your local mosque if it differs.",
+    "unknown": "Add your city in household settings to see suhoor and iftar times."
+  },
+  "timer": {
+    "a11y": "{{minutes}} minutes until iftar",
+    "left": "{{hours}}h {{minutes}}m",
+    "toIftar": "to iftar"
+  },
+  "log": {
+    "open": "Log a fast",
+    "title": "Log a fast",
+    "date": "Day",
+    "day": {
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "kind": "Kind of fast",
+    "intermittentNote": "Intermittent fasting is for adults only and is not offered in pregnancy or while breastfeeding.",
+    "outcome": "How did it go?",
+    "reason": "Reason",
+    "reasonPrivate": "Private: only this person (or the account owner for a child) can see the reason.",
+    "notes": "Notes",
+    "error": {
+      "not_allowed": "Fasts can't be logged for this person.",
+      "kind_not_allowed": "This kind of fast isn't available for this person.",
+      "too_far_ahead": "You can log up to one day ahead.",
+      "exemption_reason_required": "Choose a reason, or pick another outcome."
+    },
+    "save": "Save"
+  },
+  "upcoming": "Coming up: {{name}} on {{date}}",
+  "fast": {
+    "monday": "Monday sunnah fast",
+    "thursday": "Thursday sunnah fast",
+    "ayyam_al_bid": "The white days (13th to 15th)",
+    "arafah": "Day of Arafah",
+    "ashura": "Ashura",
+    "ashura_companion_9": "9th Muharram, with Ashura",
+    "ashura_companion_11": "11th Muharram, with Ashura"
+  },
+  "ramadan": {
+    "prev": "Previous",
+    "next": "Next",
+    "title": "Ramadan {{year}}",
+    "dayA11y": "Day {{day}}, {{date}}: {{status}}",
+    "status": {
+      "fasted": "Fasted",
+      "exempt": "Exempt",
+      "missed": "Not fasted",
+      "practice": "Practice fast",
+      "none": "Not logged",
+      "future": "Coming"
+    },
+    "legend": "Filled: fasted. Outlined: practice. Grey: not fasted or exempt."
+  },
+  "qada": {
+    "fidya": "For a lasting reason, fidya (feeding someone in need for each day) may apply instead of making up. Ask a scholar you trust.",
+    "remaining_one": "{{count}} day to make up",
+    "remaining_other": "{{count}} days to make up",
+    "detail": "{{missed}} missed, {{madeUp}} made up",
+    "scholar": "A guide only. For your own situation, ask a scholar you trust."
+  },
+  "recent": {
+    "title": "Recent fasts",
+    "empty": "No fasts logged yet.",
+    "delete": "Remove"
+  },
+  "kind": {
+    "ramadan": "Ramadan",
+    "sunnah_monday_thursday": "Monday or Thursday",
+    "ayyam_al_bid": "White days",
+    "arafah": "Arafah",
+    "ashura": "Ashura",
+    "qada": "Making up (qada)",
+    "nafl": "Voluntary (nafl)",
+    "intermittent": "Intermittent fasting"
+  },
+  "practice": {
+    "label": "Practice",
+    "pattern": "Practice pattern",
+    "until_dhuhr": "Until Dhuhr",
+    "until_asr": "Until Asr",
+    "weekend_full": "A full day at the weekend"
+  },
+  "outcome": {
+    "completed": "Completed",
+    "broke_early": "Broke it early",
+    "exempt": "Not fasting (exempt)",
+    "notFasted": "Not fasted"
+  },
+  "exemption": {
+    "illness": "Illness",
+    "travel": "Travel",
+    "menstruation": "Menstruation",
+    "pregnancy": "Pregnancy",
+    "breastfeeding": "Breastfeeding",
+    "age": "Age",
+    "medical_advice": "Medical advice",
+    "postpartum": "After childbirth",
+    "chronic_condition": "Long-term health condition",
+    "other": "Other"
+  },
+  "accepted": "May Allah accept it.",
+  "disclaimer": "Thuluth offers general guidance, not a fatwa or medical advice. If you feel unwell while fasting, break the fast.",
+  "safety": {
+    "title": "{{name}} should not fast without a clinician",
+    "body": "Fasting with this health condition can be dangerous. Please decide together with a doctor before fasting.",
+    "reason": {
+      "insulin_or_sulfonylurea": "Takes insulin or a sulfonylurea: fasting can cause dangerously low blood sugar.",
+      "gestational_diabetes": "Gestational diabetes.",
+      "pregnancy_complication": "A pregnancy complication.",
+      "eating_disorder_signals": "Signs of a difficult relationship with food."
+    },
+    "footer": "Islam exempts anyone whose health is at risk. There is no blame in not fasting."
+  },
+  "child": {
+    "under7Title": "{{name}} is too young to fast",
+    "under7Body": "Children under 7 don't fast. Let them join suhoor and iftar with the family.",
+    "practiceTitle": "{{name}} can try practice fasts",
+    "practiceBody": "From 7, children can practise with part-day fasts, at their own pace.",
+    "stopRules": "Stop the fast if they feel dizzy, very tired, unwell or upset. Praise the effort, never push."
+  },
+  "pregnancy": {
+    "title": "Decide with a clinician",
+    "body": "In pregnancy or while breastfeeding, fasting is a choice to make with your doctor. Not fasting is allowed."
+  }
+}

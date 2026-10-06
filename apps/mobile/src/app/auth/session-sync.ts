@@ -5,7 +5,7 @@ import { SUPPORTED_LOCALES } from '@shared';
 import { fetchMyHouseholds } from '@/features/household';
 import { useOnboardingStore } from '@/features/onboarding';
 import { setAnalyticsContext, track } from '@/lib/analytics/track';
-import { registerDevice } from '@/lib/auth/device-registration';
+import { registerPushDevice } from '@/lib/push/push-registration';
 import { fetchProfile, type Profile } from '@/lib/auth/profile';
 import { lastAuthenticatedAt, providersFromUser, routingFlags } from '@/lib/auth/session-status';
 import { changeLocale } from '@/lib/i18n/i18n';
@@ -80,7 +80,7 @@ function postAuthWiring(
     )
       void changeLocale(locale);
   }
-  void registerDevice(userId);
+  void registerPushDevice(userId);
   void fetchMyHouseholds(userId)
     .then((rows) => {
       queryClient.setQueryData(qk.households(), rows);

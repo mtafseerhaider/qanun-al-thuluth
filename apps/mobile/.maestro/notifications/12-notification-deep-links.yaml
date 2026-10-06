@@ -1,0 +1,63 @@
+# Sprint 4 (S4-14, S4-17): notification deep links.
+# Opens the routes the notifications dispatcher sends (data.route, FR-NOT-04) as links and checks
+# each lands on its screen, then opens the in-app inbox. Push taps use the same router
+# (features/notifications/utils/notification-routing.ts, covered by Jest).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 12 notification deep links
+tags:
+  - notifications
+  - sprint-4
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+
+- openLink: thuluth://hydration
+- extendedWaitUntil:
+    visible:
+      id: 'hydration.screen'
+    timeout: 10000
+
+- openLink: thuluth://ramadan
+- extendedWaitUntil:
+    visible:
+      id: 'fasting.screen'
+    timeout: 10000
+
+- openLink: thuluth://fasting
+- extendedWaitUntil:
+    visible:
+      id: 'fasting.screen'
+    timeout: 10000
+
+- openLink: thuluth://plans
+- extendedWaitUntil:
+    visible:
+      id: 'plan-meal-plans.screen'
+    timeout: 10000
+
+- openLink: thuluth://today
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 10000
+
+# The bell opens the inbox; a row (when the dispatcher has sent one) opens its screen
+- tapOn:
+    id: 'today.bell'
+- extendedWaitUntil:
+    visible:
+      id: 'notifications.screen'
+    timeout: 10000
+- runFlow:
+    when:
+      visible:
+        id: 'notifications.row-0'
+    commands:
+      - tapOn:
+          id: 'notifications.row-0'
+      - assertNotVisible:
+          id: 'notifications.screen'
+- takeScreenshot: 12-deep-links

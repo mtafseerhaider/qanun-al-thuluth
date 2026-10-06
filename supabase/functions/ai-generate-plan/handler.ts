@@ -21,6 +21,11 @@ import {
   runGeneration,
 } from '../_shared/plan/pipeline.ts';
 import type { GenerationMeta, GenerationMode } from '../_shared/plan/pipeline.ts';
+import {
+  handleQueueMessage,
+  sweepStuckPlans,
+  VISIBILITY_SECONDS,
+} from '../_shared/plan/sweeper.ts';
 import type { PlanStore } from '../_shared/plan/store.ts';
 
 export const SCOPE = 'ai-generate-plan';
@@ -326,12 +331,15 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
       const processed = await runGeneration(pipeline, input.meal_plan_id);
       return { processed: processed ? 1 : 0, rescheduled: false };
     }
-    const [msg] = await deps.store.dequeue(300, 1);
-    if (!msg) return { processed: 0, rescheduled: false };
-    const id = msg.message.meal_plan_id;
-    const processed = id ? await runGeneration(pipeline, id) : false;
-    await deps.store.ack(msg.msg_id);
-    return { processed: processed ? 1 : 0, rescheduled: false };
+    // No id: the sweeper (cron) or a kick. Recover stalled plans, then take the next message.
+    const swept = await sweepStuckPlans(pipeline);
+    const [msg] = await deps.store.dequeue(VISIBILITY_SECONDS, 1);
+    if (!msg) return { processed: 0, rescheduled: swept.requeued > 0 };
+    const outcome = await handleQueueMessage(pipeline, msg);
+    return {
+      processed: outcome === 'processed' ? 1 : 0,
+      rescheduled: swept.requeued > 0 || outcome === 'deferred',
+    };
   });
 
   return (req: Request): Promise<Response> => {

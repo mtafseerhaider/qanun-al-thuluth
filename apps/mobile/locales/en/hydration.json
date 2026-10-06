@@ -1,0 +1,113 @@
+{
+  "member": {
+    "label": "Who",
+    "everyone": "Everyone"
+  },
+  "offline": "You're offline. Water you log is saved on this phone and syncs later.",
+  "infant": "Babies under 6 months need only breast milk or formula, not water. Nothing to log here.",
+  "noTarget": "No daily target yet. It is set when the family's profile is assessed.",
+  "aboveRange": "That's more than twice the daily target. If this person is unusually thirsty, mention it to a clinician.",
+  "family": {
+    "a11y": "Family water today: {{score}} percent of targets",
+    "percent": "{{score}}%",
+    "label": "of today's targets"
+  },
+  "fastingWindow": "Fasting now. Drink between iftar and suhoor.",
+  "nextWindow": "Next: a glass before {{meal}} at {{time}}",
+  "aMeal": "the next meal",
+  "log": {
+    "title": "Add a drink",
+    "titleFamily": "Add a drink for everyone",
+    "cups_one": "{{count}} cup",
+    "cups_other": "{{count}} cups",
+    "familyGlass": "A glass each",
+    "custom": "Other amount",
+    "add": "Add"
+  },
+  "beverage": {
+    "label": "Drink",
+    "water": "Water",
+    "milk": "Milk",
+    "laban": "Laban",
+    "juice": "Juice",
+    "tea": "Tea",
+    "other": "Other"
+  },
+  "timing": {
+    "label": "When",
+    "hint": "Water a little before a meal leaves room for food (the thirds).",
+    "auto": "Now",
+    "pre_meal": "Before a meal",
+    "with_meal": "With a meal",
+    "post_meal": "After a meal",
+    "other": "Between meals"
+  },
+  "today": {
+    "title": "Today",
+    "empty": "Nothing logged yet today.",
+    "delete": "Remove",
+    "deleteA11y": "Remove this drink"
+  },
+  "week": {
+    "title": "Last 7 days",
+    "a11y": "{{date}}: {{amount}}"
+  },
+  "guidance": "Sip through the day. Most water is best a little before meals or between them, not in large amounts with food.",
+  "adab": "Sunnah: drink sitting, in three breaths, and say Bismillah.",
+  "basis": "Targets follow age, weight, activity and the season in your city.",
+  "symptoms": {
+    "open": "Check for signs of dehydration",
+    "title": "Signs of dehydration",
+    "body": "Tick anything you notice today. This is not a diagnosis.",
+    "who": "Who",
+    "signs": "Signs",
+    "sign": {
+      "dizziness": "Dizzy or light-headed",
+      "dark_urine": "Dark yellow urine",
+      "fainting": "Fainted or nearly fainted",
+      "little_urine": "Passing very little urine",
+      "confusion": "Confused or unusually sleepy",
+      "vomiting": "Vomiting or diarrhoea",
+      "headache": "Headache",
+      "dry_mouth": "Dry mouth or lips",
+      "tiredness": "Tired",
+      "fewer_wet_nappies": "Fewer wet nappies",
+      "no_tears": "No tears when crying",
+      "sunken_eyes": "Sunken eyes",
+      "lethargy": "Floppy or hard to wake"
+    },
+    "mild": "Mild signs. Offer small sips often and keep an eye on them. If things get worse, speak to a clinician.",
+    "none": "No signs ticked. Keep drinking through the day.",
+    "check": "Check",
+    "disclaimer": "Thuluth is not a medical service. In an emergency call 1122 or go to the nearest hospital.",
+    "close": "Done",
+    "redFlag": {
+      "title": "Please get help",
+      "emergency": "These signs need urgent care now. Call 1122 or go to the nearest emergency department.",
+      "youngChild": "Young children dehydrate quickly. Contact a doctor today, and go to emergency if they get worse.",
+      "sameDay": "These signs need a clinician today. Give small sips of water or ORS while you arrange it."
+    },
+    "breakFast": {
+      "title": "Break the fast",
+      "body": "Islam does not ask anyone to fast through signs like these. Break the fast now and drink. The day can be made up later."
+    },
+    "clinician": {
+      "title": "Talk to a clinician",
+      "body": "Tell them what you noticed, when it started, and what was eaten and drunk today."
+    }
+  },
+  "ring": {
+    "ofCups_one": "of {{count}} cup",
+    "ofCups_other": "of {{count}} cups",
+    "kidA11y": "{{name}}: {{cups}} of {{total}} cups",
+    "of": "of {{target}}",
+    "a11y": "{{name}}: {{consumed}} of {{target}}",
+    "fasting": "Fasting",
+    "cupsA11y": "{{cups}} of {{total}} cups"
+  },
+  "unit": {
+    "l": "{{value}} L",
+    "ml": "{{value}} ml",
+    "mlShort": "ml"
+  }
+}

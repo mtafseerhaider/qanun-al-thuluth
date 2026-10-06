@@ -1,0 +1,142 @@
+{
+  "inbox": {
+    "settings": "Notification settings",
+    "markAll": "Mark all read",
+    "emptyTitle": "Nothing new",
+    "emptyBody": "Reminders and updates will show here.",
+    "rowA11y": "{{title}}, {{state}}",
+    "read": "read",
+    "unread": "unread",
+    "quiet": "Arrived quietly"
+  },
+  "settings": {
+    "pushTitle": "Push notifications",
+    "push": {
+      "granted": "On for this phone.",
+      "denied": "Turned off in your phone's settings.",
+      "undetermined": "Not set up yet on this phone.",
+      "unavailable": "Not available in this version of the app."
+    },
+    "turnOn": "Turn on",
+    "openSettings": "Open phone settings",
+    "offline": "Changes need a connection.",
+    "alwaysOn": "Safety alerts for children are always on."
+  },
+  "groups": {
+    "daily": "Every day",
+    "plan": "Plans and shopping",
+    "fasting": "Fasting",
+    "children": "Children's health",
+    "account": "Household and account",
+    "news": "News"
+  },
+  "kinds": {
+    "daily_plan": {
+      "title": "Today's plan",
+      "body": "A morning summary of the day's meals."
+    },
+    "meal_reminder": {
+      "title": "Meal reminders",
+      "body": "A nudge before each planned meal."
+    },
+    "hydration_reminder": {
+      "title": "Water reminders",
+      "body": "A glass before meals, at the right times."
+    },
+    "meal_log_prompt": {
+      "title": "Log meals",
+      "body": "A reminder to note what was eaten."
+    },
+    "journal_prompt": {
+      "title": "Daily reflection",
+      "body": "An evening prompt for the journal."
+    },
+    "grocery_day": {
+      "title": "Shopping day",
+      "body": "Your list, on the day you shop."
+    },
+    "weekly_review": {
+      "title": "Weekly review",
+      "body": "How the week went."
+    },
+    "plan_ready": {
+      "title": "Plan ready",
+      "body": "When a new plan has been made."
+    },
+    "plan_failed": {
+      "title": "Plan didn't finish",
+      "body": "When a plan couldn't be made."
+    },
+    "suhoor_reminder": {
+      "title": "Suhoor",
+      "body": "Before suhoor ends."
+    },
+    "iftar_reminder": {
+      "title": "Iftar",
+      "body": "Shortly before iftar."
+    },
+    "fasting_sunnah_reminder": {
+      "title": "Sunnah fasts",
+      "body": "The evening before a sunnah fast."
+    },
+    "growth_measure_due": {
+      "title": "Growth check due",
+      "body": "Time to measure a child."
+    },
+    "growth_alert": {
+      "title": "Growth alerts",
+      "body": "Important changes in a child's growth."
+    },
+    "allergy_warning": {
+      "title": "Allergy warnings",
+      "body": "An allergen in a planned meal."
+    },
+    "exposure_nudge": {
+      "title": "New food practice",
+      "body": "Gentle steps with a new food."
+    },
+    "coaching_tip": {
+      "title": "Coaching tips",
+      "body": "Ideas for picky eating and routines."
+    },
+    "invite_received": {
+      "title": "Invitations",
+      "body": "When someone invites you to a household."
+    },
+    "invite_accepted": {
+      "title": "Invite accepted",
+      "body": "When someone joins your household."
+    },
+    "export_ready": {
+      "title": "Export ready",
+      "body": "When your export can be downloaded."
+    },
+    "trial_ending": {
+      "title": "Trial ending",
+      "body": "Before a free trial ends."
+    },
+    "billing_issue": {
+      "title": "Billing problems",
+      "body": "When a payment needs attention."
+    },
+    "marketing": {
+      "title": "News from Thuluth",
+      "body": "New features and offers, rarely."
+    }
+  },
+  "quiet": {
+    "title": "Quiet hours",
+    "toggle": "Hold reminders during quiet hours",
+    "body": "Held reminders still appear in your notifications list. {{kinds}} reminders are not held.",
+    "start": "From",
+    "end": "Until",
+    "invalid": "Use 24-hour times like 22:00, and different start and end times.",
+    "save": "Save quiet hours"
+  },
+  "preprompt": {
+    "title": "Get reminders that help",
+    "body": "Water before meals, suhoor and iftar times, and when your plan is ready. No more than a few a day, and never at night.",
+    "allow": "Turn on",
+    "notNow": "Not now"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "month": {
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "error": "Couldn't load the budget. Pull to try again.",
+  "empty": {
+    "title": "No monthly budget yet",
+    "body": "Set one to see spending, a forecast and cost per person.",
+    "cta": "Set a budget"
+  },
+  "summary": {
+    "title": "Spent this month",
+    "of": "of {{budget}}",
+    "a11y": "{{spent}} spent of {{budget}}",
+    "forecast": "Forecast for the month",
+    "left": "Left",
+    "daysLeft": "Days left",
+    "perPersonDay": "Per person per day",
+    "none": "–"
+  },
+  "status": {
+    "on_track": "On track. Forecast: {{forecast}}.",
+    "near": "Close to the budget. Forecast: {{forecast}}.",
+    "over": "Over the budget this month.",
+    "forecast_over": "At this pace the month ends at {{forecast}}, above the budget."
+  },
+  "settings": {
+    "open": "Budget settings",
+    "readOnly": "Only the owner or a caregiver can change the budget.",
+    "amount": "Monthly food budget",
+    "amountError": "Enter an amount above zero.",
+    "strictness": "How strict?",
+    "split": "Split by category",
+    "splitHint": "Optional. Shares in percent should add up to 100.",
+    "splitTotal": "Total: {{total}}%",
+    "saveError": "Couldn't save. Try again.",
+    "offline": "Saving needs a connection.",
+    "save": "Save"
+  },
+  "strictness": {
+    "flexible": {
+      "title": "Flexible",
+      "body": "A guide. We show how you're doing, nothing more."
+    },
+    "target": {
+      "title": "Target",
+      "body": "Plans aim to stay within it."
+    },
+    "hard_cap": {
+      "title": "Hard limit",
+      "body": "Plans and lists never go over it."
+    }
+  },
+  "categories": {
+    "title": "By category",
+    "ofAllocated": "{{spent}} of {{allocated}}"
+  },
+  "category": {
+    "other": "Other"
+  },
+  "add": {
+    "title": "Add spending",
+    "amount": "Amount",
+    "category": "Category",
+    "note": "Note",
+    "save": "Add"
+  },
+  "entries": {
+    "title": "Spending",
+    "empty": "Nothing recorded this month.",
+    "fromGrocery": "from a shopping trip",
+    "delete": "Remove this entry"
+  },
+  "footer": "Figures are what you recorded. Estimates on lists use local prices."
+}

@@ -11,6 +11,8 @@ import type { ClaimsVerifier } from '../_shared/auth.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { sha256Hex } from '../_shared/crypto.ts';
 import { HttpError } from '../_shared/errors.ts';
+import { budgetDelta } from '../_shared/grocery/budget-delta.ts';
+import type { GroceryCatalogStore } from '../_shared/grocery/store.ts';
 import { jsonHandler } from '../_shared/http.ts';
 import {
   computeAdjustment,
@@ -38,6 +40,8 @@ export interface AdjustPlanDeps {
   fallback: FallbackDeps;
   writeUsage: (row: AiUsageInsert) => Promise<void>;
   kick: (run: () => Promise<unknown>) => void;
+  /** Price book for `budget_delta_minor` (S4); without it the delta is 0. */
+  grocery?: GroceryCatalogStore;
   now?: () => Date;
 }
 
@@ -83,7 +87,7 @@ export function createAdjustPlanHandler(deps: AdjustPlanDeps) {
     const household = await deps.store.household(parent.household_id);
     if (!household) throw new HttpError('NOT_FOUND', 'Household not found.');
     const plan = parent;
-    const { timezone, currency } = household;
+    const { timezone, currency, region_id: regionId } = household;
 
     const begin = await deps.store.idempotencyBegin(
       SCOPE,
@@ -284,6 +288,21 @@ export function createAdjustPlanHandler(deps: AdjustPlanDeps) {
         await persistAdjustment(pipeline, child, result, user.userId);
         mealPlanId = child.id;
       }
+      const budgetDeltaMinor = deps.grocery
+        ? await budgetDelta(deps.grocery, {
+            household: { id: plan.household_id, region_id: regionId, currency },
+            today: localDate(now(), timezone),
+            from: scope.from_date,
+            to: scope.to_date,
+            parentMeals: await deps.store.planMeals(plan.id),
+            payloads: result.payloads,
+          }).catch((err) => {
+            console.warn(
+              JSON.stringify({ level: 'warn', msg: 'budget_delta_failed', error: String(err) }),
+            );
+            return 0;
+          })
+        : 0;
       const body = AiAdjustPlanResponse.parse({
         status: 'completed',
         meal_plan_id: mealPlanId,
@@ -291,8 +310,8 @@ export function createAdjustPlanHandler(deps: AdjustPlanDeps) {
         version: plan.version + 1,
         diff: result.diff,
         rationale: result.rationale,
-        // Prices land with S4 grocery (14 §16); cost tiers carry the budget signal until then.
-        budget_delta_minor: 0,
+        // Live price book (14 §12.4): new version's meals in scope minus the parent's.
+        budget_delta_minor: budgetDeltaMinor,
         currency: currency,
       });
       return { status: 200, body, headers, run: null };

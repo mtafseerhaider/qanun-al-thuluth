@@ -29,6 +29,7 @@ import {
   useUndo,
   type DailyMealView,
 } from '@/features/meals';
+import { PushPrePrompt } from '@/features/notifications';
 import { useActivePlan, useGeneratePlan, useMealPlans } from '@/features/plan';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { useProfile } from '@/hooks/use-profile';
@@ -40,6 +41,12 @@ import type { TodayScreenProps } from '@/navigation/types';
 import { selectCanEdit, useActiveHouseholdStore } from '@/stores/use-active-household-store';
 
 import {
+  NotificationBell,
+  TodayBudgetLine,
+  TodayFastingLine,
+  TodayHydrationCard,
+} from '../components/today-trackers';
+import {
   formatHijriDate,
   formatLongDate,
   formatUpdatedAt,
@@ -50,7 +57,9 @@ import {
 /**
  * T1 Today (02 §7.5.1, 24 S3-11, FR-DASH-01 to -05): greeting and dates, the next meal, today's
  * meals with one-tap "Everyone ate", quick actions, the tip of the day (verified recommendations
- * only) and the alpha feedback entry. Everything renders from the persisted query cache, so it works
+ * only) and the alpha feedback entry. Sprint 4 adds the notification bell, the push pre-prompt, the
+ * family hydration ring (FR-DASH-03), who is fasting today, the budget line and shortcuts to water,
+ * the grocery list and the daily reflection. Everything renders from the persisted query cache, so it works
  * offline; logs queue in the outbox and show as "Saved, will sync".
  */
 export function DashboardScreen() {
@@ -135,11 +144,14 @@ export function DashboardScreen() {
       }}
     >
       <View className="gap-1" testID="today.header">
-        <Text variant="title" accessibilityRole="header">
-          {name
-            ? t(`today:greetingNamed.${greetingFor(clock.nowMinutes)}`, { name })
-            : t(`today:greeting.${greetingFor(clock.nowMinutes)}`)}
-        </Text>
+        <View className="flex-row items-start justify-between gap-2">
+          <Text variant="title" accessibilityRole="header" className="flex-1">
+            {name
+              ? t(`today:greetingNamed.${greetingFor(clock.nowMinutes)}`, { name })
+              : t(`today:greeting.${greetingFor(clock.nowMinutes)}`)}
+          </Text>
+          <NotificationBell onOpen={() => navigation.navigate('NotificationsCenter')} />
+        </View>
         <Text tone="muted" testID="today.date">
           {formatLongDate(clock.today, lang)}
         </Text>
@@ -157,6 +169,8 @@ export function DashboardScreen() {
           testID="today.offline"
         />
       ) : null}
+
+      <PushPrePrompt hasPlan={Boolean(active.data)} />
 
       {generating && !active.data ? (
         <Card
@@ -249,6 +263,26 @@ export function DashboardScreen() {
         </>
       ) : null}
 
+      <TodayFastingLine
+        householdId={householdId}
+        today={clock.today}
+        onOpen={() =>
+          navigation.navigate('MoreTab', { screen: 'FastingTracker', params: {}, initial: false })
+        }
+      />
+      <TodayHydrationCard
+        householdId={householdId}
+        onOpen={() =>
+          navigation.navigate('MoreTab', { screen: 'HydrationTracker', params: {}, initial: false })
+        }
+      />
+      <TodayBudgetLine
+        householdId={householdId}
+        onOpen={() =>
+          navigation.navigate('MoreTab', { screen: 'BudgetDashboard', params: {}, initial: false })
+        }
+      />
+
       <UndoBar
         pending={undo.pending}
         onUndo={() => {
@@ -272,6 +306,41 @@ export function DashboardScreen() {
                 navigation.navigate('MealDetail', { dailyMealId: next.id });
               }}
               testID="today.quick-log.meal"
+            />
+          ) : null}
+          {canEdit ? (
+            <Button
+              label={t('today:quick.water')}
+              size="sm"
+              variant="secondary"
+              onPress={() => {
+                track('dashboard_section_tapped', { section: 'hydration' });
+                navigation.navigate('MoreTab', {
+                  screen: 'HydrationTracker',
+                  params: {},
+                  initial: false,
+                });
+              }}
+              testID="today.quick-log.water"
+            />
+          ) : null}
+          <Button
+            label={t('today:quick.grocery')}
+            size="sm"
+            variant="secondary"
+            onPress={() => {
+              track('dashboard_section_tapped', { section: 'grocery' });
+              navigation.navigate('PlanTab', { screen: 'GroceryLists', initial: false });
+            }}
+            testID="today.quick-log.grocery"
+          />
+          {canEdit ? (
+            <Button
+              label={t('today:quick.reflect')}
+              size="sm"
+              variant="secondary"
+              onPress={() => navigation.navigate('DailyReflection', {})}
+              testID="today.quick-log.reflect"
             />
           ) : null}
           <Button

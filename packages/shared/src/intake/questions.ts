@@ -645,7 +645,12 @@ export function householdCompleteness(scores: readonly number[]): number {
 
 // Goals (01 §7.5, 02 §7.3.8) ---------------------------------------------------------------------
 
-const MINOR_SHOWN_GOALS: readonly GoalType[] = ['child_growth', 'energy', 'digestive_health'];
+const MINOR_SHOWN_GOALS: readonly GoalType[] = [
+  'child_growth',
+  'energy',
+  'digestive_health',
+  'pregnancy_support',
+];
 const ADULT_GOALS: readonly GoalType[] = [
   'maintain',
   'weight_loss',
@@ -659,7 +664,7 @@ const ADULT_GOALS: readonly GoalType[] = [
 ];
 
 /**
- * Goal options for the member. Under 18: growth, energy and digestive health only; weight goals are
+ * Goal options for the member. Under 18: growth, energy and digestive health, plus pregnancy support for pregnant teens; weight goals are
  * never offered (P3, 02 §1.1 rule 2). Adults: weight loss is hidden when pregnant, breastfeeding or
  * with an eating concern; weight gain is also hidden with an eating concern. Every option passes
  * `goalAllowedForAge`, the mirror of the server guard.
@@ -667,7 +672,7 @@ const ADULT_GOALS: readonly GoalType[] = [
 export function goalOptionsFor(ctx: IntakeContext): GoalType[] {
   const base = ctx.minor ? MINOR_SHOWN_GOALS : ADULT_GOALS;
   return base.filter((g) => {
-    if (!goalAllowedForAge(g, ctx.ageYears)) return false;
+    if (!goalAllowedForAge(g, ctx.ageYears, ctx.modules)) return false;
     if (g === 'pregnancy_support') return ctx.modules.includes('pregnancy');
     if (g === 'breastfeeding_support') return ctx.modules.includes('breastfeeding');
     if (g === 'weight_loss')
@@ -682,8 +687,12 @@ export function goalOptionsFor(ctx: IntakeContext): GoalType[] {
 }
 
 export function defaultGoalFor(ctx: IntakeContext): GoalType {
+  if (
+    ctx.modules.includes('pregnancy') &&
+    goalAllowedForAge('pregnancy_support', ctx.ageYears, ctx.modules)
+  )
+    return 'pregnancy_support';
   if (ctx.minor) return 'child_growth';
-  if (ctx.modules.includes('pregnancy')) return 'pregnancy_support';
   if (ctx.modules.includes('breastfeeding')) return 'breastfeeding_support';
   return 'maintain';
 }

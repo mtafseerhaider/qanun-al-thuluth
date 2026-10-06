@@ -136,6 +136,12 @@ export function MealPlansScreen() {
           ) : null}
         </Card>
       ) : null}
+      <Button
+        label={t('plan:plans.grocery')}
+        variant="secondary"
+        onPress={() => navigation.navigate('GroceryLists')}
+        testID="plan-meal-plans.grocery"
+      />
       {inProgress.map((p, i) => (
         <PlanRow
           key={p.id}

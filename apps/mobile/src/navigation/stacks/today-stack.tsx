@@ -2,8 +2,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { MealDetailScreen } from '@/features/meals';
+import { NotificationsCenterScreen } from '@/features/notifications';
 import { RecipeDetailScreen } from '@/features/recipes';
 import { DashboardScreen } from '@/features/today';
+import { DailyReflectionScreen } from '@/features/tracking';
 
 import type { TodayStackParamList } from '../types';
 
@@ -23,6 +25,16 @@ export function TodayStack() {
         name="RecipeDetail"
         component={RecipeDetailScreen}
         options={{ title: t('screens.recipeDetail') }}
+      />
+      <Stack.Screen
+        name="NotificationsCenter"
+        component={NotificationsCenterScreen}
+        options={{ title: t('screens.notificationsCenter') }}
+      />
+      <Stack.Screen
+        name="DailyReflection"
+        component={DailyReflectionScreen}
+        options={{ title: t('screens.dailyReflection') }}
       />
     </Stack.Navigator>
   );

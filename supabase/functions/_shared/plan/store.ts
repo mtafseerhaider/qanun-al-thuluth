@@ -16,6 +16,7 @@ import type { GoalType, HouseholdRole, LifeStage, Severity, SpecialModule } from
 
 import { fromPostgrestError } from '../errors.ts';
 import type { PgErrorLike } from '../errors.ts';
+import type { NotificationRow } from '../notifications/templates.ts';
 
 /**
  * Data access shared by `ai-generate-plan` and `ai-adjust-plan` (06 §4.3, §4.4), so the handlers
@@ -91,6 +92,8 @@ export interface MealPlanRow {
   weekly_themes?: unknown[];
   failure_reason?: string | null;
   deleted_at: string | null;
+  /** Set by the database; the sweeper uses it to find stalled generations. */
+  updated_at?: string;
 }
 
 export type MealPlanInsert = Omit<
@@ -236,6 +239,10 @@ export interface PlanStore {
   enqueue(mealPlanId: string, attempt: number): Promise<number | null>;
   dequeue(visibilitySeconds: number, qty: number): Promise<QueueMessage[]>;
   ack(msgId: number): Promise<void>;
+  /** Plans still `generating` whose row has not changed since `olderThan` (04 §5.3 sweeper). */
+  stuckPlans(olderThan: string, limit: number): Promise<MealPlanRow[]>;
+  /** Inserts a `notifications` row (`plan_ready`, `plan_failed`); a duplicate dedupe key is a no-op. */
+  notify(row: NotificationRow): Promise<void>;
   writePlanWeek(mealPlanId: string, week: PlanWeekPayload): Promise<number>;
   planMeals(mealPlanId: string): Promise<StoredDailyMeal[]>;
   insertSafetyEvents(rows: SafetyEventInsert[]): Promise<void>;
@@ -887,6 +894,22 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
       });
       if (res.error?.message === 'QUEUE_UNAVAILABLE') return [];
       return (check(res) ?? []) as QueueMessage[];
+    },
+    async stuckPlans(olderThan, limit) {
+      return check(
+        await admin
+          .from('meal_plans')
+          .select('*')
+          .eq('status', 'generating')
+          .is('deleted_at', null)
+          .lt('updated_at', olderThan)
+          .order('updated_at')
+          .limit(limit),
+      ) as MealPlanRow[];
+    },
+    async notify(row) {
+      const { error } = await admin.from('notifications').insert(row);
+      if (error && error.code !== '23505') throw fromPostgrestError(error);
     },
     async ack(msgId) {
       const res = await admin.rpc('plan_generation_ack', { p_msg_id: msgId, p_archive: true });

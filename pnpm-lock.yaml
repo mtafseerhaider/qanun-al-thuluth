@@ -113,6 +113,9 @@ importers:
       nativewind:
         specifier: 4.2.7
         version: 4.2.7(4b4016a35125776437b9495fa71b3e1b)
+      onesignal-expo-plugin:
+        specifier: 2.7.2
+        version: 2.7.2(expo@57.0.26)(react-native-onesignal@5.5.14(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3)))(typescript@5.9.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -134,6 +137,9 @@ importers:
       react-native-nitro-modules:
         specifier: 0.37.1
         version: 0.37.1(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
+      react-native-onesignal:
+        specifier: 5.5.14
+        version: 5.5.14(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))
       react-native-reanimated:
         specifier: 4.5.1
         version: 4.5.1(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
@@ -3918,6 +3924,12 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
+  onesignal-expo-plugin@2.7.2:
+    resolution: {integrity: sha512-AxJir7ZURVyhiMr9IJs5r72lEQuXFLmeUeyGFwnB5iIlAEVkk7QlV/AN/0UbHi6/A1nHaObfwPHgbf2bTT2kHg==}
+    peerDependencies:
+      expo: '>=53.0.0'
+      react-native-onesignal: '>=5.0.0'
+
   onetime@2.0.1:
     resolution: {integrity: sha512-oyyPpiMaKARvvcgip+JV+7zci5L8D1W9RZIz2l1o08AM3pfspitVWnPt3mzHcBPp12oYMTy0pqrFs/C+m3EwsQ==}
     engines: {node: '>=4'}
@@ -4219,6 +4231,11 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  react-native-onesignal@5.5.14:
+    resolution: {integrity: sha512-7S1GXb/DCFy1kiMhA7rdPqyBvicLziaKFdiTMl0AWlX4iGJ7LV4gB+/OCGOrgW/35/P5Plp8aaVMyoY2DFsv6A==}
+    peerDependencies:
+      react-native: '>=0.79.0'
 
   react-native-reanimated@4.5.1:
     resolution: {integrity: sha512-RnMvtDuR+68ig864gAvZCOdZehqhC5rFmMo0kn+ARfgVSTvFeF6IFLBVgMPUu0KwihaapEyW24WRi6nEyy1kSA==}
@@ -9903,6 +9920,15 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
+  onesignal-expo-plugin@2.7.2(expo@57.0.26)(react-native-onesignal@5.5.14(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3)))(typescript@5.9.3):
+    dependencies:
+      '@expo/image-utils': 0.11.5(typescript@5.9.3)
+      expo: 57.0.26(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      react-native-onesignal: 5.5.14(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
   onetime@2.0.1:
     dependencies:
       mimic-fn: 1.2.0
@@ -10181,6 +10207,11 @@ snapshots:
   react-native-nitro-modules@0.37.1(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
+      react-native: 0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3)
+
+  react-native-onesignal@5.5.14(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3)):
+    dependencies:
+      invariant: 2.2.4
       react-native: 0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3)
 
   react-native-reanimated@4.5.1(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.7)(react@19.2.3))(react@19.2.3):

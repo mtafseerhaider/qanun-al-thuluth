@@ -6,9 +6,10 @@ import { appStorage, type KeyValueStore } from '@/lib/storage/mmkv';
 import { supabase } from '@/lib/supabase/client';
 
 /**
- * `devices` row for this install (11 §9 step 6, §11.1). OneSignal arrives in a later sprint, so the
- * row is keyed by a per-install id kept in plain MMKV; sign-out deletes the row and rotates the id.
- * Both calls are best-effort and never block auth.
+ * `devices` row for this install (11 §9 step 6, §11.1), keyed by a per-install id kept in plain MMKV;
+ * sign-out deletes the row and rotates the id. Sprint 4 adds the OneSignal subscription id when push
+ * is available (24 S4-12); the server targets the user by external id, the column is for support and
+ * cleanup. Both calls are best-effort and never block auth.
  */
 export const DEVICE_ROW_KEY = 'device.row-id';
 
@@ -20,7 +21,10 @@ export function getDeviceRowId(store: KeyValueStore = appStorage): string {
   return id;
 }
 
-export async function registerDevice(userId: string): Promise<void> {
+export async function registerDevice(
+  userId: string,
+  subscriptionId: string | null = null,
+): Promise<void> {
   if (!supabase) return;
   const platform = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
   await supabase
@@ -32,6 +36,8 @@ export async function registerDevice(userId: string): Promise<void> {
         platform,
         app_version: env.APP_VERSION,
         last_seen_at: new Date().toISOString(),
+        // Only written when known, so a later registration without push keeps the stored id.
+        ...(subscriptionId ? { onesignal_subscription_id: subscriptionId } : {}),
       },
       { onConflict: 'id' },
     )

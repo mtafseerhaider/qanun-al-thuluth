@@ -1,0 +1,71 @@
+# Sprint 4 (S4-05, S4-17): grocery list from the active plan.
+# Runs onboarding (03, ends with the first plan), opens Plan -> Grocery lists, makes this week's list
+# with grocery-generate, checks the aisle grouping, adds a manual item and starts shopping.
+# Needs the staging/local backend with grocery-generate deployed. Uses testIDs only (en and ur).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 08 grocery list from plan
+tags:
+  - grocery
+  - sprint-4
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+
+- tapOn:
+    id: 'tab.plan'
+- extendedWaitUntil:
+    visible:
+      id: 'plan-meal-plans.grocery'
+    timeout: 15000
+- tapOn:
+    id: 'plan-meal-plans.grocery'
+- extendedWaitUntil:
+    visible:
+      id: 'grocery-lists.generate.button'
+    timeout: 10000
+- tapOn:
+    id: 'grocery-lists.generate.button'
+
+# P7 list detail: grouped by aisle, the summary and the share action
+- extendedWaitUntil:
+    visible:
+      id: 'grocery-detail.screen'
+    timeout: 30000
+- assertVisible:
+    id: 'grocery-detail.summary'
+- assertVisible:
+    id: 'grocery-detail.aisle\..*'
+- assertVisible:
+    id: 'grocery-detail.share'
+- takeScreenshot: 08-grocery-list
+
+# Free accounts see the swaps upsell; premium accounts see the substitutions panel instead
+- scrollUntilVisible:
+    element:
+      id: 'grocery-detail.(upsell|substitutions|add)'
+    direction: DOWN
+
+# Manual item
+- scrollUntilVisible:
+    element:
+      id: 'grocery-detail.add'
+    direction: DOWN
+- tapOn:
+    id: 'grocery-detail.add'
+- tapOn:
+    id: 'grocery-detail.manual.label'
+- inputText: 'Lemons'
+- tapOn:
+    id: 'grocery-detail.manual.aisle.fruit'
+- tapOn:
+    id: 'grocery-detail.manual.add'
+- scrollUntilVisible:
+    element:
+      id: 'grocery-detail.aisle.fruit'
+    direction: UP
+- assertVisible:
+    text: 'Lemons'
+- takeScreenshot: 08-grocery-manual
