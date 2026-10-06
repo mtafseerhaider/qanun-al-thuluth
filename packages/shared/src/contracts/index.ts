@@ -8,3 +8,7 @@ export * from './ai-adjust-plan.ts';
 export * from './grocery-generate.ts';
 export * from './prices-refresh.ts';
 export * from './notifications-dispatch.ts';
+export * from './ai-chat.ts';
+export * from './ai-analyze-meal.ts';
+export * from './ai-transcribe.ts';
+export * from './ramadan-generate.ts';
