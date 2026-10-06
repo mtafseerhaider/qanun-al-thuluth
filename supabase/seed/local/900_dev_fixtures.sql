@@ -71,4 +71,14 @@ on conflict (rc_app_user_id, product_id, store) do update
 -- Local-only flag overrides
 update public.feature_flags set enabled = true where key in ('debug_menu', 'allow_sandbox_premium');
 
+-- Environment marker for the internal-alpha review gate (public.catalog_review_statuses()): the flag
+-- catalog.include_in_review only counts in 'local', 'development', 'staging' or 'test'; unset fails closed.
+-- Takes effect for new sessions. Skipped with a notice when the role may not alter the database.
+do $$
+begin
+  execute format('alter database %I set app.environment = %L', current_database(), 'local');
+exception when insufficient_privilege then
+  raise notice '900_dev_fixtures: cannot set app.environment (%), the review gate stays closed', sqlerrm;
+end $$;
+
 reset app.bypass_entitlements;

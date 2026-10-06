@@ -1,5 +1,5 @@
 -- supabase/tests/database/rls/090_recipe_catalog.test.sql
--- S2-16 recipe catalog (05 sections 7.6 to 7.11, 15.13, 16.3.3): the 100 seeded recipes all carry
+-- S2-16 / S3-16 recipe catalog (05 sections 7.6 to 7.11, 15.13, 16.3.3): the 200 seeded recipes all carry
 -- per_serving_nutrition that matches recompute_recipe_nutrition(), they wait for dietitian review and
 -- are hidden from users until verified, nutrition follows ingredient and servings edits, household
 -- recipes are private to the household and only editors write them.
@@ -13,8 +13,8 @@ select tests.seed_household(:'owner', 'Recipe home') as hid \gset
 select tests.add_member(:'hid', :'viewer', 'viewer');
 
 -- ---- seeded catalog ----------------------------------------------------------------------------------
-select is((select count(*) from public.recipes where household_id is null and source = 'curated'), 100::bigint,
-  '100 curated catalog recipes are seeded');
+select is((select count(*) from public.recipes where household_id is null and source = 'curated'), 200::bigint,
+  '200 curated catalog recipes are seeded (S3-16)');
 select is((select count(*) from public.recipes where household_id is null and review_status <> 'in_review'), 0::bigint,
   'every seeded recipe waits for dietitian review');
 select is((select count(*) from public.recipes r where r.household_id is null

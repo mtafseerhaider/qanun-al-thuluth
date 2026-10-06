@@ -27,6 +27,8 @@ insert into public.feature_flags (key, enabled, rules, description) values
    'Config. Per-tier AI caps read by ai_quota_check (12 section 17, 05 section 22.4). Owner: ai. Permanent.'),
   ('chat.free_route',           true,  '{"tiers":["free"],"value":"chat.free"}',
    'Config. Free-tier chat uses route chat.free (cheapest model). Product decision: 00 section 11 open decision #1 default (strict caps + cheapest model). Owner: ai/PO. Revisit after beta.'),
+  ('catalog.include_in_review', false, '{}',
+   'Config. Internal alpha: users also see in_review recipes, meals, portions and meal alternatives (public.catalog_review_statuses()). Enable in thuluth-dev and thuluth-staging only; counts only when app.environment is local, development, staging or test (unset fails closed). Never affects Islamic sources or recommendations. Owner: backend. Remove once the catalog is dietitian-verified.'),
   ('allow_sandbox_premium',     false, '{}',
    'Config. Sandbox RevenueCat purchases grant premium (enable in thuluth-dev and thuluth-staging only, never prod). 17 section 9. Owner: backend. Permanent.'),
   -- kill switches
