@@ -33,6 +33,8 @@ export const EXEMPTION_REASONS = [
   'breastfeeding',
   'age',
   'medical_advice',
+  'postpartum',
+  'chronic_condition',
   'other',
 ] as const;
 
