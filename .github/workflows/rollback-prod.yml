@@ -1,0 +1,105 @@
+name: Production rollout and rollback
+
+# S7-11: every production rollout step and rollback runs here, so each has an approval and an audit
+# trail (20-ci-cd-pipeline.md section 13, 19 sections 12 and 13). Environment `production` (required
+# reviewer: product owner). Commands and when to use each: docs/ops/launch-runbook.md section 6.
+#   advance-ota         set the rollout percentage of the latest update on branch `production`
+#   republish-ota       republish a known-good update group as the newest update (fast rollback)
+#   pin-channel         point channel `production` at another branch, e.g. `production-v1.0.0`
+#                       (channel pinning: binaries on that channel get only that branch's updates)
+#   redeploy-functions  redeploy every Edge Function from a known-good release tag
+# Database rollbacks are never automated: forward-fix migration or PITR (docs/ops/backups-and-pitr.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        options: [advance-ota, republish-ota, pin-channel, redeploy-functions]
+        required: true
+      percent:
+        description: advance-ota only (1..100)
+        default: '50'
+      group_id:
+        description: republish-ota only, the last good update group id (eas update:list --branch production)
+      branch:
+        description: pin-channel only, the EAS branch to serve on channel production (e.g. production-v1.0.0)
+      ref:
+        description: redeploy-functions only, the last good tag (vX.Y.Z)
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      ACTION: ${{ github.event.inputs.action }}
+      PERCENT: ${{ github.event.inputs.percent }}
+      GROUP_ID: ${{ github.event.inputs.group_id }}
+      BRANCH: ${{ github.event.inputs.branch }}
+      REF: ${{ github.event.inputs.ref }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Validate inputs and configuration
+        run: |
+          case "$ACTION" in
+            advance-ota)
+              printf '%s' "$PERCENT" | grep -Eq '^([1-9][0-9]?|100)$' || { echo "::error::percent must be 1..100"; exit 1; } ;;
+            republish-ota)
+              printf '%s' "$GROUP_ID" | grep -Eq '^[0-9a-f-]{36}$' || { echo "::error::group_id must be an update group UUID"; exit 1; } ;;
+            pin-channel)
+              printf '%s' "$BRANCH" | grep -Eq '^production(-v[0-9]+\.[0-9]+\.[0-9]+)?$' || { echo "::error::branch must be production or production-vX.Y.Z"; exit 1; } ;;
+            redeploy-functions)
+              printf '%s' "$REF" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::ref must be a release tag"; exit 1; }
+              [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$PROJECT_REF" ] || { echo "::error::SUPABASE_ACCESS_TOKEN / vars.SUPABASE_PROJECT_REF missing"; exit 1; } ;;
+          esac
+          if [ "$ACTION" != redeploy-functions ] && [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN missing (docs/ops/secrets.md)"; exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.action == 'redeploy-functions' && format('refs/tags/{0}', github.event.inputs.ref) || github.ref }}
+      - uses: ./.github/actions/setup
+        if: env.ACTION != 'redeploy-functions'
+      - uses: expo/expo-github-action@v8
+        if: env.ACTION != 'redeploy-functions'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Advance OTA rollout
+        if: env.ACTION == 'advance-ota'
+        working-directory: apps/mobile
+        run: eas update:edit --branch production --rollout-percentage "$PERCENT" --non-interactive
+      - name: Republish last good OTA
+        if: env.ACTION == 'republish-ota'
+        working-directory: apps/mobile
+        run: |
+          eas update:republish --group "$GROUP_ID" --branch production \
+            --message "rollback to $GROUP_ID" --non-interactive
+      - name: Pin channel production to a branch
+        if: env.ACTION == 'pin-channel'
+        working-directory: apps/mobile
+        run: |
+          eas channel:edit production --branch "$BRANCH" --non-interactive
+          eas channel:view production --non-interactive
+      - uses: supabase/setup-cli@v1
+        if: env.ACTION == 'redeploy-functions'
+        with:
+          version: 2.48.3
+      - name: Redeploy functions from last good tag
+        if: env.ACTION == 'redeploy-functions'
+        run: |
+          supabase secrets set GIT_SHA="$(git rev-parse HEAD)" --project-ref "$PROJECT_REF"
+          supabase functions deploy --project-ref "$PROJECT_REF"
+      - name: Summary
+        if: always()
+        run: |
+          echo "### $ACTION by @${{ github.actor }} (${{ job.status }})" >> "$GITHUB_STEP_SUMMARY"

@@ -13,6 +13,8 @@ import { sha256Hex } from '../_shared/crypto.ts';
 import { consumeTierQuota } from '../_shared/entitlements.ts';
 import { HttpError } from '../_shared/errors.ts';
 import { jsonHandler } from '../_shared/http.ts';
+import { emailLocale } from '../_shared/integrations/account-emails.ts';
+import type { AccountEmail, AccountEmailSender } from '../_shared/integrations/account-emails.ts';
 import type { ProcessorDelete } from '../_shared/integrations/processors.ts';
 import { removePrefix } from '../_shared/storage.ts';
 import type { StorageAdmin } from '../_shared/storage.ts';
@@ -36,6 +38,8 @@ export interface AccountDeleteDeps {
    * the Apple client secret (owner action); when unset the code is not kept and the skip is logged.
    */
   revokeApple?: (authorizationCode: string) => Promise<void>;
+  /** Postmark account emails (requested, cancelled, completed); no-op without POSTMARK_SERVER_TOKEN. */
+  email?: AccountEmailSender;
   now?: () => Date;
 }
 
@@ -61,14 +65,43 @@ export function createAccountDeleteHandler(deps: AccountDeleteDeps) {
   const now = deps.now ?? (() => new Date());
   const { store, storage } = deps;
 
+  /** Best effort: an email failure never fails the request or the erasure (logged, no address). */
+  async function notify(
+    kind: AccountEmail['kind'],
+    contact: Awaited<ReturnType<AccountDeleteStore['contact']>>,
+    at?: string,
+  ): Promise<void> {
+    if (!deps.email || !contact) return;
+    await deps
+      .email({
+        kind,
+        to: contact.email,
+        locale: emailLocale(contact.locale),
+        ...(contact.timezone ? { timezone: contact.timezone } : {}),
+        ...(at ? { at } : {}),
+      })
+      .catch((err) =>
+        console.warn(
+          JSON.stringify({
+            level: 'warn',
+            scope: SCOPE,
+            msg: 'email_failed',
+            kind,
+            error: String(err),
+          }),
+        ),
+      );
+  }
+
   const user = jsonHandler(AccountDeleteRequest, async ({ req, input }) => {
     const auth = await requireUser(req, deps.verify);
     if (input.action === 'cancel') {
       await store.cancelDeletion(auth.userId);
+      await notify('deletion_cancelled', await store.contact(auth.userId).catch(() => null));
       return AccountDeleteResponse.parse({ action: 'cancel', cancelled: true });
     }
 
-    assertRecentAuth(auth, ACCOUNT_DELETION_REAUTH_MAX_AGE_SEC, now());
+    assertRecentAuth(auth, ACCOUNT_DELETION_REAUTH_MAX_AGE_SEC, now(), req);
     const key = req.headers.get('idempotency-key')?.trim() ?? '';
     if (key.length < 8 || key.length > 128)
       throw new HttpError('VALIDATION_FAILED', 'Idempotency-Key header is required.', {
@@ -132,6 +165,24 @@ export function createAccountDeleteHandler(deps: AccountDeleteDeps) {
       await store.idempotencyComplete(begin.id, 200, body);
       // Age-gate decline: no grace, erase right away (11 §13.1).
       if (immediate) await eraseOne(auth.userId).catch(() => {});
+      else {
+        // 16 §7.5: revoke the other sessions now; the requester stays signed in for the countdown.
+        await store.revokeOtherSessions(auth.jwt).catch((err) =>
+          console.warn(
+            JSON.stringify({
+              level: 'warn',
+              scope: SCOPE,
+              msg: 'session_revoke_failed',
+              error: String(err),
+            }),
+          ),
+        );
+        await notify(
+          'deletion_requested',
+          await store.contact(auth.userId).catch(() => null),
+          body.action === 'request' ? body.scheduled_for : undefined,
+        );
+      }
       return Response.json(body, { headers: { ...corsHeaders, ...quota } });
     } catch (err) {
       await store.idempotencyFail(begin.id).catch(() => {});
@@ -141,6 +192,8 @@ export function createAccountDeleteHandler(deps: AccountDeleteDeps) {
 
   /** Erases one due user end to end. Throws on failure (the user stays due for the next run). */
   async function eraseOne(userId: string): Promise<{ objects: number; processors: string[] }> {
+    // Read the address first: erasure removes it.
+    const contact = await store.contact(userId).catch(() => null);
     const result = await store.erase(userId);
     let objects = 0;
     for (const p of result.storage_prefixes)
@@ -162,6 +215,7 @@ export function createAccountDeleteHandler(deps: AccountDeleteDeps) {
       processors.push(r.done ? 'done' : (r.reason ?? 'skipped'));
     }
     await store.deleteAuthUser(userId);
+    await notify('deletion_completed', contact);
     return { objects, processors };
   }
 

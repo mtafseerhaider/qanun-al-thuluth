@@ -3,6 +3,12 @@ import { z } from 'zod';
 /** Error codes from docs/06-api-specification.md §2.3. */
 export const ErrorCode = z.enum([
   'UNAUTHENTICATED',
+  /**
+   * S7 addition: the session is valid but too old for a sensitive action (11 §15 step-up). Sent only
+   * to clients that advertise `x-thuluth-client-caps: reauth_required`; older clients still receive
+   * UNAUTHENTICATED with `details.reauth = true` (see REAUTH_CLIENT_CAP).
+   */
+  'REAUTH_REQUIRED',
   'FORBIDDEN',
   'NOT_FOUND',
   'VALIDATION_FAILED',
@@ -54,6 +60,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
 /** HTTP status for each error code (06 §2.3 table). */
 export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   UNAUTHENTICATED: 401,
+  REAUTH_REQUIRED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   VALIDATION_FAILED: 400,
@@ -91,3 +98,8 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   WEBHOOK_UNAUTHORIZED: 401,
   INTERNAL: 500,
 };
+
+/** Request header a client sends to list optional protocol features it understands (comma separated). */
+export const CLIENT_CAPS_HEADER = 'x-thuluth-client-caps';
+/** Capability: the client handles `REAUTH_REQUIRED` (otherwise it gets UNAUTHENTICATED + details.reauth). */
+export const REAUTH_CLIENT_CAP = 'reauth_required';

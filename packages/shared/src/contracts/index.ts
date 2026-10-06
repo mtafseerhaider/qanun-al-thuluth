@@ -16,3 +16,5 @@ export * from './export-pdf.ts';
 export * from './account-export.ts';
 export * from './account-delete.ts';
 export * from './analytics-rollup.ts';
+export * from './track-events.ts';
+export * from './health.ts';

@@ -3,6 +3,7 @@ import type { ClaimsVerifier, InternalSecrets } from '../_shared/auth.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import type { AppEnv } from '../_shared/env.ts';
 import { errorResponse, HttpError } from '../_shared/errors.ts';
+import { readBodyText, requestIdOf } from '../_shared/http.ts';
 import { notificationRow, routeFor } from '../_shared/notifications/templates.ts';
 import {
   analyticsFor,
@@ -47,8 +48,7 @@ export function createRevenueCatWebhookHandler(deps: RevenueCatWebhookDeps) {
 
   async function webhook(req: Request, requestId: string): Promise<Response> {
     requireRevenueCat(req, deps.secrets);
-    const text = await req.text();
-    if (text.length > MAX_BODY_BYTES) throw new HttpError('PAYLOAD_TOO_LARGE', 'Body too large');
+    const text = await readBodyText(req, MAX_BODY_BYTES);
     let raw: unknown;
     try {
       raw = JSON.parse(text);
@@ -327,7 +327,7 @@ export function createRevenueCatWebhookHandler(deps: RevenueCatWebhookDeps) {
   }
 
   return async (req: Request): Promise<Response> => {
-    const requestId = req.headers.get('x-request-id') ?? crypto.randomUUID();
+    const requestId = requestIdOf(req);
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     try {
       if (req.method !== 'POST') throw new HttpError('NOT_FOUND', 'Not found');

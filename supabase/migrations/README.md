@@ -289,6 +289,16 @@ Needs a human:
   Urdu text.
 - CDC 2000 LMS download and checksum (US Phase 2).
 
+## Sprint 7
+
+| File | 05 ref | Contents | Deferred from this slot |
+|---|---|---|---|
+| `20261006150000_analytics_ingestion.sql` | 0024 (24.2, S7-12 / S6 leftover) | `analytics_event_catalog` (rows from the generated seed `seed/catalog/170_analytics_event_catalog.sql`), `analytics_filter_props`, `track_events` (05 body plus lenient casts, 600 events/user/hour, header-derived platform/version); `private.try_uuid`, `private.try_timestamptz`; addition `ops_health()` for the `health` function (S7-06) | none; the S0 direct-insert policy stays until `app.min_supported_version` passes the first RPC build |
+| `20261006150100_launch_kpis.sql` | 0024 addition (S7-12) | `mv_dau`, `mv_paywall_funnel_daily`, `mv_retention_weekly` recreated for the app's event names (retention cohorts from `users.created_at`); launch views `v_admin_activation_funnel_weekly`, `v_admin_ai_cost_per_active_user_weekly`, `v_admin_ai_cost_per_mau_monthly`, `v_admin_notification_on_time_daily`, `v_admin_plan_generation_daily`, `v_admin_launch_kpis`; `launch_kpis(timestamptz, timestamptz)` (admin or service role), `save_kpi_snapshots(jsonb)` | crash-free sessions stay in Sentry |
+| `20261006150500_security_review_hardening.sql` | addition (S7-03) | Caller guards on `has_premium`, `household_has_premium` (anon revoked), `household_is_read_only`, `has_active_consent` (answer only for the caller, a co-member or a member's household; unchanged for service role, cron and triggers); `accept_household_invitation` search_path `''`; `avatars_update` WITH CHECK; `meal_photos_delete` self branch requires membership; TRUNCATE, REFERENCES, TRIGGER revoked from anon and authenticated (plus default privileges) | none |
+
+Findings and residual risks: `docs/security/s7-security-review.md`. Schema-wide guards: `tests/database/rls/005_security_invariants.test.sql`.
+
 ## Base DDL still to land (05 slots 0003 to 0016)
 
 | Sprint | Story | 05 ref | Objects |
@@ -341,7 +351,7 @@ DDL.
 | 19 | 0025 | **0025b S5**, landed | `prayer_times_cache`, `prayer-times-retention` cron (04, 06 §4.9) |
 | 20 | 0021 | **0021d S6**, landed in part (growth columns and RPCs; not the `accepted` status or extended contexts) | `growth_tracking.age_days`, `measurement_position`, `entered_by`; `exposure_ladders.status = 'accepted'`, structured `food_exposures.context`; `growth_dashboard(uuid)`, `picky_acceptance_summary(uuid, int)` (15 §10, 18) |
 | 21 | 0022 | **0022d S6**, landed | `data_subject_requests`, `deleted_user_ledger` (16 §7.4, §12); erasure executor, `account-delete-executor` cron (04, 06 §4.13) |
-| 22 | 0024 analytics | **S6**, landed except 24.2 (event catalog and `track_events`) | `analytics_events.event_id`, `session_id`, `received_at`, `locale`, `country_code`; `analytics_event_catalog`, `track_events(jsonb)`, `analytics_filter_props(text, jsonb)`; schema `analytics` with ten materialized views and `metric_snapshots`; extended `refresh_analytics_views()`; `get_family_insights(uuid, int)` (18 §16) |
+| 22 | 0024 analytics | **S6**, landed; 24.2 (event catalog and `track_events`) landed in S7 (`20261006150000`) | `analytics_events.event_id`, `session_id`, `received_at`, `locale`, `country_code`; `analytics_event_catalog`, `track_events(jsonb)`, `analytics_filter_props(text, jsonb)`; schema `analytics` with ten materialized views and `metric_snapshots`; extended `refresh_analytics_views()`; `get_family_insights(uuid, int)` (18 §16) |
 | 23 | 0025 | **0025c S6**, landed | `exports.kind = 'account_data'`, nullable `exports.household_id` (04, 06 §4.12) |
 
 Notes:
@@ -349,5 +359,5 @@ Notes:
 - **Already covered, not re-added:** 05 §22.13 lists these. Examples: `can_write_household` = `can_edit_household`; `assert_same_household` = composite FKs; `rate_limits` = `rate_limit_buckets`; and the 06 unique index on `notifications (user_id, kind, scheduled_for)`, which is rejected in favour of `dedupe_key`.
 - **Not migrations:** route keys (`chat.free`, `chat.summarize`, `eval.judge`) and flag keys are seed rows in `seed/catalog/`. Storage bucket names (04 §15, 10 §17) live in 0015 / 0016b. The `tests` schema is test-only.
 - **Phase 2, not reserved:** 05 §22.14 lists these. They include `agent_*` tables (25), `coach_profiles`, `plan_approvals`, `health_integrations`, `packaged_products`, `coaching_programs`, `price_partners`, `households.kind`, `family_members.cohort_size`, the `analytics_reader` role, and `consents.kind = 'partner_access'`.
-- **Analytics client contract (S0-13):** until 0024 lands, the client inserts into `analytics_events` directly with `user_id = auth.uid()` (no column default) and `return=minimal` (authenticated has no SELECT). Fields such as `session_id` and `locale` go in `props`. Once 0024 lands, the client switches to `rpc('track_events')`.
+- **Analytics client contract (S0-13):** `track_events` landed in S7 (`20261006150000`); the client switch is the mobile lane's (docs/ops/analytics-launch-dashboard.md "Client migration"). Until then the client inserts into `analytics_events` directly with `user_id = auth.uid()` (no column default) and `return=minimal` (authenticated has no SELECT). Fields such as `session_id` and `locale` go in `props`. Once 0024 lands, the client switches to `rpc('track_events')`.
 - **Generated types:** regenerate `packages/shared/src/db/database.types.ts` with `tooling/scripts/gen-db-types.sh` (postgres-meta, no Docker; usage in the script header). It strips `analytics_events_default` and the monthly `analytics_events_y*m*` partitions, whose names change every month, and formats with the repo Prettier config. A CI drift check (S0-08 / 10 §16 rule 8) that uses `supabase gen types` directly must ignore those tables.

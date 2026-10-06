@@ -36,6 +36,20 @@ export interface AccountDeleteStore extends Pick<
   ): Promise<Set<string>>;
   /** `meal_logs.photo_path` values of these households. */
   referencedMealPhotos(householdIds: string[]): Promise<Set<string>>;
+  /** Where to send account emails (read before erasure, since the rows go). Null when unknown. */
+  contact(userId: string): Promise<AccountContact | null>;
+  /**
+   * Revokes every session of the JWT's user except the one making the request (GoTrue admin
+   * `signOut(jwt, 'others')`), so a stolen session elsewhere cannot cancel the deletion while the
+   * requester keeps the countdown screen (16 §7.5, S6 leftover).
+   */
+  revokeOtherSessions(jwt: string): Promise<void>;
+}
+
+export interface AccountContact {
+  email: string;
+  locale: string | null;
+  timezone: string | null;
 }
 
 const MISSING_FUNCTION = 'PGRST202';
@@ -117,6 +131,21 @@ export function supabaseAccountDeleteStore(admin: SupabaseClient): AccountDelete
         for (const r of rows) out.add(r.id);
       }
       return out;
+    },
+    async contact(userId) {
+      const row = check(
+        await admin.from('users').select('email, locale, timezone').eq('id', userId).maybeSingle(),
+      ) as { email: string | null; locale: string | null; timezone: string | null } | null;
+      let email = row?.email ?? null;
+      if (!email) {
+        const { data } = await admin.auth.admin.getUserById(userId);
+        email = data?.user?.email ?? null;
+      }
+      return email ? { email, locale: row?.locale ?? null, timezone: row?.timezone ?? null } : null;
+    },
+    async revokeOtherSessions(jwt) {
+      const { error } = await admin.auth.admin.signOut(jwt, 'others');
+      if (error) throw error;
     },
     async referencedMealPhotos(householdIds) {
       if (!householdIds.length) return new Set();
