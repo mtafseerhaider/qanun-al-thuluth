@@ -100,43 +100,7 @@ policy = "per_worker"
 deno_version = 2
 
 # ---- Edge Functions: gateway JWT verification per function (10 section 9) ----
-[functions.ai-chat]
-verify_jwt = true
-[functions.ai-intake-assess]
-verify_jwt = true
-[functions.ai-generate-plan]
-verify_jwt = true
-[functions.ai-adjust-plan]
-verify_jwt = true
-[functions.ai-analyze-meal]
-verify_jwt = true
-[functions.ai-transcribe]
-verify_jwt = true
-[functions.grocery-generate]
-verify_jwt = true
-[functions.growth-compute]
-verify_jwt = true
-[functions.ramadan-generate]
-verify_jwt = true
-[functions.household-invite]
-verify_jwt = true
-[functions.account-export]
-verify_jwt = true
-[functions.export-pdf]
-verify_jwt = false          # dual mode: user JWT verified in code, or cron secret for action "purge_expired"
-[functions.account-delete]
-verify_jwt = false          # dual mode: user JWT verified in code, or cron secret for action "sweep_orphans"
-[functions.revenuecat-webhook]
-verify_jwt = false          # shared secret in Authorization header
-[functions.notifications-dispatch]
-verify_jwt = false          # x-cron-secret
-[functions.prices-refresh]
-verify_jwt = false          # x-cron-secret
-[functions.analytics-rollup]
-verify_jwt = false          # x-cron-secret
-[functions.promo-redeem]
-verify_jwt = true
-[functions.health-notes]
-verify_jwt = true
+# Each function gets a [functions.<name>] block when its folder lands (the CLI refuses entries
+# without an index.ts). JWT modes per function are listed in docs/10-supabase-structure.md section 9.1.
 [functions.ai-smoke]
 verify_jwt = true           # Sprint 0 smoke function (00 section 11); removed when ai-chat ships
