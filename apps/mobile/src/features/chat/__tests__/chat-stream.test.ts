@@ -199,6 +199,36 @@ describe('tool confirmation never auto-applies', () => {
     expect(turn.proposals).toHaveLength(2);
   });
 
+  it('accepts proposals from the log_hydration and log_fasting tools as pending', () => {
+    const turn = run(
+      START +
+        sse(2, 'tool.result', {
+          tool_call_id: 'h1',
+          name: 'log_hydration',
+          ok: true,
+          card: {
+            kind: 'log_proposal',
+            table: 'hydration_logs',
+            values: { family_member_id: MEMBER, volume_ml: 300 },
+          },
+        }) +
+        sse(3, 'tool.result', {
+          tool_call_id: 'f1',
+          name: 'log_fasting',
+          ok: true,
+          card: {
+            kind: 'log_proposal',
+            table: 'fasting_logs',
+            values: { family_member_id: MEMBER, fast_date: '2027-02-10', kind: 'ramadan' },
+          },
+        }),
+    );
+    expect(turn.proposals.map((p) => [p.id, p.status])).toEqual([
+      ['h1', 'pending'],
+      ['f1', 'pending'],
+    ]);
+  });
+
   it('ignores cards on failed tool results', () => {
     const turn = run(
       START +
