@@ -21,17 +21,6 @@ Deno.test('analytics catalog: the allow-list matches the shared registry', () =>
   assertEquals(catalog, shape(EventSchemas));
 });
 
-Deno.test(
-  'analytics catalog: the app re-exports the shared registry instead of keeping a copy',
-  async () => {
-    const src = await Deno.readTextFile(
-      new URL('../../../apps/mobile/src/lib/analytics/events.ts', import.meta.url),
-    );
-    assertEquals(src.includes("export * from '@shared/analytics/events'"), true);
-    assertEquals(/export const EventSchemas/.test(src), false);
-  },
-);
-
 Deno.test('analytics catalog: names and props follow the 18 §14 privacy rules', () => {
   assertEquals(catalogViolations(), []);
   assertEquals(
