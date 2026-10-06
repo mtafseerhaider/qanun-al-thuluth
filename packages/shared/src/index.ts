@@ -7,3 +7,7 @@ export * from './constants/safety.ts';
 export * from './utils/age.ts';
 export * from './utils/money.ts';
 export * from './utils/units.ts';
+export * from './domain/profile.ts';
+export * from './domain/household.ts';
+export * from './domain/family-member.ts';
+export * from './domain/consent.ts';

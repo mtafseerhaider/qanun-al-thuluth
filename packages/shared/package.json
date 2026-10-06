@@ -9,7 +9,8 @@
     "./db": "./src/db/helpers.ts",
     "./db/database.types": "./src/db/database.types.ts",
     "./constants/*": "./src/constants/*.ts",
-    "./utils/*": "./src/utils/*.ts"
+    "./utils/*": "./src/utils/*.ts",
+    "./domain/*": "./src/domain/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
