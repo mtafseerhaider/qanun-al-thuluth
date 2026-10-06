@@ -3,8 +3,10 @@ import * as SecureStore from 'expo-secure-store';
 import { useSessionStore } from '@/stores/use-session-store';
 
 /**
- * Invitation deep links (11 §12, 02 §3.4): `https://thuluth.app/invite/<token>`,
- * `thuluth://invite/<token>` and the legacy `thuluth://invite?token=<token>` (FR-AUTH-08).
+ * Invitation deep links (11 §12, 02 §3.4, FR-AUTH-08): universal / app links only,
+ * `https://thuluth.app/invite/<token>` (also `www.` and `?token=`). The `thuluth://` custom scheme
+ * is not accepted for invites (S7-SEC-11, PO decision 2026-10-06): any app can register it and
+ * intercept the token. A custom-scheme invite link is swallowed without parking its token.
  * The token is parked in SecureStore (Keychain / Keystore, never MMKV or logs) and mirrored in
  * `useSessionStore.pendingInviteToken` until a signed-in user accepts or dismisses it.
  */
@@ -22,7 +24,7 @@ export function isInviteToken(value: string | null | undefined): value is string
 export function parseInviteUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   const match =
-    /^(?:thuluth:\/\/|https:\/\/(?:www\.)?thuluth\.app\/)invite(?:\/([^/?#]+))?\/?(?:\?([^#]*))?(?:#.*)?$/i.exec(
+    /^https:\/\/(?:www\.)?thuluth\.app\/invite(?:\/([^/?#]+))?\/?(?:\?([^#]*))?(?:#.*)?$/i.exec(
       url.trim(),
     );
   if (!match) return null;
@@ -61,8 +63,14 @@ export async function clearParkedInviteToken(): Promise<void> {
   await SecureStore.deleteItemAsync(INVITE_TOKEN_KEY, OPTIONS).catch(() => undefined);
 }
 
+/** `thuluth://invite...`: never parked, and kept away from the router (S7-SEC-11). */
+function isCustomSchemeInviteUrl(url: string): boolean {
+  return /^thuluth:\/\/invite(?:[/?#]|$)/i.test(url.trim());
+}
+
 /** Parks the token when `url` is an invite link; returns true when it was handled. */
 export function handleInviteUrl(url: string | null | undefined): boolean {
+  if (url && isCustomSchemeInviteUrl(url)) return true;
   const token = parseInviteUrl(url);
   if (!token) return false;
   void parkInviteToken(token);

@@ -658,7 +658,7 @@ Release blocker: any primary flow not completable with VoiceOver or TalkBack.
 | Splash to session restored | Custom Sentry span `auth.restore` | ≤ 1.5 s p75 | Release blocker |
 | Scroll performance (week plan, grocery 200 rows, chat 300 messages) | Flashlight on Pixel 6a | Score ≥ 80; average FPS ≥ 55 | Release blocker |
 | Component render regressions | reassure (`*.perf-test.tsx`) for MealCard list, GroceryItemRow list, ChatMessageBubble list, intake step | No render count increase; time regression ≤ 10 percent vs `main` | PR check (warn) |
-| JS bundle size | `expo export` + size report | ≤ 6 MB Hermes bytecode; growth > 5 percent needs justification | PR check |
+| JS bundle size | `expo export` + size report | ≤ 6.5 MB Hermes bytecode for 1.0 (PO decision 2026-10-06, 00 §11; measured 6.33 MB); growth > 5 percent needs justification | PR check |
 | Memory | Android Studio profiler, Xcode Instruments (manual) | No leak across 20 navigations of chat and plan screens | Release candidate |
 | Edge Functions latency | k6 against staging (`tooling/k6/*.js`) | `ai-chat` time to first token p95 ≤ 3 s (fake provider ≤ 300 ms overhead); CRUD-like functions p95 ≤ 500 ms; `grocery-generate` p95 ≤ 4 s | Pre-launch and monthly |
 | Load | k6: 500 concurrent users mixed workload for 15 minutes | Error rate < 1 percent; DB CPU < 70 percent | Pre-launch (Sprint 7) |

@@ -3,7 +3,7 @@
 Status: implemented in `packages/ai-core` and ai-chat, simulated, not yet measured live.
 Owner: AI lane. Related: NFR 9.8 (01-product-requirements), 12-ai-agent-architecture §5, §17.
 
-The cost-cap defaults were **not** changed. They wait for the product owner (see "Decisions needed").
+The cost-cap defaults were not changed in this pass. The product owner then decided them on 2026-10-06: free $0.10 a day, premium $0.60 a day, global $100 a day (see section 3).
 
 ## 1. What changed
 
@@ -77,7 +77,7 @@ Even after S7-02, **both tiers are still over target under this profile**:
 - **Free:** chat is now $0.09–0.12. The other $0.081 is plan personalisation on Sonnet (2 a month). Free chat alone fits the target.
 - **Premium:** non-chat costs about $0.75 a month. Opus `plan.generate` dominates at about $0.16 per plan. Chat is $0.69–0.95.
 
-Recommendations follow. None is implemented, because each needs evals or a product decision.
+Recommendations follow. None is implemented, because each needs evals or a product decision. The product owner accepted them in principle on 2026-10-06. They wait on the plan-quality evals run against real provider keys.
 1. Run `plan.generate` on Opus 5.5 with `effort: medium` and a smaller catalog slice, or make Sonnet 5.5 primary with Opus as fallback. This is the largest single lever, roughly $0.25–0.35 per premium MAU. Gate it on the plan-quality evals.
 2. Move free plan personalisation to Haiku, or cache the catalog block properly; it needs at least 4096 tokens to cache on Haiku.
 3. Send a tool subset on free light-adjacent turns (search and sources only). This shrinks the cached prefix and the cost of a cache write.
@@ -87,18 +87,17 @@ Recommendations follow. None is implemented, because each needs evals or a produ
 
 | Check | Value |
 | --- | --- |
-| Free: 20 messages (daily message cap) at p95 cost | $0.183, against a $0.05 ceiling. The cost ceiling binds first, after about 5 messages at p95 and about 13 at the average. |
-| Premium: messages until the NFR 9.8 ceiling ($0.60) | 31 |
-| Premium: messages until the code default ($1.00) | 52 |
-| Premium heavy day without chat (15 photos, 20 adjustments, 2 plans) | $1.076, above both ceilings |
+| Free: 20 messages (daily message cap) at p95 cost | $0.183, against the $0.10 ceiling. At p95 the cost ceiling binds first: 10 messages cost $0.091, so the check before turn 11 still passes and the 12th is blocked (about 11 messages). At the average ($0.00368) 20 messages cost $0.074, so the 20-message cap binds. |
+| Premium: messages until the $0.60 ceiling (NFR 9.8 and code default) | 31 |
+| Premium heavy day without chat (15 photos, 20 adjustments, 2 plans) | $1.076, above the ceiling |
 
-The per-user daily ceilings hold. ai-chat enforces them before each turn, and a free user is degraded or blocked long before the cost becomes material. They do not line up with the product numbers, though. See below.
+The per-user daily ceilings hold. ai-chat enforces them before each turn, and a free user is blocked, or a premium user degraded to `chat.free`, long before the cost becomes material. Code, seed and NFR 9.8 now carry the same numbers.
 
-## 3. Decisions needed (product owner)
+## 3. Decisions (product owner)
 
-1. **Premium daily ceiling.** NFR 9.8 says $0.60 a day. The ai-chat `DEFAULT_COST_CAPS` premium value is 1,000,000 micros ($1.00). Pick one and align the code or the NFR. The value was not touched here.
-2. **Free daily ceiling vs message cap.** At $0.05 a day the cost ceiling, not the 20-message cap, decides how much a free user can chat: about 5–13 messages. Either accept that and change the copy shown to users, or raise the free ceiling to about $0.10.
-3. **Per-MAU targets** are not met under the assumed profile on either tier. Accept the recommendations above, or revisit the targets once beta data exists.
+1. **Premium daily ceiling.** Decided 2026-10-06: $0.60 a day, as NFR 9.8 says. ai-chat `DEFAULT_COST_CAPS.premium` is now 600,000 micros (it was $1.00), and the `ai.caps` seed states `premium.daily_hard_usd_micros` explicitly.
+2. **Free daily ceiling vs message cap.** Decided 2026-10-06: the free ceiling is raised from $0.05 to $0.10 a day (100,000 micros, code default and `free.daily_hard_usd_micros` in the seed). At the average message cost the 20-message cap now binds; only a run of p95-cost turns stops near 11 messages. The global ceiling stays $100 a day (`global_daily_usd_micros`).
+3. **Per-MAU targets** are not met under the assumed profile on either tier. The product owner accepted the recommendations in section 2 in principle on 2026-10-06. They are not implemented: each waits on the plan-quality evals run with real provider keys. Revisit the targets once beta data exists.
 
 ## 4. Known gaps
 

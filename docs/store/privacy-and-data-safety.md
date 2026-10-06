@@ -49,9 +49,9 @@ For every type below: **Linked to the user: Yes. Used for tracking: No.**
 | Health & Fitness: Health | Yes | App Functionality |
 | Health & Fitness: Fitness | Yes (activity level, weight logs) | App Functionality |
 | Financial Info: Payment Info, Credit Info | No (Apple handles payment) | |
-| Financial Info: Other Financial Info | **Open question 2** (food budget amounts) | App Functionality |
+| Financial Info: Other Financial Info | Yes (food budget amounts, optional; decision 2) | App Functionality |
 | Location: Precise, Coarse | No (city is typed, not read from the device) | |
-| Sensitive Info | **Open question 1** (religious source tradition) | App Functionality |
+| Sensitive Info | Yes (religious source tradition; decision 1) | App Functionality |
 | Contacts | No | |
 | User Content: Photos or Videos | Yes (meal photos) | App Functionality |
 | User Content: Audio Data | Yes (voice questions, deleted after transcription) | App Functionality |
@@ -89,9 +89,9 @@ Third-party SDK manifests (Sentry, RevenueCat, OneSignal, Expo) ship inside thei
 | Personal info: Name | Yes | Required | App functionality, Account management |
 | Personal info: Email address | Yes | Required | App functionality, Account management |
 | Personal info: Other info (date of birth, sex at birth of family members) | Yes | Required | App functionality |
-| Personal info: Religious or philosophical beliefs | **Open question 1** | Optional (defaults to "shared sources") | App functionality |
+| Personal info: Religious or philosophical beliefs | Yes (religious source tradition; decision 1) | Optional (defaults to "shared sources") | App functionality |
 | Financial info: Purchase history | Yes | Optional | App functionality |
-| Financial info: Other financial info (food budget amounts) | **Open question 2** | Optional | App functionality |
+| Financial info: Other financial info (food budget amounts) | Yes (decision 2) | Optional | App functionality |
 | Health and fitness: Health info | Yes | Required | App functionality |
 | Health and fitness: Fitness info | Yes | Optional | App functionality |
 | Photos and videos: Photos | Yes | Optional | App functionality |
@@ -106,22 +106,30 @@ Third-party SDK manifests (Sentry, RevenueCat, OneSignal, Expo) ship inside thei
 | Location: Approximate, Precise | No | | |
 | Contacts, Calendar, Files and docs, Web browsing, SMS | No | | |
 
-## Open questions for the PO and legal
+## Decisions (2026-10-06)
+
+The PO accepted the recommendations below on 2026-10-06. Legal still confirms the forms before
+submission.
 
 1. **Religious source tradition.** `users.tradition_preference` stores shared, Sunni or Shia
    sources. Apple counts religious beliefs as Sensitive Info and Play has "Religious or
    philosophical beliefs". The launch checklist (§7.3) proposed "Other Data". Recommendation:
    declare it as Sensitive Info (Apple) and Religious or philosophical beliefs (Play); a stricter
-   declaration costs nothing and avoids a review dispute.
+   declaration costs nothing and avoids a review dispute. **Decided:** declared that way, App
+   Functionality, optional.
 2. **Food budget amounts.** Users type what they spent on groceries (`budget_entries`,
    `grocery_items.actual_minor`). This is not payment data, but reviewers sometimes read it as
-   "Other financial info". Recommendation: declare it (App Functionality, optional).
+   "Other financial info". Recommendation: declare it (App Functionality, optional). **Decided:**
+   declared as Other Financial Info (Apple) and Other financial info (Play), App Functionality,
+   optional.
 3. **Customer support content.** The contact support and alpha feedback forms send free text and
-   an optional screen name. Declared above as User Content: Customer Support.
+   an optional screen name. Declared above as User Content: Customer Support (no change).
 
 ## Differences from the launch checklist draft (22 §7.3 and §7.4)
 
 - Added: Audio processed ephemerally on Play; Customer Support content; Other Data for date of
-  birth and sex; the two open questions above.
+  birth and sex; religious source tradition as Sensitive Info / Religious or philosophical
+  beliefs (instead of the checklist's "Other Data") and food budget amounts as Other financial info
+  (decisions 1 and 2 above).
 - Confirmed: no location, no contacts, no tracking, no ads SDKs, processors not counted as sharing.
 - In-app search: not collected (the checklist's wording was ambiguous).

@@ -286,7 +286,7 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 | S1-09 | Step 2 Philosophy: rule-of-thirds hadith card (Tirmidhi 2380), plate method, "children are never restricted", tradition preference | mobile-b | 3 | FR-ONB-04, FR-ISL-04 | D5 | S1-08 |
 | S1-10 | Step 3 Create household: country, city, currency, timezone, optional budget (`budget_profiles`) | mobile-a | 5 | FR-HH-01, FR-GRO-07 | D5 | S1-02 |
 | S1-11 | Step 4 Add members: form with DOB, sex, height, weight, activity; `life_stage` derivation in `packages/shared`; owner linked member | mobile-b | 5 | FR-HH-02, FR-ONB-05 | D6 | S1-02 |
-| S1-12 | `household-invite` Edge Function: create, email (transactional provider via Supabase SMTP), accept with token; deep link handling `thuluth://invite` and universal link | backend | 5 | FR-HH-03, FR-AUTH-08 | D3 | S1-02 |
+| S1-12 | `household-invite` Edge Function: create, email (transactional provider via Supabase SMTP), accept with token; deep link handling via universal link (`thuluth://invite` dropped by PO decision 2026-10-06, S7-SEC-11) | backend | 5 | FR-HH-03, FR-AUTH-08 | D3 | S1-02 |
 | S1-13 | Invite UI and accept flow; roles display; leave/remove member | mobile-a | 3 | FR-HH-03, -05 | D7 | S1-12 |
 | S1-14 | RLS pgTAP suite for owner, caregiver, viewer across all Sprint 1 tables | qa | 5 | FR-HH-04, NFR security | D3 | S1-02 |
 | S1-15 | OTP rate limit and hCaptcha configuration; abuse tests | backend | 2 | FR-AUTH-09 | D6 | |

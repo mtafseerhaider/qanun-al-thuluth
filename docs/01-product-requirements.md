@@ -251,7 +251,7 @@ Detailed auth design is in `11-authentication.md`. Product requirements:
 | FR-AUTH-05 | Consent capture before any health data is entered. | Terms, privacy, `health_data`, `ai_processing` consents recorded in `consents` with `version` and `granted_at`; `child_data` consent recorded when the first under-18 member is added. The user cannot continue without the mandatory ones; `marketing` is optional and unchecked by default. |
 | FR-AUTH-06 | Session persistence and secure storage. | Refresh token stored in `expo-secure-store`; app relaunch within 30 days skips login; sign out clears secure store, MMKV caches and React Query cache. |
 | FR-AUTH-07 | Account deletion reachable in 3 taps from Settings (store requirement). | Triggers `account-delete`; see FR-SET-05. |
-| FR-AUTH-08 | Invitation deep link (`thuluth://invite?token=...` and `https://thuluth.app/invite/...`) lets an invited person register and join the inviting household. | After OTP, the invitation is accepted via `household-invite`, a `household_members` row with the invited role exists, and onboarding skips household creation. |
+| FR-AUTH-08 | Invitation deep link (universal / app link `https://thuluth.app/invite/...` only; the `thuluth://` custom scheme is not accepted for invites, S7-SEC-11, PO decision 2026-10-06) lets an invited person register and join the inviting household. | After OTP, the invitation is accepted via `household-invite`, a `household_members` row with the invited role exists, and onboarding skips household creation. |
 | FR-AUTH-09 | Rate limiting and abuse protection. | Max 5 OTP requests per email per hour and 20 per IP per hour; CAPTCHA (hCaptcha via Supabase) enabled in production. |
 
 ### 6.3 Onboarding steps 1 to 6
@@ -702,7 +702,7 @@ Reference devices: low-mid Android (Samsung Galaxy A14 class, 4 GB RAM, Android 
 | Photo meal analysis | p90 12 s |
 | Grocery list generation | p90 5 s |
 | PDF export | p90 15 s |
-| JS bundle (Hermes bytecode) | under 6 MB; install size under 60 MB |
+| JS bundle (Hermes bytecode) | under 6.5 MB for 1.0 (PO decision 2026-10-06, 00 §11); install size under 60 MB |
 | Memory | under 300 MB on Android ref during chat with images |
 
 ### 9.2 Offline
@@ -773,11 +773,11 @@ Full design in `16-security-architecture.md`.
 
 ### 9.8 AI cost budget per user
 
-Costs are tracked in `ai_usage.cost_usd_micros`. Targets assume blended provider prices at project start and are reviewed monthly.
+Costs are tracked in `ai_usage.cost_usd_micros`. Targets assume blended provider prices at project start and are reviewed monthly. The daily ceilings were signed off by the product owner on 2026-10-06, with a global ceiling of USD 100 a day across all users (`feature_flags['ai.caps']`).
 
 | Tier | Target average monthly AI cost per MAU | Hard daily ceiling per user | Behaviour at ceiling |
 |---|---|---|---|
-| Free | USD 0.15 | USD 0.05 | Chat degrades to `classify.intent` model class (Haiku) for simple Q&A; plan personalisation queued to next day |
+| Free | USD 0.15 | USD 0.10 | Free chat already runs on the cheapest route (`chat.free`, Haiku class); at the ceiling chat pauses until the next day; plan personalisation queued to next day |
 | Premium | USD 1.20 | USD 0.60 | Degrade `chat.default` to cheaper route; photo analysis limited to 15 per day |
 
 Levers: prompt caching for system and knowledge context, Haiku-class intent routing for simple questions, template-first free plans, embedding cache, response length caps, image downscaling to 1024 px before vision calls. Gross margin target for premium after store fees and AI: at least 60 percent.

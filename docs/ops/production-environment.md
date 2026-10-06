@@ -57,7 +57,7 @@ Everything that can be code is code in the repo. Everything else is listed below
 - [ ] Confirm that the smoke test passed and that `curl https://api.thuluth.app/functions/v1/health` returns `"status":"ok"`.
 - [ ] RLS check (T1): run `DB_TEST_MODE=plain tooling/scripts/db-test.sh` on the release commit (green in CI). Then check prod with `select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity;`, which must return 0.
 - [ ] Cron check: `select jobname, schedule from cron.job order by 1;` lists the Sprint 0 to 6 jobs. After an hour, `select status, count(*) from cron.job_run_details where start_time > now() - interval '1 hour' group by 1;` should show no failures.
-- [ ] Feature flags for prod (T11): set the Ramadan planner on from launch, and check `app.min_supported_version = 1.0.0` and the kill switches.
+- [ ] Feature flags for prod (T11): set `ramadan_planner` to `enabled = true` from launch (the Ramadan planner is the launch headline, PO decision 2026-10-06; the seed default stays off for other environments), and check `app.min_supported_version = 1.0.0` and the kill switches.
 - [ ] Create the admin account (PO), then set `raw_app_meta_data.role = 'admin'` with the service role.
 - [ ] Create the smoke and demo accounts (store review demo account, S7-07). Mark them `users.is_internal = true` so the KPIs exclude them.
 

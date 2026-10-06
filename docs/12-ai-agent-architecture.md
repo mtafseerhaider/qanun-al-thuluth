@@ -1907,8 +1907,9 @@ A weekly sample of 50 conversations (only from users with `ai_processing` consen
 | Long-term memory | off | on (with consent) |
 | Soft monthly AI cost budget per user | USD 0.25 | USD 3.00 |
 | Hard monthly AI cost ceiling per user | USD 0.50 (then chat pauses until next day with a friendly message) | USD 8.00 (then downgrade routes to Sonnet/Haiku-class, notify ops) |
+| Hard daily AI cost ceiling per user (ai-chat, PO decision 2026-10-06) | USD 0.10 (then chat pauses until the next day) | USD 0.60 (then chat degrades to `chat.free`) |
 
-Implementation: `metering/caps.ts` checks counters before each call using a Postgres function `ai_quota_check(user_id, route_key)` that reads `ai_usage` aggregates for the current day and month (indexed on `(user_id, created_at)`), returning `{ allowed, remaining, degradeTo }`. Caps and budgets live in `feature_flags` (`key = 'ai.caps'`, `rules` JSON) so they change without a release. Global kill-switches: `ai.chat.enabled`, `ai.vision.enabled`, `ai.plan.enabled`.
+Implementation: `metering/caps.ts` checks counters before each call using a Postgres function `ai_quota_check(user_id, route_key)` that reads `ai_usage` aggregates for the current day and month (indexed on `(user_id, created_at)`), returning `{ allowed, remaining, degradeTo }`. Caps and budgets live in `feature_flags` (`key = 'ai.caps'`, `rules` JSON) so they change without a release. ai-chat also enforces the daily ceilings above (`daily_hard_usd_micros` per tier) and a global ceiling of USD 100 a day across all users (`global_daily_usd_micros`). Global kill-switches: `ai.chat.enabled`, `ai.vision.enabled`, `ai.plan.enabled`.
 
 Cost levers in order of preference: prompt caching, intent-based tool subsetting, summarisation of old turns, deterministic engines instead of LLM steps, cheaper route for classification and summaries, and finally per-tier output caps.
 

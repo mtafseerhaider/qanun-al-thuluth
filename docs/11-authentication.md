@@ -648,7 +648,7 @@ Settings → Security → "Sign out everywhere" calls `supabase.auth.signOut({ s
 
 ### 12.2 Link handling
 
-- Universal link (iOS `applinks:thuluth.app`) and Android App Link (`autoVerify`) open the app at route `InviteAccept` with `token` (07 §9.6). The custom scheme `thuluth://invite/<token>` is also accepted.
+- Universal link (iOS `applinks:thuluth.app`) and Android App Link (`autoVerify`) open the app at route `InviteAccept` with `token` (07 §9.6). The custom scheme `thuluth://invite/<token>` is not accepted: another app can register the scheme and intercept the token (S7-SEC-11, PO decision 2026-10-06). The app swallows such a link without storing the token.
 - If the app is not installed, `https://thuluth.app/invite/<token>` serves a web page with store badges and "Open in app". Deferred deep linking is not in v1: after installing, the user taps the email link again.
 - The token is held **in memory only** (`useSessionStore.pendingInviteToken`) and never logged (Sentry breadcrumbs scrub `/invite/` paths).
 

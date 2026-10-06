@@ -52,11 +52,12 @@ export const TURN_LIMITS: Record<Tier, { maxSteps: number; maxOutputTokens: numb
 /**
  * Daily cost ceilings in USD micros (S5 cost decision: strict caps). Overridable in
  * `feature_flags['ai.caps'].rules` as `{free|premium}.daily_hard_usd_micros` and
- * `global_daily_usd_micros`. The monthly ceiling is `ai_quota_check`'s. Values need PO sign-off.
+ * `global_daily_usd_micros`. The monthly ceiling is `ai_quota_check`'s. Values signed off by the
+ * PO 2026-10-06 (00 §11): free $0.10, premium $0.60 (NFR 9.8), global $100 a day.
  */
 export const DEFAULT_COST_CAPS = {
-  free: 50_000,
-  premium: 1_000_000,
+  free: 100_000,
+  premium: 600_000,
   global: 100_000_000,
 } as const;
 

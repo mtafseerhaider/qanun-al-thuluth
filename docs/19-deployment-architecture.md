@@ -460,7 +460,7 @@ React Navigation `linking` config (in `apps/mobile/src/navigation/linking.ts`, s
 
 | URL | Screen | Auth required |
 |---|---|---|
-| `https://thuluth.app/invite/{token}` / `thuluth://invite/{token}` | `InviteAccept` | Yes (deferred: stored, then resumed after sign-in) |
+| `https://thuluth.app/invite/{token}` (universal / app link only; `thuluth://invite` is ignored, S7-SEC-11) | `InviteAccept` | Yes (deferred: stored, then resumed after sign-in) |
 | `thuluth://today?meal={daily_meal_id}` | `Today` with meal sheet | Yes |
 | `https://thuluth.app/plan/{meal_plan_id}` | `PlanDetail` | Yes, and household membership |
 | `https://thuluth.app/r/{recipe_id}` | `RecipeDetail` | No (catalog), prompts sign-in for actions |
