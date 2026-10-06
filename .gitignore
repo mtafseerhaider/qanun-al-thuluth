@@ -23,3 +23,4 @@ apps/mobile/web-build/
 supabase/.branches/
 supabase/.temp/
 supabase/functions/.env
+__pycache__/
