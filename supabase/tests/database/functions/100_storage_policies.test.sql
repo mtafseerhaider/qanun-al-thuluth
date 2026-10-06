@@ -31,6 +31,9 @@ set local app.bypass_entitlements = 'on';
 insert into public.family_members (household_id, linked_user_id, name, date_of_birth, sex_at_birth)
 values (:'hid', :'linked', 'Uncle', current_date - interval '40 years', 'male') returning id as uncle \gset
 set local app.bypass_entitlements = 'off';
+-- Storage blocks direct DELETE unless this is set (the Storage API sets it); the delete cases
+-- below test the RLS policies, not that guard.
+set local storage.allow_delete_query = 'true';
 select set_config('st.hid', :'hid', true), set_config('st.other', :'other_hid', true),
        set_config('st.son', :'son', true), set_config('st.uncle', :'uncle', true),
        set_config('st.session', :'owner_session', true),
