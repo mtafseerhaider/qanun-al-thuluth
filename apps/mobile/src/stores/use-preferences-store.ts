@@ -31,6 +31,10 @@ export interface PreferencesActions {
   setLocale(locale: AppLocale): void;
   setSensoryCalm(on: boolean): void;
   setHaptics(on: boolean): void;
+  setUnits(units: PreferencesState['units']): void;
+  setTraditionPreference(tradition: PreferencesState['traditionPreference']): void;
+  /** Copies server profile fields after sign-in (11 §9 step 2). Locale is applied by the caller. */
+  hydrateFromProfile(profile: { units: string; tradition_preference: string }): void;
 }
 
 export const initialPreferences: PreferencesState = {
@@ -63,6 +67,18 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
         setLocale: (locale) => set({ locale, localeChosen: true }),
         setSensoryCalm: (sensoryCalm) => set({ sensoryCalm }),
         setHaptics: (haptics) => set({ haptics }),
+        setUnits: (units) => set({ units }),
+        setTraditionPreference: (traditionPreference) => set({ traditionPreference }),
+        hydrateFromProfile: ({ units, tradition_preference }) =>
+          set((s) => ({
+            units: units === 'imperial' || units === 'metric' ? units : s.units,
+            traditionPreference:
+              tradition_preference === 'sunni' ||
+              tradition_preference === 'shia' ||
+              tradition_preference === 'shared'
+                ? tradition_preference
+                : s.traditionPreference,
+          })),
       }),
       {
         name: 'store.preferences',

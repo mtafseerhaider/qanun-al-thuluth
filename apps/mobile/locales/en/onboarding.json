@@ -1,5 +1,137 @@
 {
   "welcome": {
-    "title": "Let's set up your family"
+    "title": "Let's set up your family",
+    "greeting": "Assalamu alaikum",
+    "body": "Let's set up Thuluth for your family. It takes about three minutes.",
+    "bismillahA11y": "Bismillah ir-Rahman ir-Raheem: In the name of Allah, the Most Gracious, the Most Merciful",
+    "nameLabel": "What should we call you?",
+    "nameHelper": "Your first name is enough. You can change it later in Settings.",
+    "nameError": "Please enter a name of up to 40 characters."
+  },
+  "common": {
+    "back": "Back",
+    "continue": "Continue",
+    "progress": "Step {{current}} of {{total}}"
+  },
+  "philosophy": {
+    "title": "Eating in thirds",
+    "body": "Thuluth is built on a simple prophetic teaching about balance, not restriction.",
+    "thirdsA11y": "A stomach divided into three equal parts: one third for food, one third for drink, one third for breath.",
+    "thirds": {
+      "food": "Food",
+      "drink": "Drink",
+      "breath": "Breath"
+    },
+    "hadith": {
+      "label": "Hadith",
+      "translation": "“The son of Adam fills no vessel worse than his stomach. It is sufficient for the son of Adam to eat a few morsels to keep his back straight. If he must, then one third for his food, one third for his drink and one third for his breath.”",
+      "citation": "Tirmidhi 2380; Ibn Majah 3349",
+      "note": "Graded sahih by al-Albani."
+    },
+    "plateTitle": "The balanced plate",
+    "plateA11y": "A plate divided into half vegetables, a quarter protein and a quarter whole grains.",
+    "plate": {
+      "veg": "Half vegetables",
+      "protein": "Quarter protein",
+      "carb": "Quarter whole grains"
+    },
+    "childrenTitle": "Children are never restricted",
+    "childrenBody": "Thuluth never counts calories or sets weight-loss goals for children. For them, we focus on growth, variety and enjoying meals together.",
+    "tradition": {
+      "label": "Which sources should we draw on?",
+      "hint": "You can change this at any time in Settings.",
+      "shared": "Shared sources",
+      "sharedDescription": "Quran and narrations accepted across traditions.",
+      "sunni": "Sunni collections",
+      "sunniDescription": "Bukhari, Muslim, Tirmidhi and the other Sunni collections.",
+      "shia": "Shia collections",
+      "shiaDescription": "Al-Kafi and the other Shia collections."
+    }
+  },
+  "consents": {
+    "title": "Your privacy",
+    "body": "Before you add any family details, please review how we use your data.",
+    "agree": "Agree and continue",
+    "summaryTitle": "In short",
+    "summary": "Your family's data is private to your household. We never sell it. You can export or delete it at any time.",
+    "required": "Required",
+    "ready": "Thank you. You can change optional choices later in Settings.",
+    "requiredNote": "Please tick every required item to continue.",
+    "age": {
+      "title": "I am 18 or older",
+      "description": "Accounts are for adults. You can add children as family members."
+    },
+    "kinds": {
+      "terms": {
+        "title": "Terms of Service",
+        "description": "The rules for using Thuluth."
+      },
+      "privacy": {
+        "title": "Privacy Policy",
+        "description": "How we collect, store and protect your data."
+      },
+      "health_data": {
+        "title": "Health information",
+        "description": "Store family health details such as age, height, weight and conditions to personalise meal plans."
+      },
+      "ai_processing": {
+        "title": "AI assistance",
+        "description": "Let our AI service process your family details to suggest meals and answer questions. Data is not used to train models."
+      },
+      "marketing": {
+        "title": "Tips and updates (optional)",
+        "description": "Occasional emails about new features and healthy-eating tips."
+      }
+    }
+  },
+  "childConsent": {
+    "title": "Consent for children's data",
+    "body": "You're adding a child. As their parent or guardian, please confirm that you consent to Thuluth storing their details for this household.",
+    "agree": "I am this child's parent or guardian and I consent",
+    "confirm": "Confirm consent"
+  },
+  "household": {
+    "title": "Your household",
+    "body": "Tell us where you live so prices, seasons and prayer times fit your family.",
+    "defaultName": "{{name}}'s family",
+    "defaultNameFallback": "Our family",
+    "name": "Household name",
+    "nameHelper": "Shown to everyone you invite.",
+    "country": "Country",
+    "city": "City",
+    "cityHelper": "Optional. Helps with local prices.",
+    "currency": "Currency",
+    "timezone": "Time zone",
+    "timezoneHelper": "For example Asia/Karachi.",
+    "budgetTitle": "Monthly food budget",
+    "budget": "Budget (optional)",
+    "budgetHelper": "Optional. We'll plan meals within this amount.",
+    "errors": {
+      "nameRequired": "Please enter a household name.",
+      "nameTooLong": "Use 40 characters or fewer.",
+      "cityTooLong": "Use 60 characters or fewer.",
+      "timezoneInvalid": "Enter a valid time zone, such as Asia/Karachi.",
+      "budgetInvalid": "Enter an amount using numbers only."
+    }
+  },
+  "countries": {
+    "PK": "Pakistan",
+    "AE": "United Arab Emirates",
+    "SA": "Saudi Arabia",
+    "GB": "United Kingdom",
+    "US": "United States",
+    "CA": "Canada"
+  },
+  "cities": {
+    "Lahore": "Lahore",
+    "Karachi": "Karachi",
+    "Islamabad": "Islamabad"
+  },
+  "members": {
+    "title": "Who's in your family?",
+    "body": "Add everyone you cook for, including yourself. You can add more later.",
+    "finish": "Finish setup",
+    "noHousehold": "We couldn't find your household. Go back and create it first.",
+    "needOne": "Add at least one family member to continue."
   }
 }

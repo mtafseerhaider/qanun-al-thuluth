@@ -3,9 +3,10 @@ import { appStorage } from '@/lib/storage/mmkv';
 import { createStore, resetters } from './create-store';
 
 /**
- * Auth status for routing (09 §5.1). Tokens never live here; supabase-js owns the session.
- * Sprint 0 placeholder: real sign-in arrives in Sprint 1. `enterDevGuest` lets developers reach the
- * Main tabs in development builds; the flag is remembered in MMKV so an RTL reload keeps you there.
+ * Auth status for routing (09 §5.1, the `useAuthStore` of 24 S1-06). Tokens never live here;
+ * supabase-js owns the session and AuthProvider drives this store from `onAuthStateChange`.
+ * `enterDevGuest` lets developers reach the Main tabs in development builds without a backend; the
+ * flag is remembered in MMKV so an RTL reload keeps you there.
  */
 export type SessionStatus =
   'initializing' | 'signed_out' | 'needs_age_gate' | 'needs_onboarding' | 'signed_in';
@@ -30,8 +31,11 @@ export interface SessionActions {
     lastAuthenticatedAt: number;
     profile: { ageAttested: boolean; onboarded: boolean };
   }): void;
+  /** Signed out; keeps a parked invite token so the invitee can still sign in to accept it. */
   setSignedOut(): void;
+  markAgeAttested(): void;
   markOnboarded(): void;
+  setLastAuthenticatedAt(ms: number): void;
   setLocked(locked: boolean): void;
   setPendingInviteToken(token: string | null): void;
   /** Development only: restores the dev-guest session if one was entered before a reload. */
@@ -71,9 +75,16 @@ export const useSessionStore = createStore<SessionState & SessionActions>('sessi
     }),
   setSignedOut: () => {
     appStorage.remove(DEV_GUEST_KEY);
-    set({ ...initialSession, status: 'signed_out' });
+    set((s) => ({
+      ...initialSession,
+      status: 'signed_out',
+      pendingInviteToken: s.pendingInviteToken,
+    }));
   },
+  markAgeAttested: () =>
+    set((s) => ({ status: s.status === 'needs_age_gate' ? 'needs_onboarding' : s.status })),
   markOnboarded: () => set({ status: 'signed_in' }),
+  setLastAuthenticatedAt: (lastAuthenticatedAt) => set({ lastAuthenticatedAt }),
   setLocked: (locked) => set({ locked }),
   setPendingInviteToken: (pendingInviteToken) => set({ pendingInviteToken }),
   restore: () => {
@@ -93,4 +104,13 @@ export const useSessionStore = createStore<SessionState & SessionActions>('sessi
 
 resetters.add(() => useSessionStore.getState().reset());
 
+/** Name used by 24 S1-06 and 11; same store. */
+export const useAuthStore = useSessionStore;
+
 export const selectIsSignedIn = (s: SessionState) => s.status === 'signed_in';
+export const selectHasSession = (s: SessionState) =>
+  s.status === 'signed_in' || s.status === 'needs_onboarding' || s.status === 'needs_age_gate';
+export const selectRecentlyAuthenticated =
+  (windowMs = 5 * 60_000, now: () => number = Date.now) =>
+  (s: SessionState) =>
+    s.lastAuthenticatedAt !== null && now() - s.lastAuthenticatedAt < windowMs;

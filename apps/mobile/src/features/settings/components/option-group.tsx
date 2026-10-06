@@ -12,6 +12,7 @@ export interface Option<T extends string> {
 export function OptionGroup<T extends string>({
   label,
   hint,
+  compact = false,
   options,
   value,
   onChange,
@@ -19,6 +20,8 @@ export function OptionGroup<T extends string>({
 }: {
   label: string;
   hint?: string;
+  /** Hides the visible heading (the label is still announced) for tight layouts. */
+  compact?: boolean;
   options: readonly Option<T>[];
   value: T;
   onChange: (value: T) => void;
@@ -31,7 +34,7 @@ export function OptionGroup<T extends string>({
       accessibilityLabel={label}
       testID={testID}
     >
-      <Text variant="heading">{label}</Text>
+      {compact ? null : <Text variant="heading">{label}</Text>}
       {hint ? (
         <Text variant="caption" tone="muted">
           {hint}
@@ -45,6 +48,7 @@ export function OptionGroup<T extends string>({
             size="sm"
             variant={o.value === value ? 'primary' : 'secondary'}
             accessibilityRole="radio"
+            selected={o.value === value}
             onPress={() => onChange(o.value)}
             testID={`${testID}.${o.value}`}
           />

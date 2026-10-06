@@ -1,0 +1,105 @@
+# S1-08 to S1-11 / S1-17: onboarding steps 1 to 4 for a new account, ending on the Today tab.
+# Signs up first (same env as auth/02-signup-otp.yaml). Uses testIDs only, so it passes in en and ur.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 03 onboarding steps 1-4
+tags:
+  - onboarding
+  - sprint-1
+---
+- runFlow: ../auth/02-signup-otp.yaml
+
+# Step 1 Welcome: display name
+- tapOn:
+    id: 'onboarding-welcome.name'
+- eraseText: 40
+- inputText: 'Amina'
+- hideKeyboard
+- tapOn:
+    id: 'onboarding-welcome.screen.continue'
+
+# Step 2 Philosophy: hadith card, plate, children promise, tradition
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-philosophy.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'onboarding-philosophy.hadith'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-philosophy.tradition.shared'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-philosophy.tradition.shared'
+- tapOn:
+    id: 'onboarding-philosophy.screen.continue'
+
+# Consents: age plus the four required kinds; Continue stays disabled until all are ticked
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-consents.screen'
+    timeout: 10000
+- tapOn:
+    id: 'onboarding-consents.age'
+- tapOn:
+    id: 'onboarding-consents.terms'
+- tapOn:
+    id: 'onboarding-consents.privacy'
+- tapOn:
+    id: 'onboarding-consents.health_data'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-consents.ai_processing'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-consents.ai_processing'
+- tapOn:
+    id: 'onboarding-consents.screen.continue'
+
+# Step 3 Household: Pakistan defaults (PKR, Asia/Karachi), Lahore, optional budget
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-household.screen'
+    timeout: 10000
+- tapOn:
+    id: 'onboarding-household.country.PK'
+- tapOn:
+    id: 'onboarding-household.city-Lahore'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-household.budget'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-household.budget'
+- inputText: '45000'
+- hideKeyboard
+- tapOn:
+    id: 'onboarding-household.screen.continue'
+
+# Step 4 Members: add an adult (me) and a child
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-members.screen'
+    timeout: 15000
+- runFlow:
+    file: _add-member.yaml
+    env:
+      NAME: 'Amina'
+      DAY: '14'
+      MONTH: '3'
+      YEAR: '1990'
+- runFlow:
+    file: _add-member.yaml
+    env:
+      NAME: 'Zayd'
+      DAY: '2'
+      MONTH: '9'
+      YEAR: '2019'
+- assertVisible:
+    id: 'family-members.row-1'
+- tapOn:
+    id: 'onboarding-members.screen.continue'
+- extendedWaitUntil:
+    visible:
+      id: 'tab.today'
+    timeout: 15000
+- takeScreenshot: 03-onboarding-done

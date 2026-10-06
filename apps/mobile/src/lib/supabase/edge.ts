@@ -23,6 +23,8 @@ export interface InvokeEdgeOptions {
   baseUrl?: string;
   anonKey?: string;
   accessToken?: string | null;
+  /** Extra request headers, e.g. `Idempotency-Key` (06 §2.4). */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -52,6 +54,7 @@ export async function invokeEdge<TReq, TRes>(
         apikey: anonKey,
         authorization: `Bearer ${token ?? anonKey}`,
         'x-client-info': `thuluth-mobile/${env.APP_VERSION}`,
+        ...opts.headers,
       },
       body: JSON.stringify(body),
       ...(opts.signal ? { signal: opts.signal } : {}),

@@ -12,6 +12,11 @@
     "chatThread": "ثُلُث سے پوچھیں",
     "familyManagement": "خاندان",
     "moreHome": "مزید",
-    "debug": "ڈیبگ ٹولز"
+    "debug": "ڈیبگ ٹولز",
+    "caregivers": "افراد اور رسائی",
+    "settings": "ترتیبات",
+    "settingsProfile": "پروفائل",
+    "acceptInvite": "دعوت",
+    "inviteCaregiver": "کسی کو مدعو کریں"
   }
 }

@@ -11,11 +11,41 @@
     "title": "Language",
     "english": "English",
     "urdu": "اردو",
-    "hint": "Changing between English and Urdu restarts the app to switch layout direction."
+    "hint": "Changing between English and Urdu restarts the app to switch layout direction.",
+    "restartTitle": "Restart to change language?",
+    "restartBody": "Switching between English and Urdu changes the layout direction, so the app will restart. Your progress is saved.",
+    "cancel": "Cancel",
+    "restartConfirm": "Restart"
   },
   "developer": {
     "title": "Developer",
     "openDebug": "Open debug tools",
     "signOutGuest": "Leave guest session"
+  },
+  "home": {
+    "account": "Account",
+    "open": "Settings",
+    "profile": "Profile and preferences"
+  },
+  "profile": {
+    "displayName": "Display name",
+    "saveName": "Save name",
+    "units": "Units",
+    "unitsHint": "Used for height and weight across the app.",
+    "metric": "Metric (cm, kg)",
+    "imperial": "Imperial (in, lb)",
+    "tradition": "Sources tradition",
+    "traditionHint": "Chooses which hadith collections we draw guidance from.",
+    "traditionShared": "Shared sources",
+    "traditionSunni": "Sunni collections",
+    "traditionShia": "Shia collections",
+    "saved": "Saved"
+  },
+  "signOut": {
+    "button": "Sign out",
+    "confirmTitle": "Sign out?",
+    "confirmBody": "Your family data stays safe on the server. Anything saved only on this device is removed.",
+    "cancel": "Cancel",
+    "confirm": "Sign out"
   }
 }

@@ -15,6 +15,8 @@ export interface ButtonProps extends BaseProps, A11yOverride {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
+  /** For radio / toggle buttons: exposed as selected and checked to assistive tech. */
+  selected?: boolean;
 }
 
 const CONTAINER: Record<NonNullable<ButtonProps['variant']>, string> = {
@@ -48,6 +50,7 @@ export const Button = forwardRef<RNView, ButtonProps>(function Button(
     loading = false,
     disabled = false,
     fullWidth = false,
+    selected,
     accessibilityLabel,
     accessibilityHint,
     accessibilityRole,
@@ -73,7 +76,11 @@ export const Button = forwardRef<RNView, ButtonProps>(function Button(
       accessibilityRole={accessibilityRole ?? (variant === 'link' ? 'link' : 'button')}
       accessibilityLabel={accessibilityLabel ?? label}
       {...(accessibilityHint ? { accessibilityHint } : {})}
-      accessibilityState={{ disabled: inactive, busy: loading }}
+      accessibilityState={{
+        disabled: inactive,
+        busy: loading,
+        ...(selected !== undefined ? { selected, checked: selected } : {}),
+      }}
       hitSlop={size === 'sm' ? 6 : undefined}
       className={cn(
         'flex-row items-center justify-center gap-2 rounded-md py-2',

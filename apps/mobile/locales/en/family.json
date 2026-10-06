@@ -1,0 +1,102 @@
+{
+  "access": {
+    "title": "People and access",
+    "count_one": "{{count}} person has access",
+    "count_other": "{{count}} people have access",
+    "manage": "Manage access"
+  },
+  "list": {
+    "count": "{{count}} of {{max}} members",
+    "empty": "No family members yet.",
+    "add": "Add family member",
+    "noHousehold": "Create a household to add family members."
+  },
+  "remove": {
+    "title": "Remove {{name}}?",
+    "body": "Their details will be removed from plans. This can't be undone from the app.",
+    "confirm": "Remove"
+  },
+  "row": {
+    "ageMonths_one": "{{count}} month",
+    "ageMonths_other": "{{count}} months",
+    "ageYears_one": "{{count}} year",
+    "ageYears_other": "{{count}} years",
+    "you": "You",
+    "edit": "Edit",
+    "editA11y": "Edit {{name}}",
+    "remove": "Remove",
+    "removeA11y": "Remove {{name}}"
+  },
+  "form": {
+    "name": "Name",
+    "nameHelper": "A first name or nickname is fine.",
+    "dob": "Date of birth",
+    "dobDay": "Day",
+    "dobMonth": "Month",
+    "dobYear": "Year",
+    "dobHelper": "Used to tailor portions and nutrients to each life stage.",
+    "lifeStageLabel": "Life stage: {{stage}}",
+    "childNote": "For children we focus on healthy growth. We never count calories or set weight goals.",
+    "sex": "Sex",
+    "sexHelper": "Nutrient needs differ by sex from the teenage years.",
+    "sexFemale": "Female",
+    "sexMale": "Male",
+    "sexUnspecified": "Prefer not to say",
+    "height": "Height (optional)",
+    "heightHelper": "Helps estimate portion sizes.",
+    "weight": "Weight (optional)",
+    "weightHelperChild": "Optional. Used only to check growth, never for dieting.",
+    "weightHelperAdult": "Optional. Helps estimate energy needs.",
+    "unitCm": "cm",
+    "unitIn": "in",
+    "unitKg": "kg",
+    "unitLb": "lb",
+    "activity": "Activity level",
+    "isMe": "This is me",
+    "isMeHelper": "Links this profile to your account.",
+    "saveChanges": "Save changes",
+    "add": "Add member",
+    "cancel": "Cancel",
+    "errors": {
+      "nameRequired": "Please enter a name.",
+      "nameTooLong": "Use 60 characters or fewer.",
+      "dobRequired": "Please enter a date of birth.",
+      "dobInvalid": "Enter a real date: day, month and four-digit year.",
+      "dobFuture": "The date of birth can't be in the future.",
+      "dobTooOld": "Please check the year.",
+      "heightRange": "Check the height; it looks out of range.",
+      "weightRange": "Check the weight; it looks out of range.",
+      "meMustBeAdult": "Your own profile must be an adult. Untick “This is me” for a child."
+    }
+  },
+  "activity": {
+    "sedentary": {
+      "title": "Mostly sitting",
+      "description": "Desk work, little walking."
+    },
+    "light": {
+      "title": "Lightly active",
+      "description": "Some walking or light chores daily."
+    },
+    "moderate": {
+      "title": "Moderately active",
+      "description": "On your feet much of the day or regular exercise."
+    },
+    "active": {
+      "title": "Active",
+      "description": "Physical work or exercise most days."
+    },
+    "very_active": {
+      "title": "Very active",
+      "description": "Heavy physical work or daily training."
+    }
+  },
+  "lifeStage": {
+    "infant": "Infant",
+    "toddler": "Toddler",
+    "child": "Child",
+    "teen": "Teen",
+    "adult": "Adult",
+    "older_adult": "Older adult"
+  }
+}

@@ -12,6 +12,11 @@
     "chatThread": "Ask Thuluth",
     "familyManagement": "Family",
     "moreHome": "More",
-    "debug": "Debug tools"
+    "debug": "Debug tools",
+    "caregivers": "People and access",
+    "settings": "Settings",
+    "settingsProfile": "Profile",
+    "acceptInvite": "Invitation",
+    "inviteCaregiver": "Invite someone"
   }
 }
