@@ -1,3 +1,6 @@
 {
-  "CFBundleDisplayName": "Thuluth"
+  "CFBundleDisplayName": "Thuluth",
+  "NSCameraUsageDescription": "Thuluth uses the camera when you photograph a meal so it can suggest what is on the plate.",
+  "NSPhotoLibraryUsageDescription": "Thuluth uses a photo you choose to log a meal and suggest what is on the plate.",
+  "NSMicrophoneUsageDescription": "Thuluth uses the microphone when you ask the assistant a question by voice. The recording is turned into text and not kept."
 }

@@ -18,6 +18,7 @@ import { useSessionStore, type SessionStatus } from '@/stores/use-session-store'
 
 import { AuthStack } from './auth-stack';
 import { MainTabs } from './main-tabs';
+import { useStackMotion } from './motion';
 import { OnboardingStack } from './onboarding-stack';
 import type { RootStackParamList } from './types';
 
@@ -58,25 +59,26 @@ export function RootNavigator() {
   const status = useSessionStore((s) => s.status);
   const branch = branchForStatus(status);
   const signedIn = branch === 'Onboarding' || branch === 'Main';
+  const motion = useStackMotion();
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-      {branch === 'Boot' ? <Stack.Screen name="Boot" component={BootScreen} /> : null}
+      {branch === 'Boot' ? <Stack.Screen name="Boot" getComponent={() => BootScreen} /> : null}
       {branch === 'Auth' ? <Stack.Screen name="Auth" component={AuthStack} /> : null}
       {branch === 'Onboarding' ? (
         <Stack.Screen name="Onboarding" component={OnboardingStack} />
       ) : null}
       {branch === 'Main' ? <Stack.Screen name="Main" component={MainTabs} /> : null}
       {signedIn ? (
-        <Stack.Group screenOptions={{ presentation: 'modal', headerShown: true }}>
+        <Stack.Group screenOptions={{ presentation: 'modal', headerShown: true, ...motion }}>
           <Stack.Screen
             name="AcceptInvite"
-            component={AcceptInviteScreen}
+            getComponent={() => AcceptInviteScreen}
             options={{ title: t('screens.acceptInvite') }}
           />
           <Stack.Screen
             name="SourceDetailSheet"
-            component={SourceDetailSheet}
+            getComponent={() => SourceDetailSheet}
             options={{
               title: t('screens.sourceDetail'),
               presentation: 'formSheet',
@@ -87,17 +89,17 @@ export function RootNavigator() {
             <>
               <Stack.Screen
                 name="InviteCaregiverModal"
-                component={InviteCaregiverScreen}
+                getComponent={() => InviteCaregiverScreen}
                 options={{ title: t('screens.inviteCaregiver') }}
               />
               <Stack.Screen
                 name="PlanGenerationProgress"
-                component={PlanGenerationProgressScreen}
+                getComponent={() => PlanGenerationProgressScreen}
                 options={{ title: t('screens.planGenerationProgress'), gestureEnabled: true }}
               />
               <Stack.Screen
                 name="SwapMealSheet"
-                component={SwapMealSheet}
+                getComponent={() => SwapMealSheet}
                 options={{
                   title: t('screens.swapMeal'),
                   presentation: 'formSheet',
@@ -106,7 +108,7 @@ export function RootNavigator() {
               />
               <Stack.Screen
                 name="FastLogSheet"
-                component={FastLogSheet}
+                getComponent={() => FastLogSheet}
                 options={{
                   title: t('screens.fastLog'),
                   presentation: 'formSheet',
@@ -115,32 +117,32 @@ export function RootNavigator() {
               />
               <Stack.Screen
                 name="PaywallModal"
-                component={PaywallScreen}
+                getComponent={() => PaywallScreen}
                 options={{ title: t('screens.paywall'), headerShown: false }}
               />
               <Stack.Screen
                 name="MealPhotoCapture"
-                component={MealPhotoCaptureScreen}
+                getComponent={() => MealPhotoCaptureScreen}
                 options={{ title: t('screens.mealPhoto') }}
               />
               <Stack.Screen
                 name="MealAnalysisResult"
-                component={MealAnalysisResultScreen}
+                getComponent={() => MealAnalysisResultScreen}
                 options={{ title: t('screens.mealAnalysis') }}
               />
               <Stack.Screen
                 name="RamadanSetup"
-                component={RamadanSetupScreen}
+                getComponent={() => RamadanSetupScreen}
                 options={{ title: t('screens.ramadanSetup') }}
               />
               <Stack.Screen
                 name="AddGrowthMeasurementModal"
-                component={AddGrowthMeasurementScreen}
+                getComponent={() => AddGrowthMeasurementScreen}
                 options={{ title: t('screens.addGrowthMeasurement') }}
               />
               <Stack.Screen
                 name="LogExposureSheet"
-                component={LogExposureSheet}
+                getComponent={() => LogExposureSheet}
                 options={{
                   title: t('screens.logExposure'),
                   presentation: 'formSheet',
@@ -149,7 +151,7 @@ export function RootNavigator() {
               />
               <Stack.Screen
                 name="CreateExportSheet"
-                component={CreateExportSheet}
+                getComponent={() => CreateExportSheet}
                 options={{
                   title: t('screens.createExport'),
                   presentation: 'formSheet',
@@ -158,7 +160,7 @@ export function RootNavigator() {
               />
               <Stack.Screen
                 name="ReportSourceSheet"
-                component={ReportSourceSheet}
+                getComponent={() => ReportSourceSheet}
                 options={{
                   title: t('screens.reportSource'),
                   presentation: 'formSheet',
@@ -167,7 +169,7 @@ export function RootNavigator() {
               />
               <Stack.Screen
                 name="DehydrationCheckSheet"
-                component={DehydrationCheckSheet}
+                getComponent={() => DehydrationCheckSheet}
                 options={{
                   title: t('screens.dehydrationCheck'),
                   presentation: 'formSheet',

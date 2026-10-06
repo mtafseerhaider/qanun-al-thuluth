@@ -2,6 +2,7 @@ import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, type ReactNode } from 'react';
 
+import { markStartup } from '@/lib/perf/startup';
 import { captureException } from '@/lib/sentry/init';
 import { FONT_ASSETS } from '@/theme/font-assets';
 
@@ -22,6 +23,7 @@ export function SplashGate({ children }: { children: ReactNode }) {
       } catch (error) {
         captureException(error, { tags: { phase: 'fonts' } });
       }
+      markStartup('fonts_ready');
       if (!cancelled) setReady(true);
     })();
     return () => {

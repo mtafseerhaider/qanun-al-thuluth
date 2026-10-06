@@ -67,5 +67,10 @@
     "title": "Early version",
     "body": "Tell us what works and what doesn't.",
     "open": "Send feedback"
+  },
+  "accessibility": {
+    "title": "Accessibility",
+    "sensoryCalm": "Sensory-calm mode",
+    "sensoryCalmHint": "Softer colours, no motion and no sounds. Layouts stay the same. Applies to this device."
   }
 }

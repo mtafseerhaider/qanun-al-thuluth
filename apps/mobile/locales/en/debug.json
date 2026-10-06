@@ -23,5 +23,11 @@
     "signedIn": "Signed in as {{userId}}",
     "signedOut": "No Supabase session. Analytics needs one.",
     "signIn": "Sign in as seeded dev user (local)"
+  },
+  "startup": {
+    "title": "Cold start",
+    "mark": "{{name}}: {{ms}} ms",
+    "native": "Process start to JS: {{ms}} ms",
+    "none": "No marks yet. Open Today after a cold start."
   }
 }

@@ -190,6 +190,7 @@ export function GroceryListDetailScreen({ route }: PlanScreenProps<'GroceryListD
             accessibilityRole="button"
             accessibilityLabel={t('grocery:item.editA11y', { label: item.label })}
             hitSlop={8}
+            className="min-h-touch justify-center px-2"
             onPress={() => setEditing(editing === item.id ? null : item.id)}
             testID={`grocery-detail.item.${i}.edit`}
           >

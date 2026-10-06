@@ -21,6 +21,8 @@ describe('privacy rules', () => {
       true,
     );
     expect(needsReauth(new AppError('UNAUTHENTICATED', 'x'))).toBe(false);
+    // S7: servers answer REAUTH_REQUIRED to clients that send the client-caps header.
+    expect(needsReauth(new AppError('REAUTH_REQUIRED', 'x'))).toBe(true);
     expect(needsReauth(new Error('x'))).toBe(false);
   });
 

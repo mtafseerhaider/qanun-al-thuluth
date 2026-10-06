@@ -20,17 +20,15 @@ export type { EventName, EventProps } from './events';
 export type { FlushResult } from './queue';
 
 /**
- * Direct table insert for Sprint 0 (no `.select()`: authenticated has no SELECT on analytics_events).
- * Swap the body for `supabase.rpc('track_events', { p_events })` when migration 0024 lands (18 §10).
+ * RPC `track_events(p_events)` (18 §10, S7-12). The server allow-lists events and props, ignores
+ * duplicate event ids (retries are safe) and reads app version and platform from the
+ * x-app-version / x-platform headers set on the Supabase client (lib/supabase/client.ts).
  */
 export const supabaseTransport: AnalyticsTransport = {
   async send(rows: AnalyticsRow[]) {
     if (!supabase) throw new Error('Supabase is not configured');
-    // Props are validated JSON by the event registry; widen to the generated Json type.
-    const { error } = await supabase
-      .from('analytics_events')
-      .insert(rows as (AnalyticsRow & { props: Json })[]);
-    if (error) throw new Error(`analytics insert failed: ${error.code ?? ''} ${error.message}`);
+    const { error } = await supabase.rpc('track_events', { p_events: rows as unknown as Json });
+    if (error) throw new Error(`track_events failed: ${error.code ?? ''} ${error.message}`);
   },
 };
 

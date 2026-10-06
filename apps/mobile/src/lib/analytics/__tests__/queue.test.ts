@@ -1,3 +1,5 @@
+import { TrackEventInput } from '@shared/contracts';
+
 import {
   createAnalyticsClient,
   STORAGE_KEY,
@@ -24,6 +26,7 @@ function setup(
     batchSize?: number;
     failing?: boolean;
     maxQueue?: number;
+    sessionId?: string;
   } = {},
 ) {
   const store = new MemoryStore();
@@ -41,7 +44,7 @@ function setup(
     transport,
     uuid: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`,
     now: () => clock,
-    sessionId: 'session-1',
+    sessionId: overrides.sessionId ?? 'session-1',
     getContext: () => ({
       userId: overrides.userId === undefined ? 'user-1' : overrides.userId,
       householdId: null,
@@ -86,24 +89,26 @@ describe('analytics queue', () => {
     expect(client.size()).toBe(0);
   });
 
-  it('maps queued events to analytics_events rows with context in props', async () => {
+  it('maps queued events to track_events inputs (S7-12 contract)', async () => {
     const { client, sent } = setup();
     client.track('screen_viewed', { screen: 'Dashboard' }, { locale: 'ur' });
     await client.flush();
+    // session-1 is not a UUID, so it is left out rather than failing the server's Uuid check.
     expect(sent[0]?.[0]).toEqual({
-      user_id: 'user-1',
-      household_id: null,
+      event_id: '00000000-0000-4000-8000-000000000001',
       event: 'screen_viewed',
-      props: {
-        screen: 'Dashboard',
-        event_id: '00000000-0000-4000-8000-000000000001',
-        session_id: 'session-1',
-        locale: 'ur',
-      },
+      props: { screen: 'Dashboard' },
       occurred_at: '2026-10-06T10:00:00.000Z',
-      app_version: '1.0.0',
-      platform: 'android',
+      household_id: null,
     });
+    expect(TrackEventInput.safeParse(sent[0]?.[0]).success).toBe(true);
+  });
+
+  it('sends the session id at the top level when it is a UUID', async () => {
+    const { client, sent } = setup({ sessionId: '00000000-0000-4000-8000-0000000000aa' });
+    client.track('screen_viewed', { screen: 'Dashboard' });
+    await client.flush();
+    expect(sent[0]?.[0]?.session_id).toBe('00000000-0000-4000-8000-0000000000aa');
   });
 
   it('splits large queues into batches of at most 50', async () => {

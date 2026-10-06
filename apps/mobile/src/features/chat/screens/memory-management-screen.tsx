@@ -5,7 +5,8 @@ import { Switch, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InlineMessage } from '@/components/ui/inline-message';
-import { Screen } from '@/components/ui/screen';
+import { ListScreen } from '@/components/ui/list-screen';
+import { ErrorRetry, LoadingRow } from '@/components/ui/query-states';
 import { Text } from '@/components/ui/text';
 import { useFamilyMembers } from '@/features/family';
 import { DowngradeBanner, UpsellCard, useEntitlements, usePremium } from '@/features/subscription';
@@ -28,7 +29,7 @@ import {
  * and stay deletable (17 §10.3). Health facts are never stored as memories.
  */
 export function MemoryManagementScreen(_props: MoreScreenProps<'SettingsMemory'>) {
-  const { t } = useTranslation(['chat', 'errors']);
+  const { t } = useTranslation(['chat', 'errors', 'common']);
   const householdId = useActiveHouseholdStore((s) => s.activeHouseholdId);
   const canEdit = useActiveHouseholdStore(selectCanEdit);
   const online = useIsOnline();
@@ -44,122 +45,140 @@ export function MemoryManagementScreen(_props: MoreScreenProps<'SettingsMemory'>
     id ? ((members.data ?? []).find((m) => m.id === id)?.name ?? null) : null;
   const list = memories.data ?? [];
 
-  return (
-    <Screen
-      testID="memory.screen"
-      refreshing={memories.isRefetching}
-      onRefresh={() => void memories.refetch()}
-    >
-      <Text tone="muted">{t('chat:memories.intro')}</Text>
-
-      <Card variant="outlined">
-        <View className="flex-row items-center justify-between gap-3">
-          <View className="flex-1 gap-1">
-            <Text variant="bodyStrong">{t('chat:memories.toggle')}</Text>
-            <Text variant="caption" tone="muted">
-              {t('chat:memories.toggleHint')}
-            </Text>
-          </View>
-          <Switch
-            value={memory.enabled}
-            disabled={!online || memory.loading}
-            onValueChange={(v) => memory.toggle.mutate(v)}
-            accessibilityLabel={t('chat:memories.toggle')}
-            testID="memory.toggle"
-          />
-        </View>
-      </Card>
-
-      {!premium ? (
-        list.length > 0 ? (
-          <DowngradeBanner notice="expired_read_only" testID="memory.downgrade" />
-        ) : (
-          <UpsellCard
-            trigger="chat_quota"
-            title={t('chat:memories.upsellTitle')}
-            body={t('chat:memories.upsellBody')}
-            testID="memory.upsell"
-          />
-        )
-      ) : null}
-      {ent.data && !premium && list.length > 0 ? (
+  const renderRow = (m: (typeof list)[number], i: number) => (
+    <Card variant="outlined" padding="sm" testID={`memory.row-${i}`}>
+      <Text>{m.fact}</Text>
+      {name(m.familyMemberId) ? (
         <Text variant="caption" tone="muted">
-          {t('chat:memories.notUsed')}
+          {t('chat:memories.about', { name: name(m.familyMemberId) })}
         </Text>
       ) : null}
+      <Button
+        label={t('chat:memories.delete')}
+        size="sm"
+        variant="ghost"
+        className="self-start"
+        disabled={!online || del.isPending}
+        accessibilityLabel={t('chat:memories.deleteA11y', { fact: m.fact })}
+        onPress={() => del.mutate(m.id)}
+        testID={`memory.row-${i}.delete`}
+      />
+    </Card>
+  );
 
-      {!canEdit ? <InlineMessage tone="info" message={t('chat:memories.viewer')} /> : null}
-      {memories.isError ? (
-        <InlineMessage tone="danger" message={t(`errors:${errorKeyFor(memories.error)}`)} />
-      ) : null}
-      {del.isError || clear.isError ? (
-        <InlineMessage
-          tone="danger"
-          message={t(`errors:${errorKeyFor(del.error ?? clear.error)}`)}
-        />
-      ) : null}
+  return (
+    <ListScreen
+      testID="memory.screen"
+      data={list}
+      keyExtractor={(m) => m.id}
+      renderItem={renderRow}
+      extraData={{ online, deleting: del.isPending, members: members.data }}
+      refreshing={memories.isRefetching}
+      onRefresh={() => void memories.refetch()}
+      header={
+        <>
+          <Text tone="muted">{t('chat:memories.intro')}</Text>
 
-      {canEdit && !memories.isLoading && list.length === 0 ? (
-        <Card variant="filled" testID="memory.empty">
-          <Text tone="muted">{t('chat:memories.empty')}</Text>
-        </Card>
-      ) : null}
-
-      <View className="gap-3">
-        {list.map((m, i) => (
-          <Card key={m.id} variant="outlined" padding="sm" testID={`memory.row-${i}`}>
-            <Text>{m.fact}</Text>
-            {name(m.familyMemberId) ? (
-              <Text variant="caption" tone="muted">
-                {t('chat:memories.about', { name: name(m.familyMemberId) })}
-              </Text>
-            ) : null}
-            <Button
-              label={t('chat:memories.delete')}
-              size="sm"
-              variant="ghost"
-              className="self-start"
-              disabled={!online || del.isPending}
-              accessibilityLabel={t('chat:memories.deleteA11y', { fact: m.fact })}
-              onPress={() => del.mutate(m.id)}
-              testID={`memory.row-${i}.delete`}
-            />
-          </Card>
-        ))}
-      </View>
-
-      {list.length > 0 ? (
-        confirmClear ? (
-          <Card variant="outlined" testID="memory.clear-confirm">
-            <Text>{t('chat:memories.clearConfirm')}</Text>
-            <View className="flex-row gap-2">
-              <Button
-                label={t('chat:memories.clear')}
-                variant="destructive"
-                size="sm"
-                disabled={!online}
-                loading={clear.isPending}
-                onPress={() => clear.mutate(undefined, { onSettled: () => setConfirmClear(false) })}
-                testID="memory.clear-confirm.yes"
-              />
-              <Button
-                label={t('chat:sessions.cancel')}
-                variant="ghost"
-                size="sm"
-                onPress={() => setConfirmClear(false)}
+          <Card variant="outlined">
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-1 gap-1">
+                <Text variant="bodyStrong">{t('chat:memories.toggle')}</Text>
+                <Text variant="caption" tone="muted">
+                  {t('chat:memories.toggleHint')}
+                </Text>
+              </View>
+              <Switch
+                value={memory.enabled}
+                disabled={!online || memory.loading}
+                onValueChange={(v) => memory.toggle.mutate(v)}
+                accessibilityLabel={t('chat:memories.toggle')}
+                testID="memory.toggle"
               />
             </View>
           </Card>
-        ) : (
-          <Button
-            label={t('chat:memories.clear')}
-            variant="destructive"
-            disabled={!online}
-            onPress={() => setConfirmClear(true)}
-            testID="memory.clear"
-          />
-        )
-      ) : null}
-    </Screen>
+
+          {!premium ? (
+            list.length > 0 ? (
+              <DowngradeBanner notice="expired_read_only" testID="memory.downgrade" />
+            ) : (
+              <UpsellCard
+                trigger="chat_quota"
+                title={t('chat:memories.upsellTitle')}
+                body={t('chat:memories.upsellBody')}
+                testID="memory.upsell"
+              />
+            )
+          ) : null}
+          {ent.data && !premium && list.length > 0 ? (
+            <Text variant="caption" tone="muted">
+              {t('chat:memories.notUsed')}
+            </Text>
+          ) : null}
+
+          {!canEdit ? <InlineMessage tone="info" message={t('chat:memories.viewer')} /> : null}
+          {memories.isError ? (
+            <ErrorRetry
+              message={t(`errors:${errorKeyFor(memories.error)}`)}
+              retryLabel={t('common:retry')}
+              onRetry={() => void memories.refetch()}
+              retrying={memories.isFetching}
+              testID="memory.error"
+            />
+          ) : null}
+          {memories.isLoading ? (
+            <LoadingRow label={t('common:loading')} testID="memory.loading" />
+          ) : null}
+          {del.isError || clear.isError ? (
+            <InlineMessage
+              tone="danger"
+              message={t(`errors:${errorKeyFor(del.error ?? clear.error)}`)}
+            />
+          ) : null}
+        </>
+      }
+      empty={
+        canEdit && !memories.isLoading && !memories.isError ? (
+          <Card variant="filled" testID="memory.empty">
+            <Text tone="muted">{t('chat:memories.empty')}</Text>
+          </Card>
+        ) : null
+      }
+      footer={
+        list.length > 0 ? (
+          confirmClear ? (
+            <Card variant="outlined" testID="memory.clear-confirm">
+              <Text>{t('chat:memories.clearConfirm')}</Text>
+              <View className="flex-row gap-2">
+                <Button
+                  label={t('chat:memories.clear')}
+                  variant="destructive"
+                  size="sm"
+                  disabled={!online}
+                  loading={clear.isPending}
+                  onPress={() =>
+                    clear.mutate(undefined, { onSettled: () => setConfirmClear(false) })
+                  }
+                  testID="memory.clear-confirm.yes"
+                />
+                <Button
+                  label={t('chat:sessions.cancel')}
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => setConfirmClear(false)}
+                />
+              </View>
+            </Card>
+          ) : (
+            <Button
+              label={t('chat:memories.clear')}
+              variant="destructive"
+              disabled={!online}
+              onPress={() => setConfirmClear(true)}
+              testID="memory.clear"
+            />
+          )
+        ) : null
+      }
+    />
   );
 }

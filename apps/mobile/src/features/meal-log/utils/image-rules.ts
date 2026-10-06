@@ -58,3 +58,11 @@ export function mealPhotoPath(
   const mm = String(at.getUTCMonth() + 1).padStart(2, '0');
   return `${householdId}/${memberId}/${yyyy}/${mm}/${mealLogId}.jpg`;
 }
+
+/** A Storage upload error meaning the object already exists (409 Duplicate): the replay is done. */
+export function isAlreadyUploaded(error: { message?: string; statusCode?: unknown }): boolean {
+  return (
+    String(error.statusCode ?? '') === '409' ||
+    /already exists|duplicate/i.test(error.message ?? '')
+  );
+}

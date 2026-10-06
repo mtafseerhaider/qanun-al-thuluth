@@ -65,6 +65,7 @@ export function CitationChips({
             }}
             accessibilityRole="button"
             accessibilityLabel={t('chat:citationA11y', { label })}
+            hitSlop={4}
             className="min-h-control-sm justify-center rounded-full border border-primary px-3 py-1"
             {...(testID ? { testID: `${testID}.${c.marker}` } : {})}
           >
@@ -162,6 +163,7 @@ export function FollowUpChips({
             }}
             accessibilityRole="button"
             accessibilityLabel={s}
+            hitSlop={4}
             className={cn(
               'min-h-control-sm justify-center rounded-full border border-line-strong bg-surface-raised px-3 py-1',
               disabled && 'opacity-disabled',

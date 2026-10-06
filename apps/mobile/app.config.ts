@@ -35,6 +35,14 @@ const nameSuffix: Record<AppEnv, string> = {
 const VERSION = '1.0.0';
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID;
 const SPLASH_BACKGROUND = '#F7F3EA';
+/** iOS permission purpose strings (English; ur in locales/ur/native.json). */
+const PERMISSION_COPY = {
+  camera:
+    'Thuluth uses the camera when you photograph a meal so it can suggest what is on the plate.',
+  photos: 'Thuluth uses a photo you choose to log a meal and suggest what is on the plate.',
+  microphone:
+    'Thuluth uses the microphone when you ask the assistant a question by voice. The recording is turned into text and not kept.',
+} as const;
 const SPLASH_BACKGROUND_DARK = '#0F1513';
 
 /** `123-abc.apps.googleusercontent.com` -> `com.googleusercontent.apps.123-abc` (11 §5.2). */
@@ -84,6 +92,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/icons/adaptive-icon.png',
       backgroundColor: SPLASH_BACKGROUND,
     },
+    // S7-03 (MASVS-STORAGE): keep the encrypted cache and drafts out of adb and cloud backups; the MMKV key in
+    // the Keystore is never restored, so a restored copy would be unreadable anyway.
+    allowBackup: false,
     blockedPermissions: ['android.permission.READ_EXTERNAL_STORAGE'],
     intentFilters: [
       {
@@ -113,6 +124,26 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-build-properties', { android: { minSdkVersion: 26 } }],
     'expo-localization',
     'expo-secure-store',
+    // S7-09: purpose strings Apple reviews (5.1.1) for meal photos and voice questions. expo-audio
+    // also adds RECORD_AUDIO on Android; image-picker must not block it. Urdu copies live in
+    // locales/ur/native.json.
+    [
+      'expo-image-picker',
+      {
+        photosPermission: PERMISSION_COPY.photos,
+        cameraPermission: PERMISSION_COPY.camera,
+        microphonePermission: PERMISSION_COPY.microphone,
+      },
+    ],
+    // No background audio: avoids the Play foreground-service (media playback) declaration.
+    [
+      'expo-audio',
+      {
+        microphonePermission: PERMISSION_COPY.microphone,
+        enableBackgroundPlayback: false,
+        enableBackgroundRecording: false,
+      },
+    ],
     'expo-apple-authentication',
     ...(GOOGLE_IOS_URL_SCHEME
       ? [

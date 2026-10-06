@@ -20,6 +20,17 @@ export interface ScreenProps extends BaseProps {
   onRefresh?: () => void;
 }
 
+/** Safe-area padding for the edges a screen owns (shared by Screen and ListScreen). */
+export function useEdgePadding(edges: readonly Edge[]) {
+  const insets = useSafeAreaInsets();
+  return {
+    paddingTop: edges.includes('top') ? insets.top : 0,
+    paddingBottom: edges.includes('bottom') ? insets.bottom : 0,
+    paddingStart: edges.includes('left') ? insets.left : 0,
+    paddingEnd: edges.includes('right') ? insets.right : 0,
+  };
+}
+
 /** Screen shell: safe area, surface background, keyboard avoidance and a header-role title (08 §4.13). */
 export function Screen({
   children,
@@ -33,13 +44,7 @@ export function Screen({
   onRefresh,
   testID,
 }: ScreenProps) {
-  const insets = useSafeAreaInsets();
-  const padding = {
-    paddingTop: edges.includes('top') ? insets.top : 0,
-    paddingBottom: edges.includes('bottom') ? insets.bottom : 0,
-    paddingStart: edges.includes('left') ? insets.left : 0,
-    paddingEnd: edges.includes('right') ? insets.right : 0,
-  };
+  const padding = useEdgePadding(edges);
 
   const header = title ? (
     <View className="flex-row items-center justify-between gap-3">

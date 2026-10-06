@@ -37,6 +37,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { track } from '@/lib/analytics/track';
 import { dayNumber } from '@/lib/dates/local-date';
 import { useOutboxStore } from '@/lib/offline/outbox';
+import { useStartupMark } from '@/lib/perf/startup';
 import { errorKeyFor } from '@/lib/supabase/error-mapping';
 import type { TodayScreenProps } from '@/navigation/types';
 import { selectCanEdit, useActiveHouseholdStore } from '@/stores/use-active-household-store';
@@ -80,6 +81,8 @@ export function DashboardScreen() {
   const pendingCount = useOutboxStore((s) => s.entries.length);
   const undo = useUndo();
   const lang = i18n.language;
+  // Cold-start budget point (01 §9.1): Today shows the plan state from cache or the network.
+  useStartupMark('today_interactive', !active.isLoading && !meals.isLoading);
 
   const generating = (plans.data ?? []).find((p) => p.status === 'generating') ?? null;
   const latest = plans.data?.[0] ?? null;

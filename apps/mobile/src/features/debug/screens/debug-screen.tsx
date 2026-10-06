@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { analytics, flushAnalytics, setAnalyticsContext, track } from '@/lib/analytics/track';
 import { env, isSupabaseConfigured } from '@/lib/env';
+import { getStartupReport } from '@/lib/perf/startup';
 import { captureException, isSentryEnabled } from '@/lib/sentry/init';
 import { getCurrentUserId } from '@/lib/supabase/client';
 import { DEV_SEED_HOUSEHOLD_ID, signInAsDevSeedUser } from '@/lib/supabase/dev-auth';
@@ -24,6 +25,7 @@ export function DebugScreen() {
   const [flushing, setFlushing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [startup] = useState(getStartupReport);
 
   useEffect(() => {
     void getCurrentUserId().then(setUserId);
@@ -111,6 +113,22 @@ export function DebugScreen() {
         />
         {analyticsStatus ? (
           <Text testID="debug-tools.analytics-status">{analyticsStatus}</Text>
+        ) : null}
+      </Card>
+
+      <Card header={<Text variant="heading">{t('debug:startup.title')}</Text>}>
+        {Object.keys(startup.sinceJsStart).length === 0 ? (
+          <Text tone="muted">{t('debug:startup.none')}</Text>
+        ) : null}
+        {Object.entries(startup.sinceJsStart).map(([name, ms]) => (
+          <Text key={name} variant="caption" tone="muted" testID={`debug-tools.startup.${name}`}>
+            {t('debug:startup.mark', { name, ms })}
+          </Text>
+        ))}
+        {startup.nativeToJsStart !== null ? (
+          <Text variant="caption" tone="muted">
+            {t('debug:startup.native', { ms: startup.nativeToJsStart })}
+          </Text>
         ) : null}
       </Card>
 

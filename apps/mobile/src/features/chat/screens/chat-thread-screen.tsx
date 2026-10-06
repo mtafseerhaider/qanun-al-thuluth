@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChipGroup } from '@/components/ui/chip';
 import { InlineMessage } from '@/components/ui/inline-message';
+import { ErrorRetry, LoadingRow } from '@/components/ui/query-states';
 import { Text } from '@/components/ui/text';
 import { hasCurrentConsent, useConsents } from '@/features/auth';
 import { useFamilyMembers } from '@/features/family';
@@ -14,7 +16,9 @@ import { useHousehold } from '@/features/household';
 import { usePaywall, usePremium } from '@/features/subscription';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useIsOnline } from '@/hooks/use-is-online';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { track } from '@/lib/analytics/track';
+import { errorKeyFor } from '@/lib/supabase/error-mapping';
 import type { ChatScreenProps } from '@/navigation/types';
 import { selectCanEdit, useActiveHouseholdStore } from '@/stores/use-active-household-store';
 
@@ -23,12 +27,23 @@ import { QuotaIndicator, QuotaReachedCard } from '../components/chat-parts';
 import { ChatComposer } from '../components/chat-composer';
 import { useChatMessages, useChatSessions, useChatThread, useMemories } from '../hooks/use-chat';
 import { useProposalActions } from '../hooks/use-proposals';
-import { isTurnActive, newSentences } from '../utils/chat-stream';
+import type { ChatMessageView } from '../api/chat-api';
+import { isTurnActive, newSentences, type ChatTurn } from '../utils/chat-stream';
 import { sourceSheetParams } from '../utils/citation-rules';
 import { quotaDisplay } from '../utils/quota-rules';
 
 const STARTERS = ['picky', 'suhoor', 'honey', 'iron'] as const;
 const ALL = 'all';
+const MESSAGES_PADDING = { paddingHorizontal: 16, paddingVertical: 16 } as const;
+
+type ChatRow =
+  { kind: 'past'; message: ChatMessageView } | { kind: 'turn'; turn: ChatTurn; index: number };
+
+const rowKey = (row: ChatRow) => (row.kind === 'past' ? row.message.id : row.turn.clientMessageId);
+
+function MessageGap() {
+  return <View className="h-4" />;
+}
 
 /**
  * C2 AI Nutrition Chat (02 §7.7.2, 24 S5-05, FR-CHAT-01, -06, -07, -09, -11, -12): streamed answers
@@ -38,7 +53,7 @@ const ALL = 'all';
  * photo (premium). Offline the history stays readable and the composer is disabled.
  */
 export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThread'>) {
-  const { t, i18n } = useTranslation(['chat', 'errors']);
+  const { t, i18n } = useTranslation(['chat', 'errors', 'common']);
   const insets = useSafeAreaInsets();
   const householdId = useActiveHouseholdStore((s) => s.activeHouseholdId);
   const canEdit = useActiveHouseholdStore(selectCanEdit);
@@ -58,7 +73,8 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
   const proposals = useProposalActions(householdId);
   const [draft, setDraft] = useState(route.params?.prefill ?? '');
   const [focus, setFocus] = useState<string>(route.params?.familyMemberId ?? ALL);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<FlashListRef<ChatRow>>(null);
+  const reduceMotion = useReducedMotion();
   const atBottom = useRef(true);
   const [newReply, setNewReply] = useState(false);
   const announced = useRef({ id: '', length: 0, at: 0 });
@@ -137,6 +153,55 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
 
   const disabled = !online || !canEdit || !chatOn || !householdId;
 
+  // History then live turns, virtualized (24 S7-01): long chats mount only what is on screen.
+  const rows = useMemo<ChatRow[]>(
+    () => [
+      ...past.map((m) => ({ kind: 'past' as const, message: m })),
+      ...thread.turns.map((turn, index) => ({ kind: 'turn' as const, turn, index })),
+    ],
+    [past, thread.turns],
+  );
+  const rowContext = { canEdit, online, country, streaming, proposals };
+  const renderRow = ({ item }: { item: ChatRow }) => {
+    if (item.kind === 'past') {
+      const m = item.message;
+      return m.role === 'user' ? (
+        <UserBubble text={m.content} testID={`chat.history.${m.id}`} />
+      ) : (
+        <AssistantText text={m.content} testID={`chat.history.${m.id}`} />
+      );
+    }
+    const { turn, index: i } = item;
+    return (
+      <View className="gap-3">
+        <UserBubble text={turn.userText} testID={`chat.turn-${i}.user`} />
+        <AssistantTurn
+          turn={turn}
+          countryCode={country}
+          canEdit={canEdit}
+          online={online}
+          actionFor={proposals.actionFor}
+          memberName={proposals.memberName}
+          onConfirm={(p) =>
+            void proposals.confirm(p, (status, code) =>
+              thread.setProposal(turn.clientMessageId, p.id, status, code),
+            )
+          }
+          onDismiss={(p) =>
+            proposals.dismiss(p, (status) => thread.setProposal(turn.clientMessageId, p.id, status))
+          }
+          onReview={proposals.review}
+          onRetry={() => thread.retry(turn.clientMessageId)}
+          onOpenCitation={(c) => navigation.navigate('SourceDetailSheet', sourceSheetParams(c))}
+          onFollowUp={(text) => send(text)}
+          onPaywall={() => openPaywall('chat_quota')}
+          busy={streaming}
+          testID={`chat.turn-${i}.assistant`}
+        />
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -186,10 +251,14 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
         ) : null}
       </View>
 
-      <ScrollView
+      <FlashList
         ref={scroll}
-        className="flex-1"
-        contentContainerClassName="gap-4 px-4 py-4"
+        data={rows}
+        keyExtractor={rowKey}
+        renderItem={renderRow}
+        extraData={rowContext}
+        ItemSeparatorComponent={MessageGap}
+        contentContainerStyle={MESSAGES_PADDING}
         keyboardShouldPersistTaps="handled"
         onScroll={(e) => {
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
@@ -198,86 +267,64 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
         }}
         scrollEventThrottle={100}
         onContentSizeChange={() => {
-          if (atBottom.current) scroll.current?.scrollToEnd({ animated: true });
+          if (atBottom.current) scroll.current?.scrollToEnd({ animated: !reduceMotion });
           else if (streaming) setNewReply(true);
         }}
+        ListHeaderComponent={
+          <View className="gap-4 pb-4">
+            {history.hasNextPage ? (
+              <Button
+                label={t('chat:loadEarlier')}
+                size="sm"
+                variant="ghost"
+                loading={history.isFetchingNextPage}
+                onPress={() => void history.fetchNextPage()}
+                testID="chat-thread.load-earlier"
+              />
+            ) : null}
+
+            {!aiConsent ? (
+              <Card variant="filled" testID="chat-thread.no-consent">
+                <Text variant="bodyStrong">{t('chat:consent.title')}</Text>
+                <Text tone="muted">{t('chat:consent.body')}</Text>
+              </Card>
+            ) : null}
+
+            {history.isLoading ? (
+              <LoadingRow label={t('common:loading')} testID="chat-thread.loading" />
+            ) : null}
+            {history.isError && !history.data ? (
+              <ErrorRetry
+                message={t(`errors:${errorKeyFor(history.error)}`)}
+                retryLabel={t('common:retry')}
+                onRetry={() => void history.refetch()}
+                retrying={history.isFetching}
+                testID="chat-thread.history-error"
+              />
+            ) : null}
+
+            {rows.length === 0 && aiConsent && !history.isLoading && !history.isError ? (
+              <View className="gap-3" testID="chat-thread.empty">
+                <Text variant="title">{t('chat:empty.title')}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {STARTERS.map((s) => (
+                    <Button
+                      key={s}
+                      label={t(`chat:empty.starters.${s}`)}
+                      size="sm"
+                      variant="secondary"
+                      disabled={disabled}
+                      onPress={() => send(t(`chat:empty.starters.${s}`))}
+                      testID={`chat-thread.starter.${s}`}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+          </View>
+        }
         testID="chat-thread.messages"
-      >
-        {history.hasNextPage ? (
-          <Button
-            label={t('chat:loadEarlier')}
-            size="sm"
-            variant="ghost"
-            loading={history.isFetchingNextPage}
-            onPress={() => void history.fetchNextPage()}
-          />
-        ) : null}
-
-        {!aiConsent ? (
-          <Card variant="filled" testID="chat-thread.no-consent">
-            <Text variant="bodyStrong">{t('chat:consent.title')}</Text>
-            <Text tone="muted">{t('chat:consent.body')}</Text>
-          </Card>
-        ) : null}
-
-        {past.length === 0 && thread.turns.length === 0 && aiConsent ? (
-          <View className="gap-3" testID="chat-thread.empty">
-            <Text variant="title">{t('chat:empty.title')}</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {STARTERS.map((s) => (
-                <Button
-                  key={s}
-                  label={t(`chat:empty.starters.${s}`)}
-                  size="sm"
-                  variant="secondary"
-                  disabled={disabled}
-                  onPress={() => send(t(`chat:empty.starters.${s}`))}
-                  testID={`chat-thread.starter.${s}`}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {past.map((m) =>
-          m.role === 'user' ? (
-            <UserBubble key={m.id} text={m.content} testID={`chat.history.${m.id}`} />
-          ) : (
-            <AssistantText key={m.id} text={m.content} testID={`chat.history.${m.id}`} />
-          ),
-        )}
-
-        {thread.turns.map((turn, i) => (
-          <View key={turn.clientMessageId} className="gap-3">
-            <UserBubble text={turn.userText} testID={`chat.turn-${i}.user`} />
-            <AssistantTurn
-              turn={turn}
-              countryCode={country}
-              canEdit={canEdit}
-              online={online}
-              actionFor={proposals.actionFor}
-              memberName={proposals.memberName}
-              onConfirm={(p) =>
-                void proposals.confirm(p, (status, code) =>
-                  thread.setProposal(turn.clientMessageId, p.id, status, code),
-                )
-              }
-              onDismiss={(p) =>
-                proposals.dismiss(p, (status) =>
-                  thread.setProposal(turn.clientMessageId, p.id, status),
-                )
-              }
-              onReview={proposals.review}
-              onRetry={() => thread.retry(turn.clientMessageId)}
-              onOpenCitation={(c) => navigation.navigate('SourceDetailSheet', sourceSheetParams(c))}
-              onFollowUp={(text) => send(text)}
-              onPaywall={() => openPaywall('chat_quota')}
-              busy={streaming}
-              testID={`chat.turn-${i}.assistant`}
-            />
-          </View>
-        ))}
-      </ScrollView>
+      />
 
       {newReply ? (
         <Button
@@ -288,7 +335,7 @@ export function ChatThreadScreen({ route, navigation }: ChatScreenProps<'ChatThr
           onPress={() => {
             atBottom.current = true;
             setNewReply(false);
-            scroll.current?.scrollToEnd({ animated: true });
+            scroll.current?.scrollToEnd({ animated: !reduceMotion });
           }}
           testID="chat-thread.new-reply"
         />

@@ -1,8 +1,10 @@
+import type { TrackEventInput } from '@shared/contracts';
+
 import type { KeyValueStore } from '@/lib/storage/mmkv';
 
 import { EventSchemas, type EventName, type EventProps } from './events';
 
-/** One queued event. Context fields not yet columns (event_id, session_id, locale) travel in props. */
+/** One queued event (`locale` is kept for older queues; the server takes locale from `users`). */
 export interface QueuedEvent {
   event_id: string;
   event: EventName;
@@ -13,19 +15,15 @@ export interface QueuedEvent {
   locale: string;
 }
 
-/** Row shape for `analytics_events` in the Sprint 0 schema (05 §13, before migration 0024). */
-export interface AnalyticsRow {
-  user_id: string;
-  household_id: string | null;
-  event: string;
-  props: Record<string, unknown>;
-  occurred_at: string;
-  app_version: string;
-  platform: 'ios' | 'android' | 'web';
-}
+/**
+ * One element of `track_events(p_events)` (packages/shared/src/contracts/track-events.ts). The
+ * server derives the user from the JWT, locale and country from `users`, and app version and
+ * platform from the x-app-version / x-platform headers the Supabase client sends.
+ */
+export type AnalyticsRow = TrackEventInput;
 
 export interface AnalyticsTransport {
-  /** Inserts rows; throws on failure so the batch stays queued. */
+  /** Sends one batch (at most 50); throws on failure so the batch stays queued. */
   send(rows: AnalyticsRow[]): Promise<void>;
 }
 
@@ -34,7 +32,7 @@ export interface AnalyticsContext {
   householdId: string | null;
   locale: string;
   appVersion: string;
-  platform: AnalyticsRow['platform'];
+  platform: 'ios' | 'android' | 'web';
 }
 
 export interface AnalyticsClientOptions {
@@ -131,24 +129,19 @@ export function createAnalyticsClient(opts: AnalyticsClientOptions) {
     persist();
     if (queue.length === 0) return { sent: 0, remaining: 0, skipped: 'empty' };
     const ctx = await opts.getContext();
-    // The insert policy requires user_id = auth.uid(); keep events queued until signed in.
+    // track_events attributes events to auth.uid(); keep them queued until signed in.
     if (!ctx.userId) return { sent: 0, remaining: queue.length, skipped: 'no_user' };
     let sent = 0;
     while (queue.length > 0) {
       const batch = queue.slice(0, maxBatch);
       const rows: AnalyticsRow[] = batch.map((e) => ({
-        user_id: ctx.userId as string,
-        household_id: e.household_id ?? ctx.householdId,
+        event_id: e.event_id,
         event: e.event,
-        props: {
-          ...e.props,
-          event_id: e.event_id,
-          session_id: e.session_id,
-          locale: e.locale || ctx.locale,
-        },
+        // Registry props are scalar enums, numbers and booleans (validated in track()).
+        props: e.props as AnalyticsRow['props'],
         occurred_at: e.occurred_at,
-        app_version: ctx.appVersion,
-        platform: ctx.platform,
+        ...(isUuid(e.session_id) ? { session_id: e.session_id } : {}),
+        household_id: e.household_id ?? ctx.householdId,
       }));
       await opts.transport.send(rows);
       const sentIds = new Set(batch.map((e) => e.event_id));
@@ -182,3 +175,8 @@ export function createAnalyticsClient(opts: AnalyticsClientOptions) {
 }
 
 export type AnalyticsClient = ReturnType<typeof createAnalyticsClient>;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string): boolean {
+  return UUID.test(value);
+}

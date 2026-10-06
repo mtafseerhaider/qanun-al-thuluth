@@ -18,7 +18,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
   >
     <Text
       className="font-ui-semibold text-overline uppercase text-ink-muted"
-      maxFontSizeMultiplier={1.4}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -29,7 +29,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -41,7 +41,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -53,7 +53,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -65,7 +65,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -77,7 +77,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -92,7 +92,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
     >
       <Text
         className="font-ui-semibold text-bodyStrong text-ink"
-        maxFontSizeMultiplier={1.6}
+        maxFontSizeMultiplier={2}
         style={
           {
             "includeFontPadding": false,
@@ -104,7 +104,7 @@ exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and
       </Text>
       <Text
         className="font-ui text-caption text-ink-muted"
-        maxFontSizeMultiplier={1.6}
+        maxFontSizeMultiplier={2}
         style={
           {
             "includeFontPadding": false,
@@ -136,7 +136,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
   >
     <Text
       className="font-ui-semibold text-overline uppercase text-ink-muted"
-      maxFontSizeMultiplier={1.4}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -147,7 +147,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -159,7 +159,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -171,7 +171,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -183,7 +183,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,
@@ -195,7 +195,7 @@ exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or 
     </Text>
     <Text
       className="font-ui text-caption text-ink"
-      maxFontSizeMultiplier={1.6}
+      maxFontSizeMultiplier={2}
       style={
         {
           "includeFontPadding": false,

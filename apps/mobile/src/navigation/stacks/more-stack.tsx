@@ -23,115 +23,125 @@ import { SubscriptionScreen } from '@/features/subscription';
 import { WeightLogScreen } from '@/features/tracking';
 
 import type { MoreStackParamList } from '../types';
+import { useStackMotion } from '../motion';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
 
 export function MoreStack() {
+  const motion = useStackMotion();
   const { t } = useTranslation('navigation');
   const debugEnabled = useDebugMenuEnabled();
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="MoreHome" component={MoreHomeScreen} options={{ headerShown: false }} />
+    <Stack.Navigator screenOptions={motion}>
+      <Stack.Screen
+        name="MoreHome"
+        getComponent={() => MoreHomeScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="Settings"
-        component={SettingsScreen}
+        getComponent={() => SettingsScreen}
         options={{ title: t('screens.settings') }}
       />
       <Stack.Screen
         name="SettingsProfile"
-        component={SettingsProfileScreen}
+        getComponent={() => SettingsProfileScreen}
         options={{ title: t('screens.settingsProfile') }}
       />
       <Stack.Screen
         name="AlphaFeedback"
-        component={AlphaFeedbackScreen}
+        getComponent={() => AlphaFeedbackScreen}
         options={{ title: t('screens.alphaFeedback') }}
       />
       <Stack.Screen
         name="HydrationTracker"
-        component={HydrationTrackerScreen}
+        getComponent={() => HydrationTrackerScreen}
         options={{ title: t('screens.hydration') }}
       />
       <Stack.Screen
         name="FastingTracker"
-        component={FastingTrackerScreen}
+        getComponent={() => FastingTrackerScreen}
         options={{ title: t('screens.fasting') }}
       />
       <Stack.Screen
         name="BudgetDashboard"
-        component={BudgetDashboardScreen}
+        getComponent={() => BudgetDashboardScreen}
         options={{ title: t('screens.budget') }}
       />
       <Stack.Screen
         name="BudgetSettings"
-        component={BudgetSettingsScreen}
+        getComponent={() => BudgetSettingsScreen}
         options={{ title: t('screens.budgetSettings') }}
       />
       <Stack.Screen
         name="WeightLog"
-        component={WeightLogScreen}
+        getComponent={() => WeightLogScreen}
         options={{ title: t('screens.weightLog') }}
       />
       <Stack.Screen
         name="SettingsNotifications"
-        component={SettingsNotificationsScreen}
+        getComponent={() => SettingsNotificationsScreen}
         options={{ title: t('screens.settingsNotifications') }}
       />
       <Stack.Screen
         name="RamadanPlanner"
-        component={RamadanPlannerScreen}
+        getComponent={() => RamadanPlannerScreen}
         options={{ title: t('screens.ramadanPlanner') }}
       />
       <Stack.Screen
         name="Subscription"
-        component={SubscriptionScreen}
+        getComponent={() => SubscriptionScreen}
         options={{ title: t('screens.subscription') }}
       />
       <Stack.Screen
         name="SettingsMemory"
-        component={MemoryManagementScreen}
+        getComponent={() => MemoryManagementScreen}
         options={{ title: t('screens.settingsMemory') }}
       />
       <Stack.Screen
         name="SettingsPrivacy"
-        component={PrivacySettingsScreen}
+        getComponent={() => PrivacySettingsScreen}
         options={{ title: t('screens.settingsPrivacy') }}
       />
       <Stack.Screen
         name="DeleteAccount"
-        component={DeleteAccountScreen}
+        getComponent={() => DeleteAccountScreen}
         options={{ title: t('screens.deleteAccount') }}
       />
       <Stack.Screen
         name="HelpCenter"
-        component={HelpCenterScreen}
+        getComponent={() => HelpCenterScreen}
         options={{ title: t('screens.helpCenter') }}
       />
       <Stack.Screen
         name="HelpArticle"
-        component={HelpArticleScreen}
+        getComponent={() => HelpArticleScreen}
         options={{ title: t('screens.helpArticle') }}
       />
       <Stack.Screen
         name="ContactSupport"
-        component={ContactSupportScreen}
+        getComponent={() => ContactSupportScreen}
         options={{ title: t('screens.contactSupport') }}
       />
-      <Stack.Screen name="About" component={AboutScreen} options={{ title: t('screens.about') }} />
+      <Stack.Screen
+        name="About"
+        getComponent={() => AboutScreen}
+        options={{ title: t('screens.about') }}
+      />
       <Stack.Screen
         name="Exports"
-        component={ExportsScreen}
+        getComponent={() => ExportsScreen}
         options={{ title: t('screens.exports') }}
       />
       <Stack.Screen
         name="NutritionInsights"
-        component={NutritionInsightsScreen}
+        getComponent={() => NutritionInsightsScreen}
         options={{ title: t('screens.insights') }}
       />
       {debugEnabled ? (
         <Stack.Screen
           name="Debug"
-          component={DebugScreen}
+          getComponent={() => DebugScreen}
           options={{ title: t('screens.debug') }}
         />
       ) : null}

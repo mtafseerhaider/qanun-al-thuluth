@@ -97,6 +97,7 @@ export function MealAnalysisResultScreen({
         accessibilityLabel={t('capture.previewA11y')}
         className="h-48 w-full rounded-lg"
         resizeMode="cover"
+        resizeMethod="resize"
       />
 
       {view.confidence === 'low' ? (

@@ -14,6 +14,7 @@ import {
 } from '@/features/onboarding';
 
 import type { OnboardingStackParamList } from './types';
+import { useStackMotion } from './motion';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -23,18 +24,19 @@ const Stack = createNativeStackNavigator<OnboardingStackParamList>();
  * left off (FR-ONB-01). Step 6, the first plan, joined in Sprint 3; notifications come later.
  */
 export function OnboardingStack() {
+  const motion = useStackMotion();
   // Read once: the initial route must not change while the stack is mounted.
   const initial = routeForStep(useOnboardingStore.getState().currentStep);
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initial}>
-      <Stack.Screen name="OnboardingWelcome" component={OnboardingWelcomeScreen} />
-      <Stack.Screen name="OnboardingPhilosophy" component={OnboardingPhilosophyScreen} />
-      <Stack.Screen name="OnboardingConsents" component={OnboardingConsentsScreen} />
-      <Stack.Screen name="OnboardingHousehold" component={OnboardingHouseholdScreen} />
-      <Stack.Screen name="OnboardingMembers" component={OnboardingMembersScreen} />
-      <Stack.Screen name="IntakeWizard" component={OnboardingIntakeScreen} />
-      <Stack.Screen name="AssessmentSummary" component={OnboardingAssessmentScreen} />
-      <Stack.Screen name="FirstPlanGeneration" component={OnboardingFirstPlanScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false, ...motion }} initialRouteName={initial}>
+      <Stack.Screen name="OnboardingWelcome" getComponent={() => OnboardingWelcomeScreen} />
+      <Stack.Screen name="OnboardingPhilosophy" getComponent={() => OnboardingPhilosophyScreen} />
+      <Stack.Screen name="OnboardingConsents" getComponent={() => OnboardingConsentsScreen} />
+      <Stack.Screen name="OnboardingHousehold" getComponent={() => OnboardingHouseholdScreen} />
+      <Stack.Screen name="OnboardingMembers" getComponent={() => OnboardingMembersScreen} />
+      <Stack.Screen name="IntakeWizard" getComponent={() => OnboardingIntakeScreen} />
+      <Stack.Screen name="AssessmentSummary" getComponent={() => OnboardingAssessmentScreen} />
+      <Stack.Screen name="FirstPlanGeneration" getComponent={() => OnboardingFirstPlanScreen} />
     </Stack.Navigator>
   );
 }

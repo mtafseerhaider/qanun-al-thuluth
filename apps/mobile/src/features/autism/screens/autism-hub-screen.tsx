@@ -12,6 +12,7 @@ import {
   useModuleMember,
   useSafeFoods,
 } from '@/features/exposures';
+import { SensoryCalmToggle } from '@/features/settings';
 import { UpsellCard } from '@/features/subscription';
 import { track } from '@/lib/analytics/track';
 import type { FamilyScreenProps } from '@/navigation/types';
@@ -46,6 +47,10 @@ export function AutismHubScreen({ route, navigation }: FamilyScreenProps<'Autism
       <Card variant="elevated" testID="autism.summary">
         <Text>{t('hub.safeCount', { count: safe.data?.length ?? 0 })}</Text>
         {m.premium ? <Text>{t('hub.activeLadders', { count: active.length })}</Text> : null}
+      </Card>
+      {/* 02 §7.10: Sensory-calm is offered where the autism module is used, not only in Settings. */}
+      <Card variant="outlined" testID="autism.calm">
+        <SensoryCalmToggle testID="autism.calm-toggle" />
       </Card>
       <View>
         <NavRow

@@ -33,6 +33,7 @@
     "INVITE_EMAIL_MISMATCH": "This invitation was sent to a different email address.",
     "ALREADY_MEMBER": "This person is already a member of the household.",
     "UNAUTHENTICATED": "Please sign in to continue.",
+    "REAUTH_REQUIRED": "For your security, please sign in again to continue.",
     "PREMIUM_REQUIRED": "This is part of Premium.",
     "QUOTA_EXCEEDED": "You've reached today's limit.",
     "AI_UNAVAILABLE": "Our assistant is taking a break. Please try again in a minute.",

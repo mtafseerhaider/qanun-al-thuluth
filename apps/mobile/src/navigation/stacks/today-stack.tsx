@@ -8,32 +8,38 @@ import { DashboardScreen } from '@/features/today';
 import { DailyReflectionScreen } from '@/features/tracking';
 
 import type { TodayStackParamList } from '../types';
+import { useStackMotion } from '../motion';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();
 
 export function TodayStack() {
+  const motion = useStackMotion();
   const { t } = useTranslation('navigation');
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
+    <Stack.Navigator screenOptions={motion}>
+      <Stack.Screen
+        name="Dashboard"
+        getComponent={() => DashboardScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="MealDetail"
-        component={MealDetailScreen}
+        getComponent={() => MealDetailScreen}
         options={{ title: t('screens.mealDetail') }}
       />
       <Stack.Screen
         name="RecipeDetail"
-        component={RecipeDetailScreen}
+        getComponent={() => RecipeDetailScreen}
         options={{ title: t('screens.recipeDetail') }}
       />
       <Stack.Screen
         name="NotificationsCenter"
-        component={NotificationsCenterScreen}
+        getComponent={() => NotificationsCenterScreen}
         options={{ title: t('screens.notificationsCenter') }}
       />
       <Stack.Screen
         name="DailyReflection"
-        component={DailyReflectionScreen}
+        getComponent={() => DailyReflectionScreen}
         options={{ title: t('screens.dailyReflection') }}
       />
     </Stack.Navigator>

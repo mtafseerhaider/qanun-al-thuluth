@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { invokeEdge } from '@/lib/supabase/edge';
 import { toDbAppError } from '@/lib/supabase/error-mapping';
 
-import { encodeWithinLimit, resizeFor } from '../utils/image-rules';
+import { encodeWithinLimit, isAlreadyUploaded, resizeFor } from '../utils/image-rules';
 import type { MealLogWrite } from '../utils/meal-log-rules';
 
 /**
@@ -46,11 +46,16 @@ export async function preparePhoto(asset: {
   };
 }
 
+/**
+ * Meal photos are immutable and keyed by the meal log id, and `meal-photos` has no UPDATE policy (S7-03), so
+ * the upload never upserts: a replay after an app kill finds the object already there and counts as done.
+ */
 export async function uploadMealPhoto(path: string, uri: string): Promise<void> {
   const bytes = await new File(uri).arrayBuffer();
   const { error } = await client()
     .storage.from(MEAL_PHOTOS_BUCKET)
-    .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+    .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
+  if (error && isAlreadyUploaded(error as { message?: string; statusCode?: unknown })) return;
   if (error)
     throw new AppError('INTERNAL', error.message || 'Photo upload failed.', {
       details: { phase: 'upload' },

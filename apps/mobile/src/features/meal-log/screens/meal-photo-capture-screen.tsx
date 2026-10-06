@@ -177,6 +177,7 @@ export function MealPhotoCaptureScreen({ route, navigation }: RootScreenProps<'M
           accessibilityLabel={t('mealLog:capture.previewA11y')}
           className="h-64 w-full rounded-lg"
           resizeMode="cover"
+          resizeMethod="resize"
           testID="meal-photo.preview"
         />
       ) : null}

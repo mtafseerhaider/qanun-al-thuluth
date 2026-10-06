@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InlineMessage } from '@/components/ui/inline-message';
 import { Text } from '@/components/ui/text';
+import { useAnnounceOnChange } from '@/hooks/use-announce';
 import { errorKeyFor } from '@/lib/supabase/error-mapping';
 
 import { deleteProblem, type DeletionState } from '../utils/privacy-rules';
@@ -23,6 +24,16 @@ export function DeletionCountdownCard({
   testID?: string;
 }) {
   const { t } = useTranslation('privacy');
+  // A11y audit gap 1 (24 S7-04): announce when deletion is scheduled, starts, or is cancelled.
+  const phase = state.pending ? (state.inProgress ? 'in_progress' : 'scheduled') : 'none';
+  useAnnounceOnChange(
+    phase,
+    phase === 'scheduled'
+      ? t('countdown.title')
+      : phase === 'in_progress'
+        ? t('countdown.inProgressTitle')
+        : t('countdown.cancelled'),
+  );
   if (!state.pending) return null;
   const problem = error ? deleteProblem(error) : null;
   return (

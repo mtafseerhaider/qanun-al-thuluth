@@ -61,3 +61,17 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(async () => undefined),
 }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
+
+// FlashList (24 S7-01): Jest has no layout, so give the list a fixed 400 x 900 viewport and
+// 100 pt rows (as @shopify/flash-list/jestSetup does; its FlashList alias targets an export 2.0.2
+// does not have). Rows then mount in tests the way they do on a phone.
+jest.mock('@shopify/flash-list/dist/recyclerview/utils/measureLayout', () => {
+  const actual = jest.requireActual('@shopify/flash-list/dist/recyclerview/utils/measureLayout');
+  const box = (width: number, height: number) => jest.fn(() => ({ x: 0, y: 0, width, height }));
+  return {
+    ...actual,
+    measureParentSize: box(400, 900),
+    measureFirstChildLayout: box(400, 900),
+    measureItemLayout: box(400, 100),
+  };
+});

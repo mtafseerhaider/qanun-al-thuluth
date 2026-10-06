@@ -45,6 +45,9 @@ describe('invokeEdge', () => {
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://example.supabase.co/functions/v1/echo');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer jwt');
+    expect((init.headers as Record<string, string>)['x-thuluth-client-caps']).toBe(
+      'reauth_required',
+    );
     expect(init.body).toBe(JSON.stringify({ prompt: 'hi' }));
   });
 

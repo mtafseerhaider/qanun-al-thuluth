@@ -15,4 +15,19 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enablePackageExports = true;
 
+// Bundle size (24 S7-01, docs/perf-s7.md): react-native-purchases imports its browser-mode engine
+// (~1 MB minified) unconditionally, but only Expo Go and web use it. Native bundles get a stub.
+const BROWSER_ONLY_MODULES = {
+  '@revenuecat/purchases-js-hybrid-mappings': path.resolve(
+    projectRoot,
+    'metro/revenuecat-browser-mode-stub.js',
+  ),
+};
+const upstreamResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const stub = platform !== 'web' ? BROWSER_ONLY_MODULES[moduleName] : undefined;
+  if (stub) return { type: 'sourceFile', filePath: stub };
+  return (upstreamResolveRequest ?? context.resolveRequest)(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: './global.css' });

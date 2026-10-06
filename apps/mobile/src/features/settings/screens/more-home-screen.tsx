@@ -11,6 +11,7 @@ import type { MoreScreenProps } from '@/navigation/types';
 import { useSessionStore } from '@/stores/use-session-store';
 
 import { LanguageToggle } from '../components/language-toggle';
+import { SensoryCalmToggle } from '../components/sensory-calm-toggle';
 import { ThemeToggle } from '../components/theme-toggle';
 
 /**
@@ -124,6 +125,12 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
           {t('settings:appearance.title')}
         </Text>
         <ThemeToggle />
+      </Card>
+      <Card testID="settings-more-home.accessibility">
+        <Text variant="overline" tone="muted">
+          {t('settings:accessibility.title')}
+        </Text>
+        <SensoryCalmToggle />
       </Card>
       <Card>
         <LanguageToggle />

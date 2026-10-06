@@ -53,5 +53,6 @@
     "linkNote": "The download link works for 24 hours.",
     "preparing": "Preparing your PDF…",
     "submit": "Create and share"
-  }
+  },
+  "announce": "{{kind}}: {{status}}"
 }
