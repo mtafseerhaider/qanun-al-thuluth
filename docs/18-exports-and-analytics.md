@@ -49,7 +49,7 @@ Per `00-foundations.md` section 8 there are no PDF exports on the free tier. Acc
 
 ## 2. Rendering pipeline
 
-Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only with a bearer token over TLS (**Addition beyond 00-foundations**; infrastructure in `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
+Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only with a bearer token over TLS (canonical in `00-foundations.md` section 3; Cloud Run infrastructure in `04-system-architecture.md` and `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
 
 ```mermaid
 sequenceDiagram

@@ -159,7 +159,7 @@ export function requireRecentAuth(issuedAt: number, maxAgeSec = 300) {
 1. RLS enabled on **every** table in `public`, including global catalog tables (read-only policies). A CI check fails the build if any table lacks `relrowsecurity = true`.
 2. Every family-scoped row carries `household_id`; policies are one indexed predicate.
 3. Helper functions are `security definer`, `stable`, with `set search_path = ''`, owned by a non-login role, and only read membership tables.
-4. Writes distinguish roles: `owner` and `caregiver` write; `viewer` reads; `coach` (Phase 2) reads granted members only.
+4. Writes distinguish roles: `owner` and `caregiver` write; `viewer` reads; `coach` (Phase 2) reads data for the members the owner grants and writes plans for them.
 5. Soft-deleted rows are invisible (`deleted_at is null`).
 6. Service role use is confined to Edge Functions that must cross tenants (webhooks, cron, account deletion, exports assembling a zip) and is audited.
 7. Global catalog writes are by `admin` users via a separate admin Postgres role, never via the consumer API.
@@ -261,7 +261,7 @@ create policy exports_read on storage.objects for select to authenticated
 
 ### 4.5 Entitlement-related RLS
 
-Count limits (households per user, members per household by tier) are enforced by `before insert` triggers calling `has_premium()` (`17-subscription-architecture.md`), not by policies, so errors are explicit (`PLAN_LIMIT_REACHED`).
+Count limits (households per user, members per household by tier) are enforced by `before insert` triggers calling `has_premium()` (`17-subscription-architecture.md`), not by policies, so errors are explicit (`LIMIT_REACHED`).
 
 ---
 
@@ -527,7 +527,7 @@ Supabase has deprecated pgsodium's Transparent Column Encryption for new project
 - A data encryption key (DEK) per household, 256-bit, generated on household creation, stored wrapped by a key encryption key (KEK).
 - The KEK lives in Supabase Vault (`vault.secrets`, name `kek_v1`), readable only by the `encryption_service` Postgres role used by the `_shared/crypto.ts` module through a `security definer` function.
 - Encryption is AES-256-GCM via WebCrypto in Edge Functions; ciphertext stored as `bytea` in `<column>_enc` with a `key_version smallint`.
-- The client never sees keys. Sensitive notes are read and written through a small Edge route (`health-notes`, part of the `ai-chat` shared library or a dedicated function; see `06-api-specification.md` for placement) that checks RLS with the caller's JWT first, then decrypts.
+- The client never sees keys. Sensitive notes are read and written through the dedicated `health-notes` Edge Function (`00-foundations.md` section 7; contract in `06-api-specification.md`) that checks RLS with the caller's JWT first, then decrypts.
 
 ```sql
 -- Addition beyond 00-foundations
@@ -715,7 +715,7 @@ Daily message quotas per `00-foundations.md` section 8; per-request token caps; 
 3. Body size limit (1 MB default; 8 MB for `ai-analyze-meal` and `ai-transcribe`).
 4. JWT verification (`requireUser`), except webhook and cron functions which use shared secrets.
 5. Zod validation of input; Zod validation of output in non-production.
-6. Rate limiting: token bucket in Postgres (`rate_limits` table, **Addition**) keyed by `user_id` and route; defaults 60 requests per minute, AI routes 10 per minute.
+6. Rate limiting: fixed-window buckets in Postgres (`rate_limit_buckets` table with `consume_rate_limit()`, defined in `06-api-specification.md`) keyed by `user_id` and route; defaults 60 requests per minute, AI routes 10 per minute.
 7. Error envelope `{ error: { code, message, details } }` without stack traces.
 8. Structured log line with allowlisted fields: route, user hash, latency, status, error code.
 9. Sentry capture with scrubbing.
@@ -780,7 +780,7 @@ Leaked service role key; AI provider key leak; webhook secret leak; cross-tenant
 | OneSignal | Push notifications | External id, device push token, notification content (no S3 values in content) | US | DPA, SCCs; notification text avoids health detail on lock screen |
 | Sentry | Error and performance monitoring | Scrubbed stack traces, device metadata, hashed user id | EU data region (`de.sentry.io`) | DPA, PII scrubbing, IP storage off |
 | Transactional email (Supabase Auth SMTP via Resend or Postmark) | OTP, invitations, export links | Email address, message | EU or US | DPA |
-| PDF rendering service (self-hosted Gotenberg on a private container in the same cloud region, see `18-exports-and-analytics.md`) | HTML to PDF | Rendered report content | EU | Our own infrastructure, private network, auth token, no persistence |
+| PDF rendering service (self-hosted Gotenberg on a private Cloud Run service in `europe-west3`, called only by `export-pdf`, see `04-system-architecture.md` and `18-exports-and-analytics.md`) | HTML to PDF | Rendered report content | EU | Our own infrastructure, private network, auth token, no persistence |
 | Metabase (self-hosted, EU, internal only) | Internal product dashboards | Aggregated, pseudonymous analytics views only (`analytics` schema, read-only role) | EU | Our own infrastructure, SSO, no S2 or S3 tables granted |
 | Expo (EAS Build and Update) | Builds and OTA updates | No user data (build artifacts only) | US | Terms; update signing |
 | GitHub | Source code, CI | No production user data | US | Org SSO, branch protection |
@@ -800,7 +800,7 @@ Changes to this list require a security review and a privacy notice update.
 | AC-S5 | AI provider payloads in integration tests contain no email, user id, household id, DOB or city. |
 | AC-S6 | `revenuecat-webhook` rejects requests without the correct secret in constant time and ignores replayed event ids. |
 | AC-S7 | Account deletion makes the user unable to sign in immediately and hard-deletes S3 rows within 30 days (job test with clock control). |
-| AC-S8 | Encrypted note columns are unreadable with the anon or authenticated role and decrypt only via the Edge route for household members. |
+| AC-S8 | Encrypted note columns are unreadable with the anon or authenticated role and decrypt only via the `health-notes` Edge Function for household members. |
 | AC-S9 | Quarterly restore drill documented with RTO under 4 h. |
 | AC-S10 | Consent withdrawal for `ai_processing` blocks all AI routes for that user within one request. |
 
@@ -818,7 +818,7 @@ Changes to this list require a security review and a privacy notice update.
 | `users.processing_restricted` | Column | Right to restriction |
 | `household_keys`; `*_enc` and `*_key_version` columns on `medical_conditions`, `allergies`, `nutrition_journal`, `fasting_logs` (and pregnancy notes) | Table, columns | Column-level envelope encryption |
 | `deleted_user_ledger` | Table | Post-restore deletion replay |
-| `rate_limits` | Table | Edge rate limiting |
+| `rate_limit_buckets` + `consume_rate_limit()` (defined in `06-api-specification.md`) | Table, function | Edge rate limiting |
 | `audit_row_change()` | Trigger function | Audit logging |
-| `health-notes` Edge route | Edge Function (or route inside an existing function, placement per `06-api-specification.md`) | Decrypt and encrypt sensitive notes server-side |
+| `health-notes` Edge Function | Edge Function (listed in `00-foundations.md` section 7; contract in `06-api-specification.md`) | Decrypt and encrypt sensitive notes server-side |
 | PDF renderer service | Infrastructure | Private HTML to PDF rendering |

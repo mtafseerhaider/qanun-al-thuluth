@@ -148,7 +148,9 @@ supabase/
 │   ├── revenuecat-webhook/index.ts
 │   ├── notifications-dispatch/index.ts
 │   ├── prices-refresh/index.ts
-│   └── analytics-rollup/index.ts
+│   ├── analytics-rollup/index.ts
+│   ├── promo-redeem/index.ts
+│   └── health-notes/index.ts
 └── tests/
     ├── _helpers/
     │   └── 000_helpers.sql           # tests.create_user, tests.authenticate_as, tests.clear_auth
@@ -355,6 +357,10 @@ verify_jwt = false          # x-cron-secret
 verify_jwt = false          # x-cron-secret
 [functions.analytics-rollup]
 verify_jwt = false          # x-cron-secret
+[functions.promo-redeem]
+verify_jwt = true
+[functions.health-notes]
+verify_jwt = true
 ```
 
 ## 4. Environments
@@ -562,6 +568,36 @@ select cron.schedule('storage-orphan-sweep', '30 20 * * *',     -- 01:30 PKT
 
 `storage.objects` already has RLS enabled by Supabase. Note that the Storage API needs `select` permission for upserts and for `insert ... returning`, which is why each bucket that clients write to also has a `select` policy covering the same paths.
 
+### 6.5 Migration 0016b: `voice-notes` bucket
+
+Addition from `12-ai-agent-architecture.md` section 21, consolidated with the other schema additions in `05-database-schema.md` section 22. The client uploads a voice note to `voice-notes/{household_id}/{uuid}.m4a`, calls `ai-transcribe`, and the function deletes the object after transcription. Objects older than 24 hours are also removed by `account-delete` action `sweep_orphans` (daily cron above).
+
+| Bucket | Public | Size limit | Allowed MIME types | Written by | Read by |
+|---|---|---|---|---|---|
+| `voice-notes` | No | 5 MiB | `audio/m4a`, `audio/mp4`, `audio/aac`, `audio/webm` | Premium household members | The uploader; `ai-transcribe` (service) |
+
+```sql
+-- supabase/migrations/20261001001650_storage_voice_notes.sql   (0016b)
+-- Transient audio for ai-transcribe (12-ai-agent-architecture.md section 15). Path: {household_id}/{uuid}.m4a
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('voice-notes', 'voice-notes', false, 5242880, array['audio/m4a','audio/mp4','audio/aac','audio/webm'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Voice is a premium AI feature (per-user entitlement, 00-foundations section 11). Only the uploader can
+-- read or delete the object; ai-transcribe reads with the service role and deletes it after transcription.
+create policy voice_notes_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'voice-notes'
+              and public.is_household_member(public.path_household_id(name))
+              and public.has_premium(auth.uid()));
+create policy voice_notes_select_own on storage.objects for select to authenticated
+  using (bucket_id = 'voice-notes' and owner_id = auth.uid()::text);
+create policy voice_notes_delete_own on storage.objects for delete to authenticated
+  using (bucket_id = 'voice-notes' and owner_id = auth.uid()::text);
+```
+
 ## 7. Realtime
 
 ### 7.1 What uses Realtime
@@ -570,7 +606,7 @@ Realtime is used only where another person or a background job changes data the 
 
 | Channel | Type | Filter | Consumer | Why |
 |---|---|---|---|---|
-| `plan:{household_id}` | Postgres changes on `meal_plans` (UPDATE) | `household_id=eq.{id}` | Plan screen, plan-generation progress | `ai-generate-plan` runs in the background; status flips `generating` → `active` or `failed`. |
+| `plan:{meal_plan_id}` | Postgres changes on `meal_plans` (UPDATE) | `id=eq.{meal_plan_id}` | Plan screen, plan-generation progress | `ai-generate-plan/worker` processes the pgmq `plan_generation` queue and writes `generation_progress`; status flips `generating` → `active` or `failed`. Household-wide plan list freshness comes from `use-household-realtime.ts` (`09-state-management.md`). |
 | `today:{household_id}` | Postgres changes on `daily_meal_servings` (INSERT, UPDATE) | `household_id=eq.{id}` | Today screen | Two caregivers logging the same family meal see each other's ticks. |
 | `grocery:{grocery_list_id}` | Postgres changes on `shopping_items` (*) | `grocery_list_id=eq.{id}` | Shopping mode | Shared list while one parent shops and the other adds items. |
 | `grocery-presence:{grocery_list_id}` | Presence | private channel | Shopping mode | "Ayesha is shopping now" indicator. |
@@ -590,14 +626,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { planKeys } from '@/features/plans/api/query-keys';
 
-export function usePlanStatusChannel(householdId: string): void {
+export function usePlanStatusChannel(householdId: string, mealPlanId: string): void {
   const qc = useQueryClient();
   useEffect(() => {
     const channel = supabase
-      .channel(`plan:${householdId}`)
+      .channel(`plan:${mealPlanId}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'meal_plans', filter: `household_id=eq.${householdId}` },
+        { event: 'UPDATE', schema: 'public', table: 'meal_plans', filter: `id=eq.${mealPlanId}` },
         (payload) => {
           qc.invalidateQueries({ queryKey: planKeys.byHousehold(householdId) });
           if (payload.new && (payload.new as { status?: string }).status === 'active') {
@@ -609,7 +645,7 @@ export function usePlanStatusChannel(householdId: string): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [householdId, qc]);
+  }, [householdId, mealPlanId, qc]);
 }
 ```
 
@@ -665,7 +701,7 @@ SQL for every job is in `05-database-schema.md` migration 0014, except `storage-
 | `invitations-cleanup` | `50 19 * * *` | 00:50 | Remove long-expired invitations | SQL |
 | `notifications-retention` | `0 20 * * 0` | Sun 01:00 | Delete sent notifications older than 180 days | SQL |
 | `analytics-partitions` | `0 3 20 * *` | 20th 08:00 | Create next 3 monthly partitions | `private.ensure_analytics_partitions(3)` |
-| `analytics-retention` | `30 3 1 * *` | 1st 08:30 | Drop partitions older than 25 months | `private.drop_old_analytics_partitions(25)` |
+| `analytics-retention` | `30 3 1 * *` | 1st 08:30 | Drop partitions older than 13 months | `private.drop_old_analytics_partitions(13)` |
 | `ai-usage-retention` | `0 21 2 * *` | 3rd 02:00 | Delete metering older than 25 months | SQL |
 | `audit-retention` | `0 22 3 * *` | 4th 03:00 | Delete audit rows older than 3 years | `private.purge_audit_log(3)` |
 | `cron-history-retention` | `0 23 * * *` | 04:00 | Trim `cron.job_run_details` to 14 days | SQL |
@@ -695,14 +731,14 @@ Common environment for every function (provided automatically by Supabase or set
 |---|---|---|---|---|---|---|
 | `ai-chat` | POST (SSE) | User JWT | Voice/photo attachments and long-term memory premium; daily quota 20 / 200 | R: household profile, plan, `ai_memories`, verified `islamic_sources`; W: `chat_messages`, `ai_memories`, `ai_usage`, `plan_recommendations` | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY` | 150 s wall clock; 30 requests/min/user |
 | `ai-intake-assess` | POST | User JWT (editor) | No | R: family profile; W: `ai_assessments`, `hydration_targets`, `ai_usage` | AI keys | 60 s; 10/hour/household |
-| `ai-generate-plan` | POST | User JWT (plan author) | Multi-week, non-standard kinds premium (also enforced by trigger) | W: `meal_plans` (status `generating`), then in background `meals`, `portions`, `daily_meals`, `daily_meal_servings`, `plan_recommendations`, `notifications`, `ai_usage` | AI keys | Returns 202 within 2 s; background work via `EdgeRuntime.waitUntil`, 400 s cap; 5/day/household free, 20/day premium |
+| `ai-generate-plan` | POST | User JWT (plan author) | Multi-week, non-standard kinds premium (also enforced by trigger) | W: `meal_plans` (status `generating`), enqueue to pgmq `plan_generation`; the `/worker` sub-route then writes `meal_plans.generation_progress`, `meals`, `portions`, `daily_meals`, `daily_meal_servings`, `plan_recommendations`, `notifications`, `ai_usage` | AI keys | Returns 202 within 2 s; stages processed by `ai-generate-plan/worker` from the queue (400 s cap per stage), progress over Realtime channel `plan:{id}`; 5/day/household free, 20/day premium |
 | `ai-adjust-plan` | POST | User JWT (plan author) | Premium | W: new `meal_plans` version + children | AI keys | 120 s; 20/day/household |
 | `ai-analyze-meal` | POST | User JWT | Premium | R: `meal-photos` object; W: `meal_logs.estimated_nutrition`, `ai_usage` | AI keys | 60 s; 30/day/user |
 | `ai-transcribe` | POST | User JWT | Premium | R: `chat-attachments` object; W: `ai_usage` | `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY` | 60 s; audio ≤ 2 min |
 | `grocery-generate` | POST | User JWT (editor) | Budget optimization, substitutions, monthly lists premium | R: plan, `mv_ingredient_prices`, `seasonal_produce`; W: `grocery_lists`, `shopping_items` | none | 30 s |
-| `growth-compute` | POST | User JWT (editor) | Percentile charts and alerts premium (z-scores always computed so red flags work for everyone) | R: `growth_reference_lms`; W: `growth_tracking` computed columns, `notifications` | none | 10 s |
+| `growth-compute` | POST | User JWT (editor) | Percentile charts, trends and non-safety alerts premium (z-scores, latest percentile and safety alerts for faltering growth or rapid loss on every tier) | R: `growth_reference_lms`; W: `growth_tracking` computed columns, `notifications` | none | 10 s |
 | `ramadan-generate` | POST | User JWT (plan author) | Premium | W: `ramadan_plans`, `meal_plans` (`kind 'ramadan'`), `notifications` | `PRAYER_TIMES_API_BASE` (default `https://api.aladhan.com/v1`) | 120 s |
-| `export-pdf` | POST | Dual | Premium (all exports) | W: `exports`, `exports` bucket | `PDF_RENDERER` (`pdf-lib` default, see `18-exports-and-analytics.md`), `PDF_RENDER_URL`, `PDF_RENDER_TOKEN` (only if an external renderer is chosen), `CRON_SECRET` | 60 s; 10/hour/user |
+| `export-pdf` | POST | Dual | Premium (all exports) | W: `exports`, `exports` bucket | `GOTENBERG_URL`, `GOTENBERG_TOKEN` (HTML is rendered by the private Gotenberg service on Cloud Run, see `18-exports-and-analytics.md`), `CRON_SECRET` | 60 s; 10/hour/user |
 | `household-invite` | POST | User JWT | Inviting is free; household limits apply to members, not invitees | W: `household_invitations`, `household_members` (accept) | `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `INVITE_LINK_BASE_URL` (`https://thuluth.app/invite`), `INVITE_TOKEN_PEPPER` | 20 invites/day/household; accept 10/hour/IP |
 | `account-export` | POST | User JWT | No (legal right) | R: every table the user can see + own rows; W: `exports` bucket under `account/{user_id}` | `EMAIL_PROVIDER_API_KEY` | Background job, 400 s; 1/day/user |
 | `account-delete` | POST | Dual | No | Deletes Storage objects, `analytics_events` rows, then `auth.admin.deleteUser` | `CRON_SECRET` | Requires a fresh OTP re-auth (`11-authentication.md`) |
@@ -710,6 +746,8 @@ Common environment for every function (provided automatically by Supabase or set
 | `notifications-dispatch` | POST (cron) | Cron secret | n/a | R/W: `notifications`, `notification_preferences`, `devices` | `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`, `CRON_SECRET` | Batch of 500 per run, 50 s |
 | `prices-refresh` | POST (cron) | Cron secret | n/a | W: `price_observations.moderation_status`, `seasonal_produce.price_index`; RPC `refresh_ingredient_prices()` | `CRON_SECRET` | 120 s |
 | `analytics-rollup` | POST (cron) | Cron secret | n/a | RPC `refresh_analytics_views()`; R: `cron.job_run_details` via RPC | `CRON_SECRET` | 120 s |
+| `promo-redeem` | POST | User JWT | No | W: `promo_redemptions`, `promo_codes`, `promo_campaigns.redeemed_count`, `subscriptions` (`store='promotional'`), `audit_log` | `REVENUECAT_SECRET_API_KEY`, `PROMO_CODE_PEPPER` | 10 s; 5 attempts/hour/user and per IP |
+| `health-notes` | POST | User JWT (read: member; write: editor) | No | R/W: `*_enc` and `*_key_version` columns on `medical_conditions`, `allergies`, `nutrition_journal`, `fasting_logs`, `pregnancy_profiles`; R: `household_keys` via security definer function; W: `audit_log` | KEK in Supabase Vault (`kek_v1`), no env secret | 10 s; 120 requests/min/user |
 
 Request and response schemas for each function are in `06-api-specification.md`; prompt and tool design for the AI functions is in `12-ai-agent-architecture.md`.
 
@@ -1000,4 +1038,4 @@ The full list of required assertions is in `05-database-schema.md` section 21; t
 | Seed layout | `seed/catalog/`, `seed/local/`, `seed/data/`, `seed/build.ts` | Separates content seeds deployed everywhere from local fixtures |
 | Package builds | `build:deno` outputs for `packages/shared` and `packages/ai-core` | Deno-compatible imports for Edge Functions |
 | Vault secrets | `project_url`, `cron_secret`, `audit_ip_salt` | Cron invocation and audit IP hashing |
-| Env vars | `CRON_SECRET`, `INVITE_TOKEN_PEPPER`, `INVITE_LINK_BASE_URL`, `PRAYER_TIMES_API_BASE`, `PDF_RENDERER`, `PDF_RENDER_URL`, `PDF_RENDER_TOKEN`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `AI_FAKE`, `APP_ENV` | Function configuration |
+| Env vars | `CRON_SECRET`, `INVITE_TOKEN_PEPPER`, `INVITE_LINK_BASE_URL`, `PRAYER_TIMES_API_BASE`, `GOTENBERG_URL`, `GOTENBERG_TOKEN`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`, `AI_FAKE`, `APP_ENV` | Function configuration |

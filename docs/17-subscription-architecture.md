@@ -139,21 +139,21 @@ The paywall component is `PaywallScreen` (`apps/mobile/src/features/subscription
 
 ### 5.1 Placements
 
-| Trigger id | Where | Type | Notes |
+| Trigger id (`PaywallSheetProps['trigger']`, `08-component-architecture.md` §5.17) | Where | Type | Notes |
 |---|---|---|---|
-| `onboarding_plan_preview` | After the first AI plan preview is shown at the end of onboarding | Soft (dismissible), once | Shows what the full plan includes; free users continue with their weekly plan |
+| `onboarding` | After the first AI plan preview is shown at the end of onboarding | Soft (dismissible), once | Shows what the full plan includes; free users continue with their weekly plan |
 | `plan_multi_week` | Selecting 2 to 4 weeks or a second plan | Hard gate | |
-| `plan_adjust` | "Adjust my plan" natural-language change | Hard gate (free users get one adjustment per week as a teaser) | Teaser limit configurable via `feature_flags` |
+| `plan_adjust` | "Adjust my plan" natural-language change | Hard gate (premium only, per `00-foundations.md` section 8 and `12-ai-agent-architecture.md` section 17) | A free teaser adjustment is a possible Phase 2 experiment behind `feature_flags` |
 | `chat_quota` | 21st AI message of the day (free) | Hard gate with countdown to reset | |
-| `chat_voice`, `chat_photo` | Mic or camera in chat; meal photo analysis | Hard gate | |
+| `voice`, `photo` | Mic or camera in chat; meal photo analysis | Hard gate | |
 | `growth_chart` | Opening percentile charts | Hard gate with blurred preview of the child's real chart shape | Values hidden in the preview |
-| `autism_ladder`, `picky_coaching` | Exposure ladders, food chaining, coaching plans | Hard gate | Safe-food list remains free |
-| `ramadan_full_plan` | Generate a family Ramadan plan | Hard gate | Generic tips free |
-| `grocery_budget` | Budget optimization, monthly list, substitutions, price trends | Hard gate | Basic list free |
-| `export_pdf` | Any PDF export | Hard gate | |
-| `second_household`, `member_limit` | Creating household 2 or member 7 | Hard gate | |
-| `analytics` | Family analytics and coaching dashboards | Hard gate | |
-| `settings_upgrade` | Settings > Subscription | User-initiated | |
+| `exposure_ladder`, `sensory_profile`, `picky_coaching` | Exposure ladders, food chaining, sensory profile, coaching plans | Hard gate | Safe-food list remains free |
+| `ramadan_plan` | Generate a family Ramadan plan | Hard gate | Generic tips free |
+| `grocery_optimize` | Budget optimization, monthly list, substitutions, price trends | Hard gate | Basic list free |
+| `export` | Any PDF export | Hard gate | |
+| `household_limit`, `member_limit` | Creating household 2 or member 7 | Hard gate | |
+| `insights` | Family analytics and coaching dashboards | Hard gate | |
+| `settings` | Settings > Subscription | User-initiated | |
 
 ### 5.2 Frequency and fairness rules
 
@@ -420,16 +420,16 @@ revoke execute on function public.has_premium(uuid), public.household_has_premiu
 
 | Capability | Enforcement point | Check | Error |
 |---|---|---|---|
-| More than 1 household per user | `before insert on households` trigger | `has_premium(new.owner_user_id)` or count = 0 | `PLAN_LIMIT_REACHED` |
-| More than 6 members (free) / 20 (premium) per household | `before insert on family_members` trigger | count vs `household_has_premium(household_id)` | `PLAN_LIMIT_REACHED` |
+| More than 1 household per user | `before insert on households` trigger | `has_premium(new.owner_user_id)` or count = 0 | `LIMIT_REACHED` |
+| More than 6 members (free) / 20 (premium) per household | `before insert on family_members` trigger | count vs `household_has_premium(household_id)` | `LIMIT_REACHED` |
 | Multi-week plans, more than 1 active plan, AI-proposed recipes | `ai-generate-plan` | `premium_for(householdId)` | `PREMIUM_REQUIRED` |
-| Plan adjustments beyond teaser | `ai-adjust-plan` | premium or weekly teaser counter | `PREMIUM_REQUIRED` |
+| Plan adjustments | `ai-adjust-plan` | premium | `PREMIUM_REQUIRED` |
 | Chat quota (20 free, 200 premium fair use) | `ai-chat` | count of today's user messages in `chat_messages` (household timezone day) | `QUOTA_EXCEEDED` with `resetAt` |
 | Voice, photo in chat; meal photo analysis | `ai-transcribe`, `ai-chat` attachments, `ai-analyze-meal` | premium | `PREMIUM_REQUIRED` |
 | Long-term memory | `ai-chat` memory writer | premium (free sessions do not write `ai_memories`) | silent |
 | Budget optimization, substitutions, monthly lists, pantry | `grocery-generate` | premium; free path returns basic list | downgraded response |
 | Price trends | RPC `price_trends()` | `premium_for` | `PREMIUM_REQUIRED` |
-| Growth charts and trends | `growth-compute` response (`premiumChart`), RPC `growth_dashboard` returns curves only when premium | `premium_for(household)` | values withheld |
+| Growth charts and trends | `growth-compute` response (`premiumChart`), RPC `growth_dashboard` returns curves only when premium | `premium_for(household)` | values withheld (latest value, percentile and safety alerts for faltering growth or rapid loss are always returned on every tier) |
 | Autism ladders, food chaining, picky coaching, acceptance analytics | Insert trigger on `exposure_ladders` (premium required for new rows), RPC `picky_acceptance_summary` | `premium_for` | `PREMIUM_REQUIRED` |
 | Full Ramadan plan | `ramadan-generate` | premium | `PREMIUM_REQUIRED` |
 | PDF exports | `export-pdf` | premium | `PREMIUM_REQUIRED` |
@@ -465,7 +465,7 @@ Client gating (`<PremiumGate feature="growth_chart">`) only decides whether to s
 | Households beyond 1 | User picks one active household; others become read-only (no new plans, logs still allowed for safety tracking: hydration, fasting, meals) |
 | Members beyond 6 | All remain visible; members 7+ excluded from new plans until upgrade or until the user archives others |
 | Plans | Current active plan continues to its end; next plan generated from curated templates (free path) |
-| Growth | Measurements kept and loggable; charts and history hidden (latest value visible) |
+| Growth | Measurements kept and loggable; charts, history and non-safety alerts hidden (latest value, percentile and safety alerts stay visible) |
 | Autism, picky | Ladders paused (read-only), safe-food list and safe foods in plans continue |
 | Chat | Free quota; memories retained but not used until re-subscription (deleted after 12 months of non-subscription, with notice) |
 | Exports | Existing files available until `expires_at`; no new exports |
@@ -558,7 +558,7 @@ alter table promo_redemptions enable row level security;
 create policy promo_redemptions_own on promo_redemptions for select to authenticated using (user_id = (select auth.uid()));
 ```
 
-`promo-redeem` Edge Function (**Addition beyond 00-foundations**):
+`promo-redeem` Edge Function (listed in `00-foundations.md` section 7; contract in `06-api-specification.md` §4.18):
 
 1. `requireUser`; rate limit 5 attempts per hour per user and per IP (code brute-force protection).
 2. Hash the code; lock the row (`select ... for update`); check campaign window, country, remaining redemptions, single-use, user not already redeemed in this campaign, user has no active store subscription (otherwise offer to queue the grant after the store period ends).
@@ -619,6 +619,6 @@ Testing: RevenueCat sandbox (StoreKit configuration file for local iOS, App Stor
 | `household_has_premium(uuid)`, `premium_for(uuid)`, `get_my_entitlements(uuid)` | SQL functions | Household premium and client entitlement RPC |
 | `POST /revenuecat-webhook/sync` | Authenticated sub-route | On-demand entitlement sync |
 | `promo_campaigns`, `promo_codes`, `promo_redemptions` | Tables | Organisation and coach promo codes |
-| `promo-redeem` | Edge Function | Code redemption and promotional entitlement grant |
+| `promo-redeem` (now canonical in `00-foundations.md` section 7) | Edge Function | Code redemption and promotional entitlement grant |
 | `coach` entitlement (Phase 2) | RevenueCat entitlement | Coach accounts |
 | `notification_preferences.kind = 'trial_ending'` | Value | Trial reminder |

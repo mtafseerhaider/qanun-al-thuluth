@@ -143,7 +143,7 @@ export interface TextProps extends BaseProps {
   children: React.ReactNode;
   variant?: 'display' | 'title' | 'heading' | 'body' | 'bodyStrong' | 'caption' | 'label' | 'overline';
   tone?: Tone | 'muted' | 'inverse';
-  script?: 'ui' | 'arabic';        // 'arabic' forces Amiri/KFGQPC + writingDirection 'rtl' for scripture (00 §9)
+  script?: 'ui' | 'arabic' | 'quran';  // 'arabic' forces Amiri + writingDirection 'rtl' for scripture (00 §9); 'quran' uses Amiri Quran for quran_references.arabic_text
   align?: 'start' | 'center' | 'end';   // logical, never 'left'/'right'
   numberOfLines?: number;
   selectable?: boolean;
@@ -406,7 +406,7 @@ export interface GrowthChartProps extends BaseProps {
   sex: Enums<'sex_at_birth'>;
   reference: 'who_2006' | 'who_2007' | 'cdc_2000';
   points: GrowthPoint[];
-  percentileCurves: Array<{ percentile: 3 | 15 | 50 | 85 | 97; series: Array<{ ageMonths: number; value: number }> }>;
+  percentileCurves: Array<{ percentile: 3 | 5 | 10 | 15 | 25 | 50 | 75 | 85 | 90 | 95 | 97; series: Array<{ ageMonths: number; value: number }> }>;
   unit: 'metric' | 'imperial';
   locked?: boolean;                // free tier: latest value only, chart blurred with PremiumGate teaser (00 §8)
   onPointPress?: (point: GrowthPoint) => void;
@@ -428,6 +428,7 @@ export interface MealCardProps extends BaseProps {
   servings: Array<{ member: FamilyMemberSummary; status: MealStatus; adapted: boolean }>;
   tags?: Array<'kid_friendly' | 'autism_friendly' | 'sunnah_food' | 'ramadan_suitable' | 'budget'>;
   waterReminder?: string | null;   // "Water 20 to 30 min before" (00 §2 rule 2)
+  density?: 'default' | 'cell';    // 'cell' is the compact layout used inside PlanWeekGrid (03 §15)
   onPress: () => void;
   onSwap?: () => void;
 }
@@ -456,8 +457,9 @@ export interface MealServingRowProps extends BaseProps {
 export interface AcceptanceScorePickerProps extends BaseProps {
   value: AcceptanceScore | null;
   onChange: (score: AcceptanceScore) => void;
-  variant?: 'faces' | 'steps';     // faces for quick logging; steps for exposure ladders
+  variant?: 'icons' | 'steps';     // icons for quick logging (never faces, 03 §2.3); steps for exposure ladders
   size?: Size;
+  readOnly?: boolean;              // display only (history, analytics); no onChange calls
   /** Copy is always neutral and encouraging: 0_refused reads as "Not today", never failure. */
 }
 ```
@@ -675,7 +677,10 @@ import type { PurchasesPackage } from 'react-native-purchases';
 export interface PaywallSheetProps extends BaseProps {
   open: boolean;
   onClose: () => void;
-  trigger: 'chat_quota' | 'voice' | 'photo' | 'growth_chart' | 'exposure_ladder' | 'ramadan_plan' | 'export' | 'settings' | 'onboarding';
+  trigger:
+    | 'chat_quota' | 'voice' | 'photo' | 'growth_chart' | 'exposure_ladder' | 'ramadan_plan' | 'export' | 'settings' | 'onboarding'
+    | 'plan_multi_week' | 'plan_adjust' | 'grocery_optimize' | 'sensory_profile'
+    | 'picky_coaching' | 'insights' | 'household_limit' | 'member_limit';   // canonical union; 02 §3.3 and 17 §5.1 use these values
   packages: PurchasesPackage[];    // from Purchases.getOfferings(); container passes them
   selectedPackageId: string | null;
   onSelectPackage: (id: string) => void;
@@ -1009,12 +1014,24 @@ module.exports = {
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
         info: 'rgb(var(--color-info) / <alpha-value>)',
+        // Additional tokens adopted from 03 §15 item 1 (same rgb(var(--color-<name>)) pattern):
+        // 'surface-sunken', 'ink-subtle', 'line-strong', 'primary-pressed', 'primary-soft', 'on-primary-soft',
+        // secondary, 'on-secondary', accent, 'on-accent', 'accent-ink', 'on-success', 'on-warning', 'on-danger', 'on-info',
+        // 'success-soft' / 'on-success-soft', 'warning-soft' / 'on-warning-soft', 'danger-soft' / 'on-danger-soft',
+        // 'info-soft' / 'on-info-soft', focus, 'plate-space'
         'plate-veg': 'rgb(var(--color-plate-veg) / <alpha-value>)',
         'plate-protein': 'rgb(var(--color-plate-protein) / <alpha-value>)',
         'plate-carb': 'rgb(var(--color-plate-carb) / <alpha-value>)',
         water: 'rgb(var(--color-water) / <alpha-value>)',
       },
-      fontFamily: { ui: ['Inter'], urdu: ['NotoNastaliqUrdu'], arabic: ['Amiri'] },
+      // Keys and PostScript names per 03 §5 and §11; one key per weight (Android does not synthesise weights)
+      fontFamily: {
+        ui: ['Inter-Regular'], 'ui-medium': ['Inter-Medium'], 'ui-semibold': ['Inter-SemiBold'], 'ui-bold': ['Inter-Bold'],
+        'ui-display': ['InterDisplay-SemiBold'],
+        urdu: ['NotoNastaliqUrdu-Regular'], 'urdu-bold': ['NotoNastaliqUrdu-Bold'],
+        arabic: ['Amiri-Regular'], 'arabic-bold': ['Amiri-Bold'],
+        quran: ['AmiriQuran-Regular'],      // Qur'anic text only
+      },
     },
   },
 };
@@ -1024,7 +1041,7 @@ module.exports = {
 
 - `usePreferencesStore.theme` is `'system' | 'light' | 'dark'`. `ThemeProvider` calls NativeWind `colorScheme.set(theme)`.
 - `theme/use-theme-colors.ts` returns resolved token hex values for SVG, charts and React Navigation theme.
-- Sensory-calm mode (`usePreferencesStore.sensoryCalm`) adds the `calm` class at the root: lower saturation palette, no shimmer, no haptics, no confetti, reduced motion regardless of OS setting.
+- Sensory-calm mode (`usePreferencesStore.sensoryCalm`) swaps the palette by applying the calm variable set with NativeWind `vars()` at the root in `ThemeProvider` (`03-design-system.md` §11.5; theme names `calmLight`, `calmDark`); there is no `calm` class. Behavioural changes (no shimmer, no haptics, no confetti, reduced motion regardless of OS setting) read `sensoryCalm` through `useMotionPreference()` and `useHaptics()`.
 
 ### 10.3 RTL
 

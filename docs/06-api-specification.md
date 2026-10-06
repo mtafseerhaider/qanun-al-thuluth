@@ -11,7 +11,7 @@
    - 2.1 Base URLs · 2.2 Headers and auth · 2.3 Error envelope and codes · 2.4 Idempotency · 2.5 Pagination · 2.6 Versioning · 2.7 Rate limits and quotas · 2.8 Size limits and timeouts · 2.9 Shared Zod primitives
 3. [PostgREST resource usage](#3-postgrest-resource-usage)
 4. [Edge Functions](#4-edge-functions)
-   - 4.1 `ai-chat` · 4.2 `ai-intake-assess` · 4.3 `ai-generate-plan` · 4.4 `ai-adjust-plan` · 4.5 `ai-analyze-meal` · 4.6 `ai-transcribe` · 4.7 `grocery-generate` · 4.8 `growth-compute` · 4.9 `ramadan-generate` · 4.10 `export-pdf` · 4.11 `household-invite` · 4.12 `account-export` · 4.13 `account-delete` · 4.14 `revenuecat-webhook` · 4.15 `notifications-dispatch` · 4.16 `prices-refresh` · 4.17 `analytics-rollup`
+   - 4.1 `ai-chat` · 4.2 `ai-intake-assess` · 4.3 `ai-generate-plan` · 4.4 `ai-adjust-plan` · 4.5 `ai-analyze-meal` · 4.6 `ai-transcribe` · 4.7 `grocery-generate` · 4.8 `growth-compute` · 4.9 `ramadan-generate` · 4.10 `export-pdf` · 4.11 `household-invite` · 4.12 `account-export` · 4.13 `account-delete` · 4.14 `revenuecat-webhook` · 4.15 `notifications-dispatch` · 4.16 `prices-refresh` · 4.17 `analytics-rollup` · 4.18 `promo-redeem` · 4.19 `health-notes`
 5. [RevenueCat webhook payload handling](#5-revenuecat-webhook-payload-handling)
 6. [OneSignal outbound calls](#6-onesignal-outbound-calls)
 7. [Other outbound calls](#7-other-outbound-calls)
@@ -110,6 +110,7 @@ export const ErrorCode = z.enum([
   'INVITE_INVALID', 'INVITE_EXPIRED', 'INVITE_EMAIL_MISMATCH', 'ALREADY_MEMBER',
   'OWNERSHIP_TRANSFER_REQUIRED', 'ACCOUNT_DELETION_PENDING',
   'PRAYER_TIMES_UNAVAILABLE', 'GROWTH_REFERENCE_OUT_OF_RANGE', 'EXPORT_KIND_UNSUPPORTED',
+  'PROMO_INVALID', 'PROMO_ALREADY_REDEEMED', 'ACTIVE_STORE_SUBSCRIPTION',
   'WEBHOOK_UNAUTHORIZED', 'INTERNAL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
@@ -155,6 +156,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
 | `PRAYER_TIMES_UNAVAILABLE` | 503 | Yes | Aladhan and local computation both failed |
 | `GROWTH_REFERENCE_OUT_OF_RANGE` | 422 | No | Age outside reference tables |
 | `EXPORT_KIND_UNSUPPORTED` | 400 | No | Kind not available in this release |
+| `PROMO_INVALID` / `PROMO_ALREADY_REDEEMED` / `ACTIVE_STORE_SUBSCRIPTION` | 400 / 409 / 409 | No | Promo code redemption (`promo-redeem`) |
 | `WEBHOOK_UNAUTHORIZED` | 401 | No | Bad webhook secret |
 | `INTERNAL` | 500 | Yes | Unexpected; reported to Sentry |
 
@@ -579,6 +581,8 @@ Summary:
 | `notifications-dispatch` | POST `/notifications-dispatch` | Internal (cron) | n/a | By design | Sync |
 | `prices-refresh` | POST `/prices-refresh` | Internal (cron) | n/a | By design | Sync |
 | `analytics-rollup` | POST `/analytics-rollup` | Internal (cron) | n/a | By design | Sync |
+| `promo-redeem` | POST `/promo-redeem` | User | All | By (`promo_code_id`, `user_id`) | Sync |
+| `health-notes` | POST `/health-notes` | User (role owner or caregiver to write) | All | Required for `write` | Sync |
 
 ---
 
@@ -636,10 +640,11 @@ export type AiChatRequest = z.infer<typeof AiChatRequest>;
 SSE wire format: each event is `id: {seq}\nevent: {type}\ndata: {json}\n\n`. Comments `: ping` every 15 s.
 
 ```ts
-export const ChatToolName = z.enum([           // authoritative list and schemas in 12-ai-agent-architecture.md
-  'get_family_member_summary', 'get_meals_for_date', 'search_recipes', 'get_recipe',
-  'search_islamic_sources', 'search_scientific_evidence', 'get_hydration_status',
-  'get_growth_summary', 'get_budget_status', 'propose_plan_adjustment', 'propose_log_entry',
+export const ChatToolName = z.enum([           // mirrors the tool catalog in 12-ai-agent-architecture.md §8 (authoritative)
+  'get_household_snapshot', 'calculate_energy_needs', 'search_meals', 'generate_meal_plan',
+  'adjust_meal_plan', 'build_grocery_list', 'estimate_cost', 'compute_hydration_target',
+  'search_islamic_sources', 'get_growth_status', 'log_meal', 'create_exposure_ladder',
+  'plan_ramadan', 'analyze_meal_photo', 'escalate_to_clinician',
 ]);
 
 export const ChatSseEvent = z.discriminatedUnion('type', [
@@ -708,11 +713,11 @@ data: {"session_id":"5e0c...","user_message_id":"77aa...","assistant_message_id"
 
 id: 2
 event: tool.call
-data: {"tool_call_id":"tc_1","name":"get_family_member_summary","display":"Checking Aisha's profile..."}
+data: {"tool_call_id":"tc_1","name":"get_household_snapshot","display":"Checking Aisha's profile..."}
 
 id: 3
 event: tool.result
-data: {"tool_call_id":"tc_1","name":"get_family_member_summary","ok":true,"summary":"Age 9, no allergies, picky eater module on"}
+data: {"tool_call_id":"tc_1","name":"get_household_snapshot","ok":true,"summary":"Age 9, no allergies, picky eater module on"}
 
 id: 4
 event: message.delta
@@ -889,7 +894,7 @@ Example:
 // 202 Accepted
 { "status": "accepted", "meal_plan_id": "9a8b7c6d-...", "plan_status": "generating", "version": 1, "mode": "full",
   "poll_after_ms": 2000,
-  "realtime": { "schema": "public", "table": "meal_plans", "filter": "id=eq.9a8b7c6d-..." } }
+  "realtime": { "channel": "plan:9a8b7c6d-...", "schema": "public", "table": "meal_plans", "filter": "id=eq.9a8b7c6d-..." } }
 ```
 
 Polling query: `supabase.from('meal_plans').select('id, status, generation_progress, rationale').eq('id', id).single()`.
@@ -1381,7 +1386,33 @@ export const NotificationsDispatchResponse = z.object({
 });
 ```
 
-Reminder kinds materialized (Addition beyond 00-foundations: `notifications.kind` values, since foundations leaves `kind` free text): `meal_reminder`, `hydration_reminder`, `suhoor_reminder`, `iftar_reminder`, `fasting_sunnah_reminder`, `plan_ready`, `grocery_day`, `growth_measure_due`, `billing_issue`, `invite_accepted`, `export_ready`. A unique index on `(user_id, kind, scheduled_for)` makes materialization idempotent.
+**Canonical `notifications.kind` and `notification_preferences.kind` values** (Addition beyond 00-foundations, since foundations leaves `kind` free text; `01-product-requirements.md` and `02-ux-specification.md` reference this list):
+
+| kind | Default | Source | Purpose |
+|---|---|---|---|
+| `daily_plan` | On, 07:00 local | dispatch (materialized) | Today's plan summary |
+| `meal_reminder` | Off | dispatch | Before each scheduled meal |
+| `hydration_reminder` | On | dispatch | Water 20 to 30 minutes before main meals, hydration nudges |
+| `meal_log_prompt` | Off | dispatch | After meals, prompt to log |
+| `journal_prompt` | Off | dispatch | Evening reflection |
+| `grocery_day` | On | dispatch | Shopping day and grocery list ready |
+| `weekly_review` | On | dispatch | Weekly review ready |
+| `plan_ready` | On | `ai-generate-plan`, `ai-adjust-plan` | Async plan generation finished |
+| `plan_failed` | On | `ai-generate-plan` | Generation failed or paused by a red flag |
+| `suhoor_reminder` / `iftar_reminder` | On during Ramadan if planner active | dispatch | Ramadan schedule (ignore quiet hours) |
+| `fasting_sunnah_reminder` | Off (opt-in) | dispatch | Voluntary fast evening-before and suhoor reminders |
+| `growth_measure_due` | On | dispatch | Child measurement reminder |
+| `growth_alert` | Always on (safety) | `growth-compute` | Growth red flag or watch alert, every tier |
+| `allergy_warning` | Always on (safety) | plan and log checks | Allergen safety warning |
+| `exposure_nudge` | On if module active | dispatch | Exposure food of the week |
+| `coaching_tip` | On if module active | dispatch | Age-banded tip from `coaching_tips` |
+| `invite_received` / `invite_accepted` | On | `household-invite` | Household invitation events |
+| `export_ready` | On | `export-pdf`, `account-export` | Export finished |
+| `trial_ending` | On (opt-in local notification) | client | 2 days before trial end (`17-subscription-architecture.md`) |
+| `billing_issue` | On | `revenuecat-webhook` | Grace period or billing retry |
+| `marketing` | Off (opt-in only) | campaigns | Marketing messages |
+
+A unique index on `(user_id, kind, scheduled_for)` makes materialization idempotent.
 
 ### 4.16 `prices-refresh`
 
@@ -1422,6 +1453,49 @@ export const AnalyticsRollupResponse = z.object({
   duration_ms: z.number().int(),
 });
 ```
+
+### 4.18 `promo-redeem`
+
+| | |
+|---|---|
+| Method / path | `POST /functions/v1/promo-redeem` |
+| Auth | User JWT |
+| Rate limit | 5 attempts per hour per user and per IP (`consume_rate_limit()`), brute-force protection |
+| Side effects | `promo_redemptions`, `promo_codes.redeemed_at`, `promo_campaigns.redeemed_count`, `subscriptions` (`store='promotional'`), RevenueCat promotional entitlement, `audit_log`, `analytics_events` (`promo_redeemed`) |
+| Errors | `PROMO_INVALID` (unknown, expired, exhausted or wrong country, one generic message), `PROMO_ALREADY_REDEEMED`, `ACTIVE_STORE_SUBSCRIPTION`, `RATE_LIMITED` |
+
+```ts
+export const PromoRedeemRequest = z.object({ code: z.string().trim().toUpperCase().regex(/^[0-9A-HJKMNP-TV-Z]{10,11}$/) });
+export const PromoRedeemResponse = z.object({ granted_until: IsoInstant, entitlement: z.literal('premium') });
+```
+
+Flow and tables are specified in `17-subscription-architecture.md` §14: hash the code, lock the row, check campaign window, country, remaining redemptions and single use, grant through RevenueCat's promotional entitlement API, then upsert `subscriptions`.
+
+### 4.19 `health-notes`
+
+| | |
+|---|---|
+| Method / path | `POST /functions/v1/health-notes` |
+| Auth | User JWT; RLS is checked with the caller's JWT before any decrypt. `read` needs household membership; `write` needs role `owner` or `caregiver` |
+| Side effects | `write`: the target row's `<column>_enc` and `<column>_key_version` (plaintext column stays null), `audit_log` (logged as `"<changed>"` only) |
+| Errors | `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_FAILED` |
+
+```ts
+export const HealthNoteTarget = z.object({
+  table: z.enum(['medical_conditions', 'allergies', 'nutrition_journal', 'fasting_logs', 'pregnancy_profiles']),
+  row_id: Uuid,
+  column: z.enum(['notes', 'reaction_notes']),
+});
+export const HealthNotesRequest = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('read'), targets: z.array(HealthNoteTarget).min(1).max(50) }),
+  z.object({ action: z.literal('write'), target: HealthNoteTarget, text: z.string().max(4000).nullable() }),
+]);
+export const HealthNotesResponse = z.object({
+  notes: z.array(HealthNoteTarget.extend({ text: z.string().nullable() })),
+});
+```
+
+Encryption is AES-256-GCM in `_shared/crypto.ts` with a per-household data key wrapped by a key held in Supabase Vault (`16-security-architecture.md` §10). pgsodium is not used. Decrypted text is never cached on the server and is returned with `Cache-Control: no-store`.
 
 ## 5. RevenueCat webhook payload handling
 
@@ -1884,6 +1958,6 @@ components:
 | `notifications.kind` value list and unique index `(user_id, kind, scheduled_for)` | 4.15 |
 | `prayer_times_cache` table | 4.9 |
 | Column privilege revoke on `chat_messages (tool_calls, tokens_in, tokens_out, model)` | 3.8 |
-| Error code catalog | 2.3 |
+| Error code catalog (including `PROMO_*` and `ACTIVE_STORE_SUBSCRIPTION`) | 2.3, 4.18 |
 | Headers `X-Api-Version`, `X-App-Version`, `X-App-Build`, `X-Platform`, `x-region`, `x-internal-secret` | 2.2 |
-| Chat tool names (provisional; authoritative list in `12-ai-agent-architecture.md`) | 4.1 |
+| Chat tool names (mirrors `12-ai-agent-architecture.md` §8, which is authoritative) | 4.1 |

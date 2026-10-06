@@ -1544,7 +1544,7 @@ Tools with `sideEffects: 'writes'` (except `log_meal` when the user's message is
 
 ## 11. Plan generation pipeline
 
-`ai-generate-plan` is asynchronous: the public call validates, creates the `meal_plans` row with `status = 'generating'` and an `ai_jobs` row (addition), returns `{ mealPlanId, jobId }` within 2 seconds, and then the job advances stage by stage. Each stage is a separate invocation of the same function in **internal mode** (service-role JWT plus `x-thuluth-job` header), chained by the previous stage and backed by a `pg_cron` sweeper every minute that resumes jobs whose `heartbeat_at` is older than 3 minutes. This keeps every invocation under the Edge Function wall-clock limit without adding a new function.
+`ai-generate-plan` is asynchronous: the public call validates, creates the `meal_plans` row with `status = 'generating'` and an `ai_jobs` row (addition), enqueues a message on the pgmq queue `plan_generation`, and returns `{ mealPlanId, jobId }` within 2 seconds (`00-foundations.md` section 11). The internal `ai-generate-plan/worker` sub-route reads the queue and advances the job stage by stage, one stage per worker invocation, writing user-visible progress to `meal_plans.generation_progress` (shape in `06-api-specification.md` §4.3) and stage outputs to `ai_jobs.state`. The `plan-generation-sweeper` pg_cron job (every minute, `04-system-architecture.md`) kicks a worker for messages whose visibility timeout expired. This keeps every invocation under the Edge Function wall-clock limit without adding a new function.
 
 ```mermaid
 stateDiagram-v2
@@ -1579,7 +1579,7 @@ stateDiagram-v2
 | S7 repair | LLM (`plan.repair`) | Receives the failing gate list and the relevant candidate sets; returns replacement choices for failing slots only. Max 2 repair rounds; if still failing, deterministic fallback: take the highest-scoring feasible candidate for each failing slot. Fail only if no feasible candidate exists. | revised choices |
 | S8 grocery | deterministic | Grocery Engine + Budget Engine (premium optimisation) produce a draft grocery list. | list draft |
 | S9 rationale | LLM (`plan.generate`, prompt `plan.select` second call, or reuse of S4 output) | Plan rationale in the user's locale: weekly theme, how the rule of thirds is applied, per-member notes (child notes framed as rhythm), 2-4 recommendation codes from `recommendations` with sources fetched through the Islamic Knowledge Engine. Output checked by the output guardrails (citations, child filter, numbers). | rationale |
-| S10 persist | deterministic, single transaction | Insert `daily_meals`, `daily_meal_servings`, `grocery_lists`, `shopping_items`, `plan_recommendations`; set `meal_plans.status = 'active'` (archiving the previous active plan of the same kind), `version`, `rationale`; notify the user via `notifications` (push "Your plan is ready"). | ids |
+| S10 persist | deterministic, single transaction | Insert `daily_meals`, `daily_meal_servings`, `grocery_lists`, `shopping_items`, `plan_recommendations`; set `meal_plans.status = 'draft'` (activation, which archives the previous active plan of the same kind, happens through `activate_meal_plan`: automatically for the first onboarding plan, otherwise when the user taps "Start this plan"), `version`, `rationale`; notify the user via `notifications` (push "Your plan is ready"). | ids |
 
 ### 11.1 Validation gates
 
@@ -1623,7 +1623,7 @@ create policy ai_jobs_read on ai_jobs for select using (is_household_member(hous
 -- writes only via service role
 ```
 
-The client subscribes to `meal_plans` row changes with Supabase Realtime and shows a progress indicator mapped from `ai_jobs.stage` (Gathering family details → Calculating needs → Choosing meals → Checking safety → Building grocery list → Writing your plan).
+The client subscribes to row changes on Realtime channel `plan:{meal_plan_id}` and shows a progress indicator mapped from `meal_plans.generation_progress` (the worker copies the current `ai_jobs.stage` into it) (Gathering family details → Calculating needs → Choosing meals → Checking safety → Building grocery list → Writing your plan).
 
 ---
 

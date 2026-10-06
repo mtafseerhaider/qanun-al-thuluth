@@ -607,6 +607,7 @@ Visual: §4.2 band styling; x-axis labels in months under 24 months, years after
 | `servings` | `{ member, status, adapted }[]` | required | Avatar stack (max 5 + "+2"), each with a status glyph (§3.5) and an adaptation dot |
 | `tags` | `('kid_friendly' \| 'autism_friendly' \| 'sunnah_food' \| 'ramadan_suitable' \| 'budget')[]` | [] | `Badge`s, max 2 visible |
 | `waterReminder` | `string \| null` | null | `water` drop icon + caption |
+| `density` | `'default' \| 'cell'` | `'default'` | `cell` is the compact layout inside `PlanWeekGrid` |
 | `onPress` / `onSwap` | handlers | | Swap as secondary action (custom a11y action) |
 
 Visual: `Card variant="elevated"` `rounded-lg`, 16 padding. States: upcoming, current (left/start border 3pt `primary`), all logged (check badge, title `ink-muted`), partly logged, skipped (dash glyph, neutral), swapped (swap glyph), offline queued (`QueuedBadge`), loading (`Skeleton variant="card"`). Proposed `density?: 'default' \| 'cell'` prop for the plan week grid (cell: title + dots only, 2 lines; §15).
@@ -621,10 +622,11 @@ Props (08): `member`, `portionLabel`, `adaptation`, `adaptedMealTitle`, `status`
 |---|---|---|---|
 | `value` | `AcceptanceScore \| null` | required | |
 | `onChange` | `(score) => void` | required | |
-| `variant` | `'faces' \| 'steps'` | `'faces'` | Name kept from 08; **visual uses no faces**: "faces" renders six simple food-interaction icons (plate untouched, plate nudged, hand touch, tongue-free "taste" spoon, half bowl, empty bowl). `steps` renders a 6-step horizontal ladder. See §15 for a suggested rename. |
+| `variant` | `'icons' \| 'steps'` | `'icons'` | Renamed from `'faces'` in 08; **visual uses no faces**: `icons` renders six simple food-interaction icons (plate untouched, plate nudged, hand touch, tongue-free "taste" spoon, half bowl, empty bowl). `steps` renders a 6-step horizontal ladder. |
 | `size` | `Size` | `md` | |
+| `readOnly` | `boolean` | false | Display only (history, analytics) |
 
-Visual: six options, each icon + word (§8.2 of `02-ux-specification.md`), selected option `primary-soft` fill with `primary` border and check; sequential teal ramp only as a subtle background tint. States: unset, selected, disabled, read-only (proposed `readOnly`). Accessibility: radio group "How did it go with {food}?", each option "3, Tasted".
+Visual: six options, each icon + word (§8.2 of `02-ux-specification.md`), selected option `primary-soft` fill with `primary` border and check; sequential teal ramp only as a subtle background tint. States: unset, selected, disabled, read-only (`readOnly`). Accessibility: radio group "How did it go with {food}?", each option "3, Tasted".
 
 #### `ExposureLadder` (08 §5.8)
 
@@ -1311,7 +1313,7 @@ These are design-system items that `08-component-architecture.md` should adopt o
 | 2 | Calm theme mechanism | 08 §10.2 says a `calm` class is added at the root; this document implements the palette swap with NativeWind `vars()` (§11.5), which works on native without custom class selectors. Behavioural changes read `sensoryCalm` via hooks. |
 | 3 | Font family keys | 08 lists `ui`, `urdu`, `arabic`; add `quran` (Amiri Quran for Qur'anic text) and weight-specific keys (`ui-medium`, `ui-semibold`, `ui-bold`, `ui-display`, `urdu-bold`, `arabic-bold`). |
 | 4 | Preset path | 08 places the preset at `packages/config/tailwind/preset.js`; this document keeps that and adds `packages/config/src/tokens.ts` compiled to `dist/tokens.cjs`. |
-| 5 | `AcceptanceScorePicker.variant = 'faces'` | Visual has no faces (§2.3 rule 1). Suggest renaming the value to `'icons'` in 08; until then `'faces'` renders icons. Add `readOnly?: boolean`. |
+| 5 | `AcceptanceScorePicker.variant` | Visual has no faces (§2.3 rule 1). Adopted in 08: value renamed to `'icons'`; `readOnly?: boolean` added. |
 | 6 | `MealCard` | Add `density?: 'default' \| 'cell'` for `PlanWeekGrid`. |
 | 7 | `GrowthChart.percentileCurves` | Extend the percentile union with 5, 10, 25, 75, 90, 95 for CDC charts. |
 | 8 | `PaywallSheet.trigger` | Extend the union with `plan_multi_week`, `plan_adjust`, `grocery_optimize`, `sensory_profile`, `picky_coaching`, `insights`, `household_limit`, `member_limit` (used by `02-ux-specification.md` §3.3). |

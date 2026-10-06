@@ -311,7 +311,10 @@ The 25 documents were written in parallel against this baseline. Where they made
 | Plan generation execution | `ai-generate-plan` enqueues to the pgmq queue `plan_generation`; its `/worker` sub-route processes stages and writes progress to `meal_plans.generation_progress`, streamed to the app over Realtime. |
 | Recommendation publishing | A recommendation is shown to users only when it links to at least one verified Islamic source **and** one scientific evidence row, unless it is flagged `science_only` (pure nutrition guidance with no Islamic claim). |
 | Schema additions | Tables and columns that other documents mark as "Addition beyond 00-foundations" are accepted. They are collected into follow-up migrations in Sprint 0 (story in `24-sprint-plan.md`), and `05-database-schema.md` is the place they land. |
-| Store reviewer access | A dedicated reviewer account with a fixed OTP configured through Supabase Auth test OTPs in production only for that address (see `11-authentication.md`). |
+| Store reviewer access | Supabase test OTPs cover phone numbers, not email, so the reviewer account `reviewer@thuluth.app` signs in with a password instead. The password is set by an admin; the app reveals a password field only when that exact address is entered; a Supabase "before user created" Auth hook rejects any other password sign-up. Verify the hook behaviour in Sprint 0 (see `11-authentication.md` section 3.1.1). |
+| Plan status after generation | Generation finishes at `draft`. The first plan created during onboarding is activated automatically by the app calling `activate_meal_plan`; every later plan shows a review screen and becomes `active` when the user taps "Start this plan". |
+| Coach permissions (Phase 2) | Coaches read household data for the members the owner grants and write plans for them; RLS in `05-database-schema.md` is the reference. |
+| JS bundle budget | 6 MB of Hermes bytecode, enforced as a PR check (`21-testing-strategy.md`). |
 
 ### Decisions still open for the product owner
 

@@ -126,6 +126,10 @@ Production email uses a custom SMTP provider with SPF, DKIM and DMARC on `thulut
 | Email normalization | `trim().toLowerCase()`, validated with `z.string().email()` | Client and Supabase |
 | New vs existing account | `shouldCreateUser: true`: one screen handles both | supabase-js |
 
+### 3.1.1 Store reviewer account
+
+App Store and Play reviewers cannot read an inbox, so production has one dedicated reviewer account, `reviewer@thuluth.app` (`00-foundations.md` section 11). Supabase test OTPs apply to phone numbers only, so this account signs in with a password: an admin sets it in the `thuluth-prod` dashboard, the login screen reveals a password field only when that exact address is typed, and a Supabase "before user created" Auth hook rejects every password-based sign-up so no other account can use this path. Sprint 0 verifies the hook blocks password sign-up through the public API. The account is a normal user with a sample household and premium through a promotional entitlement (`17-subscription-architecture.md`). Controls: the password is stored in the team password manager and in the review notes only (`22-mvp-roadmap.md` §7.5), the normal `token_verifications` rate limit applies, sign-ins for the address are written to `audit_log`, and the password is rotated after each review cycle. Dev and staging do not enable the password path.
+
 ### 3.2 Flow
 
 ```mermaid
@@ -845,4 +849,5 @@ All auth errors are normalized to `AppError` codes and localized in `locales/*/e
 | Trigger on `family_members` insert enforcing `child_data` consent | Raises `CHILD_DATA_CONSENT_REQUIRED`. |
 | Trigger on `auth.identities` writing `audit_log` | Identity link/unlink auditing. |
 | `household-invite` actions `create`, `accept`, `revoke`, `remove_member` | Action names inside the canonical function. |
+| Password sign-in for `reviewer@thuluth.app` only | Store review access (section 3.1.1), guarded by a before-user-created Auth hook. |
 | Error codes `REAUTH_REQUIRED`, `INVITE_*`, `ALREADY_MEMBER`, `ROLE_NOT_AVAILABLE`, `CHILD_DATA_CONSENT_REQUIRED` | Envelope codes per 00 §4.2. |

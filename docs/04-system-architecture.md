@@ -370,7 +370,7 @@ Mechanics:
 3. The worker reads the message with `pgmq.read('plan_generation', vt => 300, qty => 1)`, generates one week per model call (keeps each call under about 90 s), writes rows for that week, updates `meal_plans.generation_progress`, and re-kicks itself for the next week if the remaining wall-clock budget is under 120 s.
 4. On completion it sets `status = 'draft'`, deletes the queue message, writes `ai_usage`, and inserts a `notifications` row (`kind = 'plan_ready'`) for users not currently connected.
 5. If a worker crashes, the message becomes visible again after the 300 s visibility timeout and `plan-generation-sweeper` (cron, every minute) kicks a worker. `read_ct > 3` marks the plan `failed` with `generation_progress.error_code = 'AI_UNAVAILABLE'`.
-6. Client: subscribes to Realtime `postgres_changes` on `meal_plans` with filter `id=eq.{meal_plan_id}` and also polls `GET meal_plans?id=eq.{id}&select=status,generation_progress` with backoff (2 s, 4 s, 8 s, then every 10 s, max 10 min). Polling covers Realtime disconnects on mobile networks. Whichever sees a terminal status first wins.
+6. Client: subscribes on Realtime channel `plan:{meal_plan_id}` to `postgres_changes` on `meal_plans` with filter `id=eq.{meal_plan_id}` and also polls `GET meal_plans?id=eq.{id}&select=status,generation_progress` with backoff (2 s, 4 s, 8 s, then every 10 s, max 10 min). Polling covers Realtime disconnects on mobile networks. Whichever sees a terminal status first wins.
 
 ### 5.4 Webhooks
 
@@ -492,7 +492,7 @@ sequenceDiagram
     EF-->>App: event: message.start
     EF->>PG: Load context snapshot (members, plan today, memories by vector search)
     EF->>AI: stream(system prompt + tools + history + user msg)
-    AI-->>EF: tool_use get_family_member_summary {member: "Member A"}
+    AI-->>EF: tool_use get_household_snapshot {familyMemberIds: ["Member A"]}
     EF-->>App: event: tool.call
     EF->>PG: Tool executes with user-scoped client (RLS)
     EF-->>App: event: tool.result (summary only)

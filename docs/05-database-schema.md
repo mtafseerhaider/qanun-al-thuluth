@@ -29,6 +29,9 @@
 19. [Seed strategy](#19-seed-strategy)
 20. [Additions beyond 00-foundations](#20-additions-beyond-00-foundations)
 21. [Acceptance criteria and test hooks](#21-acceptance-criteria-and-test-hooks)
+22. [Consolidated additions (migrations 0017 onward)](#22-consolidated-additions-migrations-0017-onward)
+    - New tables: `ai_jobs`, `safety_events`, `ai_eval_cases`, `ai_eval_runs`, `scholar_reviewers`, `scholarly_notes`, `quran_text`, `pantry_items`, `ingredient_substitutions`, `consent_versions`, `data_subject_requests`, `deleted_user_ledger`, `household_keys`, `revenuecat_events`, `promo_campaigns`, `promo_codes`, `promo_redemptions`, `analytics_event_catalog`, `analytics.metric_snapshots`, `idempotency_keys`, `rate_limit_buckets`, `prayer_times_cache`
+    - New views: `citable_islamic_sources`, `v_knowledge_status`, `v_qada_balance`, `fasting_logs_visible`, `mv_current_prices`, ten `analytics.mv_*` views; pgmq queue `plan_generation`
 
 ---
 
@@ -68,6 +71,8 @@ File names follow the Supabase CLI convention `<UTC timestamp>_<name>.sql`. The 
 | 0012 | `20261001001200_triggers.sql` | `updated_at` loop, derived columns, entitlement limits, audit, auth profile creation, membership bootstrap |
 | 0013 | `20261001001300_rls.sql` | `enable row level security` on every table and all policies |
 | 0014 | `20261001001400_analytics_cron.sql` | Partition maintenance, materialized views, all `pg_cron` jobs |
+
+Migrations 0015 and 0016 (Storage, Realtime) are in `10-supabase-structure.md`; 0016b and 0017 to 0026 (consolidated additions from the other documents) are listed in [section 22.1](#221-migration-plan-0015-onward).
 
 Rules for future migrations are in `10-supabase-structure.md` section "Migration rules". The short version: forward-only, additive enum changes only, every new table ships with RLS policies and a pgTAP test in the same pull request.
 
@@ -3208,7 +3213,7 @@ begin
   return v_created;
 end $$;
 
-create or replace function private.drop_old_analytics_partitions(p_keep_months integer default 25)
+create or replace function private.drop_old_analytics_partitions(p_keep_months integer default 13)
 returns integer language plpgsql security definer set search_path = '' as $$
 declare r record; v_month date; v_dropped integer := 0;
 begin
@@ -3377,7 +3382,7 @@ select cron.schedule('exports-purge-expired', '25 * * * *',
 select cron.schedule('analytics-partitions', '0 3 20 * *',
   $$select private.ensure_analytics_partitions(3)$$);
 select cron.schedule('analytics-retention', '30 3 1 * *',
-  $$select private.drop_old_analytics_partitions(25)$$);
+  $$select private.drop_old_analytics_partitions(13)$$);
 select cron.schedule('refresh-life-stages', '5 19 * * *',                  -- 00:05 PKT
   $$select private.refresh_life_stages()$$);
 select cron.schedule('ai-memories-expire', '20 19 * * *',
@@ -3408,7 +3413,7 @@ Retention aligns with `16-security-architecture.md` (privacy) and `18-exports-an
 |---|---|---|
 | Soft-deleted rows (all tables with `deleted_at` except `users`, `households`) | 30 days after `deleted_at`, then hard-deleted | `soft-delete-purge` cron |
 | Account (`users`, owned `households` and everything under them) | Erased within 30 days of request; immediate soft-delete and sign-out | `account-delete` Edge Function deletes `auth.users`, cascading through `public.users` |
-| Analytics events | 25 months, then partition dropped; `user_id`/`household_id` deleted on account erasure | `analytics-retention` cron, `account-delete` |
+| Analytics events | 13 months, then partition dropped; `user_id`/`household_id` deleted on account erasure | `analytics-retention` cron, `account-delete` |
 | Audit log | 3 years; on erasure `actor_user_id` and `household_id` become null (FK `set null`), diffs of health tables contain keys only | `audit-retention` cron |
 | AI usage metering | 25 months (billing disputes, cost analysis) | `ai-usage-retention` cron |
 | Chat sessions and messages | Until the user deletes the session or the account. Attachments in Storage are removed with the session (`10-supabase-structure.md`) | `soft_delete('chat_sessions')` then purge |
@@ -3482,6 +3487,8 @@ join public.ingredients i on lower(i.name) = lower(v.name);
 
 ## 20. Additions beyond 00-foundations
 
+This table covers additions made in migrations 0001 to 0014. Additions requested by the other documents and migrated in 0016b and 0017 to 0026 are traced in [section 22.15](#2215-traceability).
+
 | Kind | Name | Reason |
 |---|---|---|
 | Extension | `pg_net` | `pg_cron` to Edge Function HTTP calls |
@@ -3529,3 +3536,2313 @@ pgTAP tests live in `supabase/tests/` (structure in `10-supabase-structure.md`, 
 10. **Derived data:** `family_members.life_stage` is `toddler` for a DOB 20 months ago; `growth_tracking.bmi` equals `compute_bmi`; adding a recipe ingredient updates `recipes.per_serving_nutrition`.
 11. **Partitions:** `analytics_events` has partitions for the current month and the next three; `authenticated` cannot select from `analytics_events` or any partition.
 12. **Indexes:** `explain` of `select * from ai_memories order by embedding <=> $1 limit 8` uses `ai_memories_embedding_hnsw`.
+
+## 22. Consolidated additions (migrations 0017 onward)
+
+Documents 01 to 25 were written in parallel and each ended with "Additions beyond 00-foundations". Per `00-foundations.md` section 11 ("Schema additions"), every MVP addition is collected here as forward-only migrations 0017 to 0026, applied after `10-supabase-structure.md` migrations 0015 (Storage), 0016 (Realtime) and 0016b (`voice-notes` bucket, `10-supabase-structure.md` section 6.5). Nothing in 0001 to 0014 is edited: tables from those migrations change only through `alter table`, and replaced functions use `create or replace` (the publishing gate from 0012 is one of them).
+
+Resolutions applied from `00-foundations.md` section 11:
+
+- **Rate limiting:** one table `rate_limit_buckets` and one function `consume_rate_limit()` (0025). Every mention of `rate_limits` (for example in `16-security-architecture.md`) means this table.
+- **Sensitive notes:** no pgsodium. Free-text notes live in `*_enc bytea` columns with `*_key_version`, written only by the `health-notes` Edge Function using per-household DEKs (`household_keys`) wrapped by a KEK in Supabase Vault (0022). Plaintext columns are constrained to null.
+- **Recommendation publishing:** `recommendations.science_only boolean not null default false`; the 0012 gate is replaced so a `science_only` recommendation needs only scientific evidence (0019).
+- **Premium scope:** `has_premium` and `household_has_premium` from 0011 are reused, not redefined.
+- **Plan generation:** pgmq queue `plan_generation`, progress in `meal_plans.generation_progress`, streamed over the existing Realtime publication (0026).
+
+### 22.1 Migration plan (0015 onward)
+
+| # | File | Contents |
+|---|---|---|
+| 0015 | `20261001001500_storage.sql` | Buckets and Storage policies (`10-supabase-structure.md` section 6.4) |
+| 0016 | `20261001001600_realtime.sql` | Realtime publication and private channel policies (`10-supabase-structure.md` section 7.3) |
+| 0016b | `20261001001650_storage_voice_notes.sql` | `voice-notes` bucket and policies (`10-supabase-structure.md` section 6.5) |
+| 0017 | `20261001001700_consolidation_helpers.sql` | `attach_updated_at`, `attach_audit`, `has_household_role`, `has_content_role`, cross-domain `users` columns |
+| 0018 | `20261001001800_ai_jobs_safety.sql` | `ai_jobs`, `safety_events`, `ai_eval_cases`, `ai_eval_runs`, metering and memory columns, `chat_messages` column privileges, `ai_quota_check` |
+| 0019 | `20261001001900_islamic_knowledge_extras.sql` | `scholar_reviewers`, `scholarly_notes`, `quran_text`, citation codes, two-reviewer verification, retraction, `science_only` publishing gate, `citable_islamic_sources`, `search_islamic_sources`, `v_knowledge_status`, content-role policies |
+| 0020 | `20261001002000_meal_planning_grocery_extras.sql` | `households.preferences`, ingredient yields, tiered portions, leftovers and lunchboxes, weekly themes, price screening, `mv_current_prices`, `pantry_items`, `ingredient_substitutions` |
+| 0021 | `20261001002100_health_modules_extras.sql` | `family_members.lifestyle`, growth inputs, Hijri offset and qada, Ramadan calculation settings, picky-eater values, `v_qada_balance`, `growth_dashboard`, `picky_acceptance_summary` |
+| 0022 | `20261001002200_security_privacy.sql` | `consent_versions`, consent triggers, `data_subject_requests`, `deleted_user_ledger`, `household_keys`, `*_enc` columns, `fasting_logs_visible`, identity audit, erasure executor |
+| 0023 | `20261001002300_subscriptions_promos.sql` | Subscription lifecycle columns, `revenuecat_events`, promo tables, `premium_for`, `get_my_entitlements`, `trial_ending` preference |
+| 0024 | `20261001002400_analytics.sql` | Event columns, `analytics_event_catalog`, `track_events`, schema `analytics` with materialized views and `metric_snapshots`, `get_family_insights` |
+| 0025 | `20261001002500_platform_idempotency_rate_limits.sql` | `idempotency_keys`, `rate_limit_buckets`, `consume_rate_limit`, `prayer_times_cache`, account-data exports, `evaluate_feature_flags`, housekeeping cron |
+| 0026 | `20261001002600_plan_generation_queue.sql` | pgmq `plan_generation`, `meal_plans.generation_progress`, queue wrappers, `write_plan_week`, `activate_meal_plan`, sweeper cron |
+
+No migration adds an enum value, so none needs its own transaction (`10-supabase-structure.md` section 16 rule 4).
+
+### 22.2 New tables and views at a glance
+
+| Domain | Tables | Views, materialized views |
+|---|---|---|
+| AI jobs and safety | `ai_jobs`, `safety_events`, `ai_eval_cases`, `ai_eval_runs` | |
+| Islamic knowledge | `scholar_reviewers`, `scholarly_notes`, `quran_text` | `citable_islamic_sources`, `v_knowledge_status` |
+| Meal planning and grocery | `pantry_items`, `ingredient_substitutions` | `mv_current_prices` |
+| Health modules | | `v_qada_balance` |
+| Security and privacy | `consent_versions`, `data_subject_requests`, `deleted_user_ledger`, `household_keys` | `fasting_logs_visible` |
+| Subscriptions and promos | `revenuecat_events`, `promo_campaigns`, `promo_codes`, `promo_redemptions` | |
+| Analytics | `analytics_event_catalog`, `analytics.metric_snapshots` | `analytics.mv_user_active_days`, `mv_dau`, `mv_meal_adherence_daily`, `mv_plan_completion`, `mv_retention_weekly`, `mv_food_acceptance_weekly`, `mv_hydration_daily`, `mv_growth_coverage_monthly`, `mv_paywall_funnel_daily`, `mv_family_weekly_summary` |
+| Platform | `idempotency_keys`, `rate_limit_buckets` (unlogged), `prayer_times_cache` | |
+| Queue | pgmq `plan_generation` (tables `pgmq.q_plan_generation`, `pgmq.a_plan_generation`) | |
+
+```mermaid
+erDiagram
+    households ||--o{ ai_jobs : runs
+    households ||--o{ safety_events : escalates
+    family_members |o--o{ safety_events : about
+    chat_messages |o--o{ safety_events : raised_in
+    households ||--o{ pantry_items : stocks
+    ingredients ||--o{ ingredient_substitutions : "from / to"
+    households ||--o| household_keys : "wrapped DEK"
+    scholar_reviewers ||--o{ source_verifications : approves
+    scholarly_notes ||--o| islamic_sources : "indexed_as (kind scholarly)"
+    users ||--o{ promo_redemptions : redeems
+    promo_campaigns ||--o{ promo_codes : issues
+    promo_codes ||--o{ promo_redemptions : redeemed_by
+    users |o--o{ data_subject_requests : files
+    users |o--o{ idempotency_keys : sends
+    ai_eval_cases ||--o{ ai_eval_runs : evaluated_in
+    daily_meals |o--o{ daily_meals : "source_daily_meal_id (leftovers)"
+```
+
+Access patterns for the new tables (all have RLS enabled and at least one policy, matching acceptance criterion 1 in section 21):
+
+| Pattern | Tables |
+|---|---|
+| Household members read, writes by service role (`apply_household_rls(..., 'service')` or equivalent) | `ai_jobs`, `safety_events` (editors may resolve) |
+| Household members read, owner and caregiver write (`apply_household_rls(..., 'edit')`) | `pantry_items` |
+| Global catalog: everyone reads, admins write (`apply_catalog_rls`) | `ingredient_substitutions`, `consent_versions`, `analytics_event_catalog` |
+| Content roles (`has_content_role`) and admins | `scholar_reviewers`, `scholarly_notes`, `quran_text`, plus new policies on the 0006 knowledge tables |
+| User reads own rows, admins manage | `promo_redemptions`, `data_subject_requests` |
+| Service role only; admins may read for support (grants revoked from `authenticated`) | `idempotency_keys`, `rate_limit_buckets`, `prayer_times_cache`, `revenuecat_events`, `deleted_user_ledger`, `promo_campaigns`, `promo_codes`, `ai_eval_cases`, `ai_eval_runs`, `analytics.metric_snapshots` |
+| Nobody through the API (`using (false)`) | `household_keys` |
+
+### 22.3 0017 Consolidation helpers
+
+```sql
+-- supabase/migrations/20261001001700_consolidation_helpers.sql
+-- Shared helpers for migrations 0018 onward, plus the users columns that several domains read.
+
+-- 17.1 Attach the standard updated_at and audit triggers to tables created after 0012 -------------
+create or replace procedure private.attach_updated_at(p_table regclass)
+language plpgsql set search_path = '' as $$
+declare v_name text := (select relname from pg_class where oid = p_table);
+begin
+  execute format('create trigger %I before update on %s for each row execute function public.set_updated_at()',
+                 'trg_' || v_name || '_updated_at', p_table);
+end $$;
+
+-- p_mode: 'full' or 'keys_only' (health data), as in private.audit_row_change() from 0012
+create or replace procedure private.attach_audit(p_table regclass, p_mode text)
+language plpgsql set search_path = '' as $$
+declare v_name text := (select relname from pg_class where oid = p_table);
+begin
+  execute format('create trigger %I after insert or update or delete on %s for each row execute function private.audit_row_change(%L)',
+                 'trg_' || v_name || '_audit', p_table, p_mode);
+end $$;
+
+-- 17.2 Role helpers ---------------------------------------------------------------------------
+-- From 11-authentication.md section 10.2, aligned with 05 conventions (search_path '', soft-deleted memberships ignored).
+create or replace function public.has_household_role(p_household_id uuid, p_roles public.household_role[])
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.household_members hm
+    where hm.household_id = p_household_id
+      and hm.user_id = auth.uid()
+      and hm.deleted_at is null
+      and hm.role = any (p_roles)
+  );
+$$;
+revoke all on function public.has_household_role(uuid, public.household_role[]) from public, anon;
+grant execute on function public.has_household_role(uuid, public.household_role[]) to authenticated, service_role;
+
+-- Knowledge-base admin roles from 13-islamic-knowledge-module.md section 8.1. Claims live in
+-- auth.users.raw_app_meta_data as {"role":"content_editor"} or {"roles":["scholar_reviewer","content_editor"]}
+-- and are set only with the service role. Platform admins (is_admin) pass every check.
+create or replace function public.has_content_role(variadic p_roles text[])
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select public.is_admin()
+      or coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = any (p_roles), false)
+      or coalesce((
+           select bool_or(r = any (p_roles))
+           from jsonb_array_elements_text(
+                  case when jsonb_typeof(auth.jwt() -> 'app_metadata' -> 'roles') = 'array'
+                       then auth.jwt() -> 'app_metadata' -> 'roles' else '[]'::jsonb end) as r), false);
+$$;
+revoke all on function public.has_content_role(text[]) from public, anon;
+grant execute on function public.has_content_role(text[]) to authenticated, service_role;
+
+-- 17.3 users columns read across domains ----------------------------------------------------
+alter table public.users
+  add column age_attested_at        timestamptz,                         -- 11 section 13: account holder attests 18+
+  add column deletion_scheduled_for timestamptz,                         -- 04, 06 section 4.13: erasure grace period
+  add column processing_restricted  boolean not null default false,      -- 16 section 7.4: GDPR restriction, blocks AI and analytics
+  add column analytics_opt_out      boolean not null default false,      -- 18 section 14: objection to analytics
+  add column is_internal            boolean not null default false;      -- 18: staff and test accounts excluded from metrics
+create index users_deletion_due_idx on public.users (deletion_scheduled_for) where deletion_scheduled_for is not null;
+
+-- clients may set the attestation and the analytics toggle; the rest is service-only
+grant update (age_attested_at, analytics_opt_out) on public.users to authenticated;
+```
+
+### 22.4 0018 AI jobs and safety
+
+```sql
+-- supabase/migrations/20261001001800_ai_jobs_safety.sql
+-- AI job tracking, safety escalations, evals, metering columns and quota check (12-ai-agent-architecture.md).
+
+-- 18.1 ai_jobs: resumable stages of plan generation, adjustment, Ramadan generation and assessment.
+-- Transport is the pgmq queue plan_generation (0026); this table is the durable stage record.
+create table public.ai_jobs (
+  id            uuid primary key default gen_random_uuid(),
+  household_id  uuid not null references public.households(id) on delete cascade,
+  user_id       uuid references public.users(id) on delete set null,
+  kind          text not null check (kind in ('plan_generate','plan_adjust','ramadan_generate','assessment')),
+  subject_id    uuid,                                   -- meal_plans.id, ramadan_plans.id or ai_assessments.id
+  status        text not null default 'queued'
+                  check (status in ('queued','running','succeeded','failed','blocked_red_flag','cancelled')),
+  stage         text not null default 's0_queued',
+  attempts      integer not null default 0 check (attempts >= 0),
+  state         jsonb not null default '{}'::jsonb,     -- stage outputs; no free text beyond what plans already hold
+  error         jsonb,
+  request_id    uuid not null default gen_random_uuid(),
+  heartbeat_at  timestamptz,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index ai_jobs_household_idx on public.ai_jobs (household_id, created_at desc);
+create index ai_jobs_resume_idx on public.ai_jobs (status, heartbeat_at) where status in ('queued','running');
+create index ai_jobs_subject_idx on public.ai_jobs (subject_id) where subject_id is not null;
+call private.attach_updated_at('public.ai_jobs');
+call private.apply_household_rls('public.ai_jobs', 'service');   -- members read; writes by service role only
+
+-- 18.2 safety_events: durable record of red-flag escalations (00-foundations section 10.2)
+create table public.safety_events (
+  id                uuid primary key default gen_random_uuid(),
+  household_id      uuid not null references public.households(id) on delete cascade,
+  family_member_id  uuid,
+  user_id           uuid references public.users(id) on delete set null,
+  source            text not null check (source in ('chat','plan_generation','photo','growth','intake')),
+  category          text not null check (char_length(category) <= 64),   -- matches escalate_to_clinician.category
+  urgency           text not null check (urgency in ('emergency_now','same_day','soon','routine')),
+  evidence          text check (char_length(evidence) <= 1000),         -- short text already shown to the user
+  chat_message_id   uuid references public.chat_messages(id) on delete set null,
+  resolved_at       timestamptz,
+  resolved_by       uuid references public.users(id) on delete set null,
+  resolved_note     text check (char_length(resolved_note) <= 1000),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  foreign key (family_member_id, household_id)
+    references public.family_members(id, household_id) on delete set null (family_member_id)
+);
+create index safety_events_household_idx on public.safety_events (household_id, created_at desc);
+create index safety_events_open_idx on public.safety_events (household_id) where resolved_at is null;
+create index safety_events_member_idx on public.safety_events (family_member_id) where family_member_id is not null;
+call private.attach_updated_at('public.safety_events');
+call private.attach_audit('public.safety_events', 'keys_only');
+
+alter table public.safety_events enable row level security;
+create policy safety_events_select_member on public.safety_events for select to authenticated
+  using (public.is_household_member(household_id));
+create policy safety_events_resolve_editor on public.safety_events for update to authenticated
+  using (public.can_edit_household(household_id))
+  with check (public.can_edit_household(household_id) and resolved_by = auth.uid());
+revoke insert, update, delete on public.safety_events from authenticated;
+grant update (resolved_at, resolved_by, resolved_note) on public.safety_events to authenticated;
+
+-- 18.3 Eval harness (12 section 19, 21 section 20). Deployed everywhere, populated in staging and CI only.
+create table public.ai_eval_cases (
+  id          uuid primary key default gen_random_uuid(),
+  suite       text not null check (suite ~ '^[a-z0-9_.]+$'),
+  case_key    text not null,
+  fixture     jsonb not null,
+  expect      jsonb not null,
+  active      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  unique (suite, case_key)
+);
+create table public.ai_eval_runs (
+  id               uuid primary key default gen_random_uuid(),
+  suite            text not null,
+  git_sha          text,
+  case_id          uuid references public.ai_eval_cases(id) on delete cascade,   -- null = suite-level summary row
+  prompt_key       text,
+  prompt_version   integer,
+  route_key        text,
+  model            text,
+  passed           boolean not null,
+  judge_score      numeric(4,2) check (judge_score between 0 and 10),
+  output           jsonb,
+  prompt_versions  jsonb not null default '{}'::jsonb,   -- summary rows (21): {"chat.system": 7, ...}
+  routes           jsonb not null default '{}'::jsonb,
+  metrics          jsonb not null default '{}'::jsonb,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+create index ai_eval_runs_suite_idx on public.ai_eval_runs (suite, created_at desc);
+create index ai_eval_runs_case_idx on public.ai_eval_runs (case_id, created_at desc) where case_id is not null;
+call private.attach_updated_at('public.ai_eval_cases');
+call private.attach_updated_at('public.ai_eval_runs');
+alter table public.ai_eval_cases enable row level security;
+alter table public.ai_eval_runs enable row level security;
+create policy ai_eval_cases_admin on public.ai_eval_cases for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+create policy ai_eval_runs_admin on public.ai_eval_runs for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- 18.4 Metering and memory columns (05 already has ai_usage.request_id and ai_usage.status)
+alter table public.ai_usage
+  add column prompt_key          text,
+  add column prompt_version      integer check (prompt_version >= 1),
+  add column cache_read_tokens   integer not null default 0 check (cache_read_tokens >= 0),
+  add column cache_write_tokens  integer not null default 0 check (cache_write_tokens >= 0);
+create index ai_usage_user_created_idx on public.ai_usage (user_id, created_at desc) include (cost_usd_micros);
+
+alter table public.ai_memories
+  add column kind    text not null default 'context' check (kind in ('preference','routine','context','goal_context')),
+  add column status  text not null default 'active'  check (status in ('active','superseded','withdrawn'));
+create index ai_memories_active_idx on public.ai_memories (household_id, kind) where status = 'active' and deleted_at is null;
+
+-- 18.5 chat_messages: hide tool_calls, tokens and model from clients (06 section 3.8).
+-- A column revoke has no effect while a table-level grant exists, so the grant is replaced by a column list.
+revoke select on public.chat_messages from authenticated;
+grant select (id, session_id, household_id, role, content, attachments, safety_flags, created_at, updated_at)
+  on public.chat_messages to authenticated;
+
+-- 18.6 ai_quota_check: server-side caps (12 section 17). Caps come from feature_flags key 'ai.caps'
+-- (rules = {"free": {...}, "premium": {...}}, merged per tier over the defaults below). Service role only.
+create or replace function public.ai_quota_check(p_user_id uuid, p_route_key text)
+returns table (allowed boolean, remaining integer, degrade_to text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_defaults constant jsonb := '{
+    "free":    {"per_day": {"chat.default": 20,  "vision.meal_analysis": 0,  "speech.transcribe": 0,  "plan.adjust": 0},
+                "monthly_hard_usd_micros": 500000},
+    "premium": {"per_day": {"chat.default": 200, "vision.meal_analysis": 15, "speech.transcribe": 40, "plan.adjust": 20},
+                "monthly_hard_usd_micros": 8000000, "degrade_route": "chat.free"}}'::jsonb;
+  v_tier       text := case when public.has_premium(p_user_id) then 'premium' else 'free' end;
+  v_rules      jsonb;
+  v_cap        integer;
+  v_tz         text;
+  v_day_start  timestamptz;
+  v_used       integer;
+  v_month_cost bigint;
+  v_restricted boolean;
+begin
+  select coalesce(u.timezone, 'UTC'), u.processing_restricted into v_tz, v_restricted
+    from public.users u where u.id = p_user_id;
+  if v_restricted is null or v_restricted then          -- unknown user or GDPR restriction
+    return query select false, 0, null::text;
+    return;
+  end if;
+
+  v_rules := (v_defaults -> v_tier)
+             || coalesce((select f.rules -> v_tier from public.feature_flags f where f.key = 'ai.caps' and f.enabled), '{}'::jsonb);
+  v_cap := (v_rules -> 'per_day' ->> p_route_key)::integer;          -- null = no daily cap for this route
+  v_day_start := date_trunc('day', now() at time zone v_tz) at time zone v_tz;
+
+  if p_route_key = 'chat.default' then                               -- chat caps count user messages, not model calls
+    select count(*) into v_used
+      from public.chat_messages m join public.chat_sessions s on s.id = m.session_id
+     where s.user_id = p_user_id and m.role = 'user' and m.created_at >= v_day_start;
+  else
+    select count(*) into v_used
+      from public.ai_usage a
+     where a.user_id = p_user_id and a.route_key = p_route_key and a.created_at >= v_day_start and a.status <> 'blocked';
+  end if;
+
+  select coalesce(sum(a.cost_usd_micros), 0) into v_month_cost
+    from public.ai_usage a
+   where a.user_id = p_user_id and a.created_at >= date_trunc('month', now());
+
+  if v_month_cost >= coalesce((v_rules ->> 'monthly_hard_usd_micros')::bigint, 9223372036854775807) then
+    if v_tier = 'premium' then
+      return query select (v_cap is null or v_used < v_cap), case when v_cap is null then null else greatest(v_cap - v_used, 0) end, v_rules ->> 'degrade_route';
+    else
+      return query select false, 0, null::text;
+    end if;
+    return;
+  end if;
+
+  return query select (v_cap is null or v_used < v_cap), case when v_cap is null then null else greatest(v_cap - v_used, 0) end, null::text;
+end $$;
+revoke all on function public.ai_quota_check(uuid, text) from public, anon, authenticated;
+grant execute on function public.ai_quota_check(uuid, text) to service_role;
+```
+
+Notes:
+- `ai_jobs` and the pgmq queue are complementary: the queue delivers work and retries on visibility timeout, `ai_jobs` keeps the stage state a resumed worker needs and the history the admin console shows.
+- `ai_eval_runs` merges the two shapes requested: per-case rows (`12-ai-agent-architecture.md`) and suite summary rows with `case_id` null (`21-testing-strategy.md`). The table exists in production but is written only by CI against staging.
+- Route keys `chat.summarize`, `eval.judge` and `chat.free` are `ai_model_routes` seed rows (section 19, order 13), not schema.
+
+### 22.5 0019 Islamic knowledge extras
+
+```sql
+-- supabase/migrations/20261001001900_islamic_knowledge_extras.sql
+-- Two-reviewer verification, citation codes, scholarly notes, retraction, science_only publishing
+-- (13-islamic-knowledge-module.md, 12-ai-agent-architecture.md section 9, 00-foundations section 11).
+
+-- 19.1 Reviewers and staging tables -----------------------------------------------------------
+create table public.scholar_reviewers (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid unique references public.users(id) on delete set null,   -- admin console account
+  full_name            text not null,
+  credentials          text not null,
+  institution          text,
+  traditions           public.source_tradition[] not null check (cardinality(traditions) >= 1),
+  competencies         text[] not null default '{}',     -- 'quran','hadith_grading','rijal','arabic_translation','urdu_translation'
+  languages            text[] not null default '{ar,en}',
+  is_active            boolean not null default true,
+  approved_by          uuid references public.users(id) on delete set null,
+  agreement_signed_on  date,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+
+-- Backs islamic_sources.kind = 'scholarly' (short scholarly notes, never fatwas)
+create table public.scholarly_notes (
+  id                  uuid primary key default gen_random_uuid(),
+  title_i18n          jsonb not null check (title_i18n ? 'en'),
+  body_i18n           jsonb not null check (body_i18n ? 'en'),
+  author_name         text not null,
+  author_credentials  text not null,
+  tradition           public.source_tradition not null default 'shared',
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
+-- Staging for Tanzil Arabic and licensed translations; quran_references copy from here
+create table public.quran_text (
+  id             uuid primary key default gen_random_uuid(),
+  surah          smallint not null check (surah between 1 and 114),
+  ayah           smallint not null check (ayah >= 1),
+  edition        text not null,           -- 'tanzil-uthmani', 'en.khattab', 'ur.jalandhry', 'en.pickthall'
+  text           text not null,
+  source_sha256  text not null check (source_sha256 ~ '^[0-9a-f]{64}$'),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  unique (surah, ayah, edition)
+);
+
+call private.attach_updated_at('public.scholar_reviewers');
+call private.attach_updated_at('public.scholarly_notes');
+call private.attach_updated_at('public.quran_text');
+call private.attach_audit('public.scholar_reviewers', 'full');
+
+-- 19.2 Column additions on 0006 tables ----------------------------------------------------------
+-- islamic_sources: stable citation code, approvals, retraction, lexical search. Migrations run before
+-- seeds in every environment, so "not null" on code is safe here.
+alter table public.islamic_sources
+  add column code               text not null,
+  add column approvals_count    smallint not null default 0 check (approvals_count >= 0),
+  add column retracted_at       timestamptz,
+  add column retraction_reason  text,
+  add column search_tsv         tsvector generated always as (
+      to_tsvector('simple'::regconfig, coalesce(code, '') || ' ' || coalesce(citation_text, ''))) stored;
+alter table public.islamic_sources add constraint islamic_sources_code_key unique (code);
+alter table public.islamic_sources add constraint islamic_sources_code_format
+  check (code ~ '^(quran|hadith|imam|scholarly)\.[a-z0-9_.]+$');
+-- scholarly sources now point at scholarly_notes, so every kind has a ref_id
+alter table public.islamic_sources drop constraint islamic_sources_check;
+alter table public.islamic_sources add constraint islamic_sources_ref_required check (ref_id is not null);
+create index islamic_sources_tsv_idx on public.islamic_sources using gin (search_tsv);
+create index islamic_sources_citable_idx on public.islamic_sources (tradition, kind)
+  where verification_status = 'verified' and approvals_count >= 2 and retracted_at is null;
+
+-- hadith_references.edition from 13 is the existing numbering_scheme column; only also_in is new
+alter table public.hadith_references
+  add column also_in jsonb not null default '[]'::jsonb check (jsonb_typeof(also_in) = 'array');
+alter table public.imam_narrations
+  add column edition  text,
+  add column chapter  text,
+  add column also_in  jsonb not null default '[]'::jsonb check (jsonb_typeof(also_in) = 'array');
+
+alter table public.source_verifications
+  add column reviewer_id  uuid references public.scholar_reviewers(id) on delete restrict,
+  add column round        smallint not null default 1 check (round >= 1),
+  add column action       text check (action in ('claim','approve','reject','request_changes','correct','retract','reinstate')),
+  add column checklist    jsonb not null default '{}'::jsonb check (jsonb_typeof(checklist) = 'object');
+-- 13 records several methods comma-separated; accept both vocabularies
+alter table public.source_verifications drop constraint source_verifications_method_check;
+alter table public.source_verifications add constraint source_verifications_method_check
+  check (string_to_array(method, ',') <@ array[
+    'primary_text_check','takhrij','scholar_panel','cross_reference',
+    'checked_against_printed_edition','checked_against_digital_corpus',
+    'grading_confirmed_from_cited_authority','translation_reviewed','needs_verification','automatic']);
+create index source_verifications_round_idx on public.source_verifications (islamic_source_id, round, action);
+create index source_verifications_reviewer_idx on public.source_verifications (reviewer_id) where reviewer_id is not null;
+
+alter table public.scientific_evidence
+  add column code          text not null,
+  add column reviewed_by   text,
+  add column reviewed_on   date,
+  add column summary_i18n  jsonb not null default '{}'::jsonb,
+  add column retracted_at  timestamptz;
+alter table public.scientific_evidence add constraint scientific_evidence_code_key unique (code);
+alter table public.scientific_evidence add constraint scientific_evidence_code_format check (code ~ '^sci\.[a-z0-9_.]+$');
+
+alter table public.recommendations
+  add column version          integer not null default 1 check (version >= 1),
+  add column tradition_scope  public.source_tradition[] not null default '{shared,sunni,shia}'
+                                check (cardinality(tradition_scope) >= 1),
+  add column science_only     boolean not null default false;   -- pure nutrition guidance, no Islamic claim (00 section 11)
+
+-- 19.3 Integrity triggers (replace 0012 bodies) --------------------------------------------------
+create or replace function private.validate_islamic_source()
+returns trigger language plpgsql set search_path = '' as $$
+declare v_trad public.source_tradition;
+begin
+  if new.kind = 'quran' then
+    if not exists (select 1 from public.quran_references where id = new.ref_id) then
+      raise exception 'ISLAMIC_SOURCE_REF_INVALID' using errcode = '23503';
+    end if;
+    new.tradition := 'shared';
+  elsif new.kind = 'hadith' then
+    select tradition into v_trad from public.hadith_references where id = new.ref_id;
+    if v_trad is null then raise exception 'ISLAMIC_SOURCE_REF_INVALID' using errcode = '23503'; end if;
+    new.tradition := v_trad;
+  elsif new.kind = 'imam_narration' then
+    if not exists (select 1 from public.imam_narrations where id = new.ref_id) then
+      raise exception 'ISLAMIC_SOURCE_REF_INVALID' using errcode = '23503';
+    end if;
+    new.tradition := 'shia';
+  elsif new.kind = 'scholarly' then
+    select tradition into v_trad from public.scholarly_notes where id = new.ref_id;
+    if v_trad is null then raise exception 'ISLAMIC_SOURCE_REF_INVALID' using errcode = '23503'; end if;
+    new.tradition := v_trad;
+  end if;
+
+  if coalesce(current_setting('app.verification_sync', true), '') <> 'on' then
+    if tg_op = 'INSERT' then
+      new.verification_status := 'unverified';
+      new.approvals_count := 0;
+    elsif new.verification_status is distinct from old.verification_status
+       or new.approvals_count is distinct from old.approvals_count then
+      raise exception 'VERIFICATION_STATUS_MANAGED' using errcode = '42501',
+        hint = 'insert a source_verifications row instead';
+    end if;
+  end if;
+  return new;
+end $$;
+
+-- Rounds are managed by the database: 'correct' and 'reinstate' open a new round, everything else
+-- is recorded against the current round.
+create or replace function private.source_verification_round()
+returns trigger language plpgsql set search_path = '' as $$
+declare v_round smallint;
+begin
+  select max(v.round) into v_round from public.source_verifications v where v.islamic_source_id = new.islamic_source_id;
+  new.round := case when new.action in ('correct','reinstate') then coalesce(v_round, 0) + 1
+                    else coalesce(v_round, 1) end;
+  return new;
+end $$;
+create trigger trg_source_verifications_round before insert on public.source_verifications
+  for each row execute function private.source_verification_round();
+
+-- source_verifications_apply (13 section 3.5) replaces the "latest row wins" rule from 0012:
+-- verified needs two distinct approvals in the current round, at least one from an active reviewer
+-- whose traditions include the source's tradition (any reviewer counts for 'shared'); any reject in
+-- the round means rejected; retract sets retracted_at and sends linked recommendations back to review.
+create or replace function private.sync_source_verification()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_source     uuid := coalesce(new.islamic_source_id, old.islamic_source_id);
+  v_trad       public.source_tradition;
+  v_round      smallint;
+  v_last       public.source_verifications;
+  v_has_rows   boolean;
+  v_approvals  smallint;
+  v_qualified  boolean;
+  v_rejected   boolean;
+  v_status     public.verification_status;
+begin
+  select s.tradition into v_trad from public.islamic_sources s where s.id = v_source;
+  if not found then
+    return null;                                         -- source itself is being deleted
+  end if;
+
+  select v.* into v_last from public.source_verifications v
+   where v.islamic_source_id = v_source order by v.created_at desc, v.id desc limit 1;
+  v_has_rows := found;
+  v_round := coalesce(v_last.round, 1);
+
+  select count(distinct coalesce(v.reviewer_id::text, lower(v.reviewer_name)))::smallint,
+         coalesce(bool_or(v_trad = 'shared' or (r.is_active and v_trad = any (r.traditions))), false)
+    into v_approvals, v_qualified
+    from public.source_verifications v
+    left join public.scholar_reviewers r on r.id = v.reviewer_id
+   where v.islamic_source_id = v_source and v.round = v_round
+     and coalesce(v.action, case when v.status = 'verified' then 'approve' end) = 'approve';
+
+  select exists (select 1 from public.source_verifications v
+                  where v.islamic_source_id = v_source and v.round = v_round
+                    and coalesce(v.action, case when v.status = 'rejected' then 'reject' end) = 'reject')
+    into v_rejected;
+
+  v_status := case
+    when not v_has_rows                         then 'unverified'
+    when v_rejected                             then 'rejected'
+    when v_approvals >= 2 and v_qualified       then 'verified'
+    when v_approvals = 0 and v_last.status = 'unverified' then 'unverified'
+    else 'in_review' end;
+
+  perform set_config('app.verification_sync', 'on', true);
+  update public.islamic_sources s
+     set verification_status = v_status,
+         approvals_count     = v_approvals,
+         retracted_at        = case when v_last.action = 'retract' then coalesce(s.retracted_at, now())
+                                    when v_last.action = 'reinstate' then null
+                                    else s.retracted_at end,
+         retraction_reason   = case when v_last.action = 'retract' then coalesce(v_last.notes, s.retraction_reason)
+                                    when v_last.action = 'reinstate' then null
+                                    else s.retraction_reason end
+   where s.id = v_source;
+  perform set_config('app.verification_sync', 'off', true);
+
+  if v_last.action = 'retract' then
+    update public.recommendations r set review_status = 'in_review'
+     where r.review_status = 'verified'
+       and exists (select 1 from public.recommendation_evidence re
+                    where re.recommendation_id = r.id and re.islamic_source_id = v_source);
+  end if;
+  return null;
+end $$;
+
+-- Content edits to a verified source open a new 'correct' round (approvals reset), per 13 section 8.4.
+create or replace function private.reset_verification_on_edit()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_kind public.source_kind := case tg_table_name
+    when 'quran_references' then 'quran' when 'hadith_references' then 'hadith'
+    when 'scholarly_notes' then 'scholarly' else 'imam_narration' end;
+begin
+  insert into public.source_verifications
+    (islamic_source_id, status, action, reviewer_name, reviewer_credentials, method, notes)
+  select s.id, 'in_review', 'correct', 'system', 'automatic re-review after content edit', 'automatic',
+         'Content of ' || tg_table_name || ' changed'
+    from public.islamic_sources s
+   where s.kind = v_kind and s.ref_id = new.id and s.verification_status in ('verified','in_review');
+  return null;
+end $$;
+create trigger trg_scholarly_notes_reverify after update of title_i18n, body_i18n, author_name on public.scholarly_notes
+  for each row execute function private.reset_verification_on_edit();
+
+-- 19.4 Publishing gate (replaces the 0012 body; 00-foundations section 11 and 13 section 3.8) ------
+-- Always: en and ur practical text, and at least one non-retracted scientific evidence link.
+-- Unless science_only: at least one citable Islamic source (verified, two approvals, not retracted)
+-- linked as supports/context, and every tradition in tradition_scope covered (a shared source covers all).
+create or replace function private.enforce_recommendation_publish()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_gaps public.source_tradition[];
+begin
+  if coalesce(new.practical_text_i18n ->> 'en', '') = '' or coalesce(new.practical_text_i18n ->> 'ur', '') = '' then
+    raise exception 'RECOMMENDATION_MISSING_PRACTICAL_TEXT' using errcode = '23514';
+  end if;
+  if not exists (select 1 from public.recommendation_evidence re
+                 join public.scientific_evidence e on e.id = re.scientific_evidence_id
+                 where re.recommendation_id = new.id and e.retracted_at is null) then
+    raise exception 'RECOMMENDATION_MISSING_SCIENTIFIC_EVIDENCE' using errcode = '23514';
+  end if;
+  if new.science_only then
+    return new;
+  end if;
+  if not exists (select 1 from public.recommendation_evidence re
+                 join public.islamic_sources s on s.id = re.islamic_source_id
+                 where re.recommendation_id = new.id and re.relationship in ('supports','context')
+                   and s.verification_status = 'verified' and s.approvals_count >= 2 and s.retracted_at is null) then
+    raise exception 'RECOMMENDATION_MISSING_VERIFIED_ISLAMIC_SOURCE' using errcode = '23514';
+  end if;
+  select array_agg(t) into v_gaps
+    from unnest(new.tradition_scope) as t
+   where not exists (select 1 from public.recommendation_evidence re
+                     join public.islamic_sources s on s.id = re.islamic_source_id
+                     where re.recommendation_id = new.id and re.relationship in ('supports','context')
+                       and s.verification_status = 'verified' and s.approvals_count >= 2 and s.retracted_at is null
+                       and (s.tradition = 'shared' or s.tradition = t));
+  if v_gaps is not null then
+    raise exception 'RECOMMENDATION_TRADITION_GAP' using errcode = '23514', detail = v_gaps::text;
+  end if;
+  return new;
+end $$;
+drop trigger trg_recommendations_publish on public.recommendations;
+create trigger trg_recommendations_publish
+  before insert or update of review_status, science_only, tradition_scope on public.recommendations
+  for each row when (new.review_status = 'verified')
+  execute function private.enforce_recommendation_publish();
+
+-- 19.5 Views and retrieval ------------------------------------------------------------------------
+create view public.citable_islamic_sources with (security_invoker = true) as
+select s.*
+from public.islamic_sources s
+where s.verification_status = 'verified'
+  and s.approvals_count >= 2
+  and s.retracted_at is null
+  and s.embedding is not null;
+grant select on public.citable_islamic_sources to authenticated;
+
+-- Hybrid semantic + lexical retrieval with reciprocal rank fusion (12 section 9). Invoker rights: RLS applies.
+create or replace function public.search_islamic_sources(
+  p_query_embedding  extensions.vector(1536),
+  p_query_text       text,
+  p_traditions       public.source_tradition[],
+  p_kinds            public.source_kind[] default null,
+  p_limit            integer default 8
+) returns table (islamic_source_id uuid, code text, kind public.source_kind, tradition public.source_tradition,
+                 citation_text text, score double precision)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with sem as (
+    select s.id, row_number() over (order by s.embedding operator(extensions.<=>) p_query_embedding) as r
+    from public.citable_islamic_sources s
+    where s.tradition = any (p_traditions) and (p_kinds is null or s.kind = any (p_kinds))
+    order by s.embedding operator(extensions.<=>) p_query_embedding
+    limit 40
+  ),
+  lex as (
+    select s.id, row_number() over (order by ts_rank_cd(s.search_tsv, q) desc) as r
+    from public.citable_islamic_sources s, websearch_to_tsquery('simple'::regconfig, coalesce(p_query_text, '')) q
+    where s.search_tsv @@ q
+      and s.tradition = any (p_traditions) and (p_kinds is null or s.kind = any (p_kinds))
+    limit 40
+  ),
+  fused as (
+    select u.id, sum(1.0 / (60 + u.r))::double precision as score
+    from (select * from sem union all select * from lex) u
+    group by u.id
+  )
+  select s.id, s.code, s.kind, s.tradition, s.citation_text, f.score
+  from fused f join public.citable_islamic_sources s on s.id = f.id
+  order by f.score desc
+  limit p_limit;
+$$;
+revoke all on function public.search_islamic_sources(extensions.vector, text, public.source_tradition[], public.source_kind[], integer) from public, anon;
+grant execute on function public.search_islamic_sources(extensions.vector, text, public.source_tradition[], public.source_kind[], integer) to authenticated, service_role;
+
+-- Weekly content-operations view (13 section 8.6). Content roles only.
+create view public.v_knowledge_status with (security_invoker = true) as
+select 'source'::text                   as item,
+       s.tradition::text                as tradition,
+       s.verification_status::text      as status,
+       count(*)                         as n,
+       count(*) filter (where s.retracted_at >= now() - interval '90 days') as retracted_90d,
+       percentile_cont(0.5) within group (order by extract(epoch from now() - s.updated_at) / 86400.0)
+         filter (where s.verification_status = 'in_review')               as median_days_in_review
+from public.islamic_sources s
+where public.has_content_role('content_editor','scholar_reviewer','nutrition_reviewer','content_admin')
+group by s.tradition, s.verification_status
+union all
+select 'recommendation', t::text, r.review_status::text, count(*), 0, null
+from public.recommendations r cross join lateral unnest(r.tradition_scope) as t
+where public.has_content_role('content_editor','scholar_reviewer','nutrition_reviewer','content_admin')
+group by t, r.review_status;
+grant select on public.v_knowledge_status to authenticated;
+
+-- 19.6 RLS ---------------------------------------------------------------------------------------
+alter table public.scholar_reviewers enable row level security;
+create policy scholar_reviewers_select on public.scholar_reviewers for select to authenticated
+  using (user_id = auth.uid() or public.has_content_role('content_admin'));
+create policy scholar_reviewers_write_content_admin on public.scholar_reviewers for all to authenticated
+  using (public.has_content_role('content_admin')) with check (public.has_content_role('content_admin'));
+
+alter table public.scholarly_notes enable row level security;
+create policy scholarly_notes_select on public.scholarly_notes for select to authenticated
+  using (public.has_content_role('content_editor','scholar_reviewer','nutrition_reviewer','content_admin')
+         or exists (select 1 from public.islamic_sources s
+                    where s.kind = 'scholarly' and s.ref_id = scholarly_notes.id));   -- inherits the verified filter
+
+alter table public.quran_text enable row level security;
+create policy quran_text_select_content on public.quran_text for select to authenticated
+  using (public.has_content_role('content_editor','scholar_reviewer','content_admin'));
+create policy quran_text_write_admin on public.quran_text for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- Content roles on the knowledge tables, added next to the admin-only policies from 0013.
+do $$
+declare t text;
+begin
+  foreach t in array array['quran_references','hadith_references','imam_narrations','islamic_sources',
+                           'foods_in_narrations','recommendation_evidence','scholarly_notes','scientific_evidence']
+  loop
+    execute format('create policy %I on public.%I for select to authenticated using (public.has_content_role(%L,%L,%L,%L))',
+                   t || '_select_content', t, 'content_editor', 'scholar_reviewer', 'nutrition_reviewer', 'content_admin');
+    execute format('create policy %I on public.%I for insert to authenticated with check (public.has_content_role(%L,%L))',
+                   t || '_insert_editor', t, 'content_editor', 'content_admin');
+    execute format('create policy %I on public.%I for update to authenticated using (public.has_content_role(%L,%L)) with check (public.has_content_role(%L,%L))',
+                   t || '_update_editor', t, 'content_editor', 'content_admin', 'content_editor', 'content_admin');
+  end loop;
+end $$;
+create policy scientific_evidence_update_nutrition on public.scientific_evidence for update to authenticated
+  using (public.has_content_role('nutrition_reviewer')) with check (public.has_content_role('nutrition_reviewer'));
+
+create policy recommendations_select_content on public.recommendations for select to authenticated
+  using (public.has_content_role('content_editor','scholar_reviewer','nutrition_reviewer','content_admin'));
+create policy recommendations_insert_editor on public.recommendations for insert to authenticated
+  with check (public.has_content_role('content_editor','content_admin') and review_status <> 'verified');
+create policy recommendations_update_editor on public.recommendations for update to authenticated
+  using (public.has_content_role('content_editor','content_admin'))
+  with check (public.has_content_role('content_editor','content_admin')
+              and (review_status <> 'verified' or public.has_content_role('content_admin')));   -- only content_admin publishes
+
+create policy source_verifications_select_content on public.source_verifications for select to authenticated
+  using (public.has_content_role('content_editor','scholar_reviewer','nutrition_reviewer','content_admin'));
+create policy source_verifications_insert_reviewer on public.source_verifications for insert to authenticated
+  with check (public.has_content_role('scholar_reviewer')
+              and reviewer_id in (select r.id from public.scholar_reviewers r where r.user_id = auth.uid() and r.is_active));
+create policy source_verifications_insert_editor on public.source_verifications for insert to authenticated
+  with check ((public.has_content_role('content_editor','content_admin') and action in ('claim','request_changes'))
+              or (public.has_content_role('content_admin') and action = 'retract'));
+```
+
+Notes:
+- The publishing gate's citable test does not require an embedding (so a recommendation can be published before `knowledge:embed` runs); `citable_islamic_sources` and `search_islamic_sources` do require one, as `13-islamic-knowledge-module.md` specifies.
+- Seed impact (section 19, orders 10 and 11): every `islamic_sources` and `scientific_evidence` row needs a `code`; a source becomes `verified` only after two distinct approvals in the current round, and for Sunni or Shia sources at least one approval must carry a `reviewer_id` whose `traditions` include that tradition. Seeds therefore insert `scholar_reviewers` first, then two `source_verifications` rows per source, as in the worked example in `13-islamic-knowledge-module.md` section 5.
+- `24-sprint-plan.md` names `islamic_sources_public` and `match_knowledge()`; these are `citable_islamic_sources` and `search_islamic_sources()`.
+
+### 22.6 0020 Meal planning and grocery extras
+
+```sql
+-- supabase/migrations/20261001002000_meal_planning_grocery_extras.sql
+-- Household planner settings, yields and tiered portions, leftovers, pantry, substitutions and price
+-- screening (01 appendix B, 14-meal-planning-and-grocery.md section 22).
+
+-- 20.1 Household planner settings (01 appendix B; 14's allow_mashbooh, weekday_cook_limit_min,
+-- packed_lunches and batch_day keys live in the same object)
+alter table public.households
+  add column preferences jsonb not null default '{}'::jsonb check (jsonb_typeof(preferences) = 'object');
+grant update (preferences) on public.households to authenticated;          -- owner-only via households_update_owner
+
+-- 20.2 Catalog columns
+alter table public.ingredients
+  add column yield_factors    jsonb not null default '{}'::jsonb check (jsonb_typeof(yield_factors) = 'object'),
+                              -- {"boiled":2.8,"pressure_cooked":2.5,"roasted":0.72}
+  add column shelf_life_days  smallint check (shelf_life_days > 0),     -- null = shelf stable (> 90 days)
+  add column purchase_units   jsonb not null default '[]'::jsonb check (jsonb_typeof(purchase_units) = 'array'),
+                              -- [{"unit":"dozen","grams":660},{"unit":"kg","grams":1000}]
+  add column aisle            text check (aisle in ('sabzi','fruit','meat','dairy','dry_goods','spices','other'));
+
+-- Tiered child portions (start / ideal / extra). The 0004 one-portion-per-stage keys become per tier.
+alter table public.portions
+  add column tier text not null default 'standard' check (tier in ('standard','start','ideal','extra'));
+drop index public.portions_meal_stage_key;
+drop index public.portions_recipe_stage_key;
+create unique index portions_meal_stage_key   on public.portions (meal_id, life_stage, tier)   where meal_id is not null;
+create unique index portions_recipe_stage_key on public.portions (recipe_id, life_stage, tier) where recipe_id is not null;
+
+-- 20.3 Plan columns
+alter table public.daily_meals
+  add column batch_multiplier      numeric(3,1) not null default 1.0 check (batch_multiplier between 0.5 and 4.0),
+  add column source_daily_meal_id  uuid,                     -- this slot eats the leftovers of that slot
+  add column is_lunchbox           boolean not null default false,
+  add constraint daily_meals_source_fk foreign key (source_daily_meal_id, household_id)
+    references public.daily_meals(id, household_id) on delete set null (source_daily_meal_id),
+  add constraint daily_meals_source_not_self check (source_daily_meal_id is distinct from id);
+create index daily_meals_source_idx on public.daily_meals (source_daily_meal_id) where source_daily_meal_id is not null;
+
+alter table public.meal_plans
+  add column weekly_themes jsonb not null default '[]'::jsonb check (jsonb_typeof(weekly_themes) = 'array');
+  -- [{"week":1,"key":"rhythm_bismillah","title_i18n":{...},"body_i18n":{...}}]
+
+-- 20.4 Price screening. 14's price_observations.status is 0004's moderation_status with two more values.
+alter table public.price_observations
+  add column unit_grams numeric(8,1) check (unit_grams > 0);   -- grams represented by unit (1 dozen eggs = 660)
+alter table public.price_observations drop constraint price_observations_moderation_status_check;
+alter table public.price_observations add constraint price_observations_moderation_status_check
+  check (moderation_status in ('pending','accepted','rejected','rejected_outlier','rejected_manual'));
+
+-- Replaces the 0012 body: keeps the user-report rules, fills unit_grams, then applies the
+-- modified z-score screen (Iglewicz and Hoaglin, threshold 3.5, hard band 40 to 160 percent of median).
+create or replace function private.price_report_moderation()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_med numeric; v_mad numeric; v_ppk numeric; v_n integer;
+begin
+  if new.source = 'user_report' and not public.is_admin() then
+    new.reporter_user_id := auth.uid();
+    new.observed_on := least(new.observed_on, current_date);
+  end if;
+
+  new.unit_grams := coalesce(new.unit_grams,
+    case new.unit when 'g' then 1 when 'kg' then 1000 when 'ml' then 1 when 'l' then 1000 end,
+    (select i.grams_per_unit from public.ingredients i where i.id = new.ingredient_id and new.unit = i.default_unit));
+
+  if new.unit_grams is null then
+    new.moderation_status := case when new.source = 'user_report' then 'pending' else new.moderation_status end;
+    return new;
+  end if;
+
+  v_ppk := new.amount_minor * 1000.0 / new.unit_grams;
+  select percentile_cont(0.5) within group (order by po.amount_minor * 1000.0 / po.unit_grams), count(*)
+    into v_med, v_n
+    from public.price_observations po
+   where po.price_profile_id = new.price_profile_id and po.ingredient_id = new.ingredient_id
+     and po.moderation_status = 'accepted' and po.unit_grams is not null
+     and po.observed_on >= new.observed_on - 60;
+
+  if v_n < 5 then
+    if new.source = 'user_report' and not public.is_admin() then
+      new.moderation_status := 'pending';
+    end if;
+    return new;
+  end if;
+
+  select percentile_cont(0.5) within group (order by abs(po.amount_minor * 1000.0 / po.unit_grams - v_med))
+    into v_mad
+    from public.price_observations po
+   where po.price_profile_id = new.price_profile_id and po.ingredient_id = new.ingredient_id
+     and po.moderation_status = 'accepted' and po.unit_grams is not null
+     and po.observed_on >= new.observed_on - 60;
+
+  if (v_mad > 0 and abs(0.6745 * (v_ppk - v_med) / v_mad) > 3.5) or v_ppk > v_med * 1.6 or v_ppk < v_med * 0.4 then
+    new.moderation_status := case when new.source = 'admin' then 'accepted' else 'rejected_outlier' end;
+  else
+    new.moderation_status := 'accepted';
+  end if;
+  return new;
+end $$;
+
+-- Current recency-weighted median price per kg (14 section 12.3). Complements 0014's mv_ingredient_prices.
+create materialized view public.mv_current_prices as
+with obs as (
+  select po.price_profile_id, po.ingredient_id,
+         po.amount_minor * 1000.0 / po.unit_grams as price_per_kg_minor,
+         case po.source when 'admin' then 1.0 when 'partner_feed' then 0.9 when 'user_report' then 0.5 else 0.3 end
+           * power(0.5, (current_date - po.observed_on) / 21.0) as w
+  from public.price_observations po
+  where po.moderation_status = 'accepted' and po.unit_grams is not null and po.observed_on >= current_date - 120
+),
+ranked as (
+  select obs.*,
+         sum(w) over (partition by price_profile_id, ingredient_id order by price_per_kg_minor
+                      rows between unbounded preceding and current row) as cw,
+         sum(w) over (partition by price_profile_id, ingredient_id) as tw
+  from obs
+)
+select distinct on (price_profile_id, ingredient_id)
+       price_profile_id, ingredient_id,
+       round(price_per_kg_minor)::bigint as price_per_kg_minor,
+       tw as total_weight,
+       now() as refreshed_at
+from ranked
+where cw >= tw / 2
+order by price_profile_id, ingredient_id, price_per_kg_minor;
+create unique index mv_current_prices_pk on public.mv_current_prices (price_profile_id, ingredient_id);
+grant select on public.mv_current_prices to authenticated;     -- public price information, no PII
+
+create or replace function public.refresh_ingredient_prices()
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (select 1 from public.mv_ingredient_prices limit 1) then
+    refresh materialized view public.mv_ingredient_prices;
+  else
+    refresh materialized view concurrently public.mv_ingredient_prices;
+  end if;
+  if not exists (select 1 from public.mv_current_prices limit 1) then
+    refresh materialized view public.mv_current_prices;
+  else
+    refresh materialized view concurrently public.mv_current_prices;
+  end if;
+end $$;
+
+-- 20.5 Recipe nutrition follows ingredient nutrient edits (14's mark_recipe_nutrition_stale, implemented
+-- as a direct recompute with 0012's recompute_recipe_nutrition so recipes are never left stale)
+create or replace function private.ingredient_nutrition_sync()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare r record;
+begin
+  for r in select distinct ri.recipe_id from public.recipe_ingredients ri where ri.ingredient_id = new.id loop
+    perform public.recompute_recipe_nutrition(r.recipe_id);
+  end loop;
+  return null;
+end $$;
+create trigger trg_ingredients_nutrition_sync
+  after update of kcal, protein_g, carbs_g, fiber_g, sugar_g, fat_g, sat_fat_g, sodium_mg, iron_mg, calcium_mg,
+                  zinc_mg, vitamin_a_mcg, vitamin_c_mg, vitamin_d_mcg, b12_mcg, folate_mcg, potassium_mg, omega3_g
+  on public.ingredients
+  for each row execute function private.ingredient_nutrition_sync();
+
+-- 20.6 pantry_items (household) and ingredient_substitutions (global) -----------------------------
+create table public.pantry_items (
+  id             uuid primary key default gen_random_uuid(),
+  household_id   uuid not null references public.households(id) on delete cascade,
+  ingredient_id  uuid references public.ingredients(id) on delete restrict,
+  label          text not null check (char_length(label) between 1 and 80),
+  grams          numeric(9,1) not null check (grams >= 0),
+  expires_on     date,
+  updated_by     uuid references public.users(id) on delete set null default auth.uid(),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  deleted_at     timestamptz
+);
+create index pantry_items_household_idx on public.pantry_items (household_id, ingredient_id) where deleted_at is null;
+create index pantry_items_ingredient_idx on public.pantry_items (ingredient_id) where ingredient_id is not null;
+call private.attach_updated_at('public.pantry_items');
+call private.apply_household_rls('public.pantry_items', 'edit');
+
+create table public.ingredient_substitutions (
+  id                   uuid primary key default gen_random_uuid(),
+  from_ingredient_id   uuid not null references public.ingredients(id) on delete restrict,
+  to_ingredient_id     uuid not null references public.ingredients(id) on delete restrict,
+  reason               text not null check (reason in ('allergy','budget','season','availability','halal','preference')),
+  ratio                numeric(5,3) not null default 1.000 check (ratio > 0),   -- grams of "to" per gram of "from"
+  nutrient_similarity  numeric(4,3) not null check (nutrient_similarity between 0 and 1),
+  culinary_fit         smallint not null check (culinary_fit between 1 and 3),
+  notes_i18n           jsonb not null default '{}'::jsonb,
+  region_codes         text[],                                                   -- null = everywhere
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  unique (from_ingredient_id, to_ingredient_id, reason),
+  check (from_ingredient_id <> to_ingredient_id)
+);
+create index ingredient_substitutions_to_idx on public.ingredient_substitutions (to_ingredient_id);
+call private.attach_updated_at('public.ingredient_substitutions');
+call private.apply_catalog_rls('public.ingredient_substitutions');
+
+-- soft_delete RPC (0011) gains pantry_items; body otherwise unchanged
+create or replace function public.soft_delete(p_table text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_household uuid;
+  v_allowed constant text[] := array[
+    'family_members','medical_conditions','allergies','medications','supplements','food_preferences',
+    'food_dislikes','nutrition_goals','pregnancy_profiles','sensory_profiles','meal_plans','meal_logs',
+    'budget_profiles','grocery_lists','hydration_targets','ramadan_plans','exposure_ladders',
+    'chat_sessions','ai_memories','recipes','meals','household_members','pantry_items'];
+begin
+  if not (p_table = any (v_allowed)) then
+    raise exception 'SOFT_DELETE_NOT_ALLOWED' using errcode = '42501', detail = p_table;
+  end if;
+
+  execute format('select household_id from public.%I where id = $1 and deleted_at is null', p_table)
+    into v_household using p_id;
+  if v_household is null then
+    raise exception 'NOT_FOUND' using errcode = 'P0002';
+  end if;
+
+  if p_table = 'chat_sessions' then
+    if not exists (select 1 from public.chat_sessions where id = p_id and user_id = auth.uid()) then
+      raise exception 'FORBIDDEN' using errcode = '42501';
+    end if;
+  elsif p_table = 'household_members' then
+    if exists (select 1 from public.household_members where id = p_id and role = 'owner') then
+      raise exception 'OWNER_CANNOT_LEAVE' using errcode = '42501';
+    end if;
+    if not (public.household_role_of(v_household) = 'owner'
+            or exists (select 1 from public.household_members where id = p_id and user_id = auth.uid())) then
+      raise exception 'FORBIDDEN' using errcode = '42501';
+    end if;
+  elsif p_table = 'meal_plans' then
+    if not public.can_author_plans(v_household) then
+      raise exception 'FORBIDDEN' using errcode = '42501';
+    end if;
+  elsif not public.can_edit_household(v_household) then
+    raise exception 'FORBIDDEN' using errcode = '42501';
+  end if;
+
+  execute format('update public.%I set deleted_at = now() where id = $1', p_table) using p_id;
+end;
+$$;
+```
+
+### 22.7 0021 Health modules extras
+
+```sql
+-- supabase/migrations/20261001002100_health_modules_extras.sql
+-- Member lifestyle intake, growth computation inputs, Ramadan calculation settings, Hijri and qada
+-- support, picky-eater values and dashboard RPCs (01 appendix B, 15-family-health-modules.md section 10).
+
+-- 21.1 Columns ------------------------------------------------------------------------------------
+alter table public.family_members
+  add column lifestyle jsonb not null default '{}'::jsonb check (jsonb_typeof(lifestyle) = 'object');
+  -- meal_pattern, eats_out, screens_at_meals, caffeine, sugary_drinks_per_week, fasting_practice, appetite_pattern
+
+alter table public.households
+  add column hijri_offset_days smallint not null default 0 check (hijri_offset_days between -2 and 2);
+grant update (hijri_offset_days) on public.households to authenticated;
+
+-- 15's alerts and head_circumference_z/percentile already exist in 0009 as flags and
+-- head_circumference_for_age_z/percentile; only the three columns below are new.
+alter table public.growth_tracking
+  add column age_days              integer check (age_days >= 0),            -- set by trigger from date_of_birth
+  add column measurement_position  text check (measurement_position in ('recumbent','standing')),
+  add column entered_by            uuid references public.users(id) on delete set null default auth.uid();
+
+create or replace function private.growth_age_days()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  select new.measured_on - fm.date_of_birth into new.age_days
+    from public.family_members fm where fm.id = new.family_member_id and fm.date_of_birth is not null;
+  if new.age_days is not null and new.age_days < 0 then
+    raise exception 'MEASUREMENT_BEFORE_BIRTH' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger trg_growth_tracking_age_days before insert or update of measured_on, family_member_id on public.growth_tracking
+  for each row execute function private.growth_age_days();
+
+alter table public.ramadan_plans
+  add column calc_params jsonb not null default '{}'::jsonb check (jsonb_typeof(calc_params) = 'object');
+  -- {"method":"Karachi","madhab":"hanafi","latitude":31.5204,"longitude":74.3587,"imsakOffsetMin":10,
+  --  "iftarOffsetMin":0,"highLatitudeRule":"middle_of_the_night","tradition":"sunni"}
+
+-- exemption_reason already has a check constraint in 0009
+alter table public.fasting_logs
+  add column hijri_date          text check (hijri_date ~ '^\d{4}-\d{2}-\d{2}$'),
+  add column qada_for_hijri_year smallint check (qada_for_hijri_year between 1400 and 1600),
+  add constraint fasting_logs_qada_year_only_for_qada check (qada_for_hijri_year is null or kind = 'qada');
+create index fasting_logs_qada_idx on public.fasting_logs (family_member_id, qada_for_hijri_year) where kind = 'qada';
+
+-- Value sets used by 15 and 18: 'accepted' ladder status; structured exposure contexts
+alter table public.exposure_ladders drop constraint exposure_ladders_status_check;
+alter table public.exposure_ladders add constraint exposure_ladders_status_check
+  check (status in ('active','paused','accepted','completed','abandoned'));
+alter table public.food_exposures drop constraint food_exposures_context_check;
+alter table public.food_exposures add constraint food_exposures_context_check
+  check (context in ('family_meal','snack','cooking_together','grocery_trip','play','school','other',
+                     'distress','hard_day','learning_plate','taste_test_game'));
+
+-- 21.2 Views and RPCs (invoker rights, RLS applies) -------------------------------------------------
+create view public.v_qada_balance with (security_invoker = true) as
+select fl.household_id,
+       fl.family_member_id,
+       r.hijri_year,
+       count(*) filter (where fl.kind = 'ramadan' and (not fl.completed or fl.exemption_reason is not null)) as missed,
+       (select count(*) from public.fasting_logs q
+         where q.family_member_id = fl.family_member_id and q.kind = 'qada'
+           and q.completed and q.qada_for_hijri_year = r.hijri_year) as made_up
+from public.fasting_logs fl
+join public.ramadan_plans r
+  on r.household_id = fl.household_id and r.deleted_at is null
+ and fl.fast_date between r.start_date and r.end_date
+group by fl.household_id, fl.family_member_id, r.hijri_year;
+grant select on public.v_qada_balance to authenticated;
+
+-- Free tier: latest measurement only (safety flags are on every row and every tier). Premium: full history.
+create or replace function public.growth_dashboard(p_member uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with m as (
+    select fm.id, fm.household_id, fm.name, fm.sex_at_birth, fm.date_of_birth,
+           public.household_has_premium(fm.household_id) as premium
+    from public.family_members fm
+    where fm.id = p_member and fm.deleted_at is null
+  ), g as (
+    select gt.*, row_number() over (order by gt.measured_on desc) as rn
+    from public.growth_tracking gt join m on m.id = gt.family_member_id
+  )
+  select jsonb_build_object(
+    'member', jsonb_build_object('id', m.id, 'name', m.name, 'sex', m.sex_at_birth,
+                                 'ageMonths', public.age_in_months(m.date_of_birth)),
+    'premium', m.premium,
+    'measurements', coalesce((select jsonb_agg(to_jsonb(g) - 'rn' order by g.measured_on)
+                              from g where m.premium or g.rn = 1), '[]'::jsonb),
+    'openFlags', coalesce((select jsonb_agg(distinct f) from g, unnest(g.flags) as f where g.rn <= 3), '[]'::jsonb)
+  )
+  from m;
+$$;
+grant execute on function public.growth_dashboard(uuid) to authenticated;
+
+create or replace function public.picky_acceptance_summary(p_member uuid, p_days integer default 30)
+returns table (accepted_food_count integer, meal_acceptance_rate numeric, exposures integer, new_accepted integer)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with s as (
+    select dms.acceptance
+    from public.daily_meal_servings dms
+    join public.daily_meals dm on dm.id = dms.daily_meal_id
+    where dms.family_member_id = p_member and dm.plan_date >= current_date - p_days and dms.acceptance is not null
+  ), e as (
+    select fe.ingredient_id, fe.acceptance
+    from public.food_exposures fe
+    where fe.family_member_id = p_member and fe.exposed_on >= current_date - 60
+  )
+  select
+    ((select count(*) from (select e.ingredient_id from e where e.acceptance >= '4_ate_some'
+                            group by e.ingredient_id having count(*) >= 2) a)
+     + (select count(*) from public.food_preferences fp
+         where fp.family_member_id = p_member and fp.is_safe_food and fp.deleted_at is null))::integer,
+    (select round(avg(case when s.acceptance >= '4_ate_some' then 1 else 0 end)::numeric, 3) from s),
+    (select count(*) from public.food_exposures fe
+      where fe.family_member_id = p_member and fe.exposed_on >= current_date - p_days)::integer,
+    (select count(*) from public.exposure_ladders el
+      where el.family_member_id = p_member and el.status = 'accepted' and el.deleted_at is null
+        and el.updated_at >= now() - make_interval(days => p_days))::integer;
+$$;
+grant execute on function public.picky_acceptance_summary(uuid, integer) to authenticated;
+```
+
+### 22.8 0022 Security and privacy
+
+```sql
+-- supabase/migrations/20261001002200_security_privacy.sql
+-- Consent versioning and enforcement, DSAR tracking, deletion ledger, envelope-encrypted notes,
+-- identity audit and erasure executor (11-authentication.md, 16-security-architecture.md).
+-- No pgsodium: notes are encrypted with AES-256-GCM in the health-notes Edge Function, DEKs per
+-- household wrapped by a KEK held in Supabase Vault (00-foundations section 11).
+
+-- 22.1 Consent versions and checks -----------------------------------------------------------------
+create table public.consent_versions (
+  id               uuid primary key default gen_random_uuid(),
+  kind             text not null unique check (kind in ('terms','privacy','health_data','child_data','ai_processing','marketing')),
+  current_version  text not null,                 -- matches CONSENT_VERSIONS in packages/shared, e.g. '2026-10'
+  material         boolean not null default true, -- true = re-consent required on version change
+  text_hash        text not null,                 -- sha256 of the published consent text
+  published_at     timestamptz not null default now(),
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+call private.attach_updated_at('public.consent_versions');
+call private.attach_audit('public.consent_versions', 'full');
+call private.apply_catalog_rls('public.consent_versions');
+
+-- Active = not withdrawn and at the current version (any version while no consent_versions row exists).
+-- p_household scopes child_data consent, which 0010 requires to carry a household_id.
+create or replace function public.has_active_consent(p_user uuid, p_kind text, p_household uuid default null)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.consents c
+    left join public.consent_versions v on v.kind = c.kind
+    where c.user_id = p_user and c.kind = p_kind and c.withdrawn_at is null
+      and (v.id is null or c.version = v.current_version)
+      and (p_household is null or c.household_id = p_household)
+  );
+$$;
+revoke all on function public.has_active_consent(uuid, text, uuid) from public, anon;
+grant execute on function public.has_active_consent(uuid, text, uuid) to authenticated, service_role;
+
+-- Enforcement applies to end-user writes only: service role, seeds and fixtures (auth.uid() null or
+-- app.bypass_entitlements = 'on') are not blocked.
+create or replace function private.enforce_child_data_consent()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null or coalesce(current_setting('app.bypass_entitlements', true), '') = 'on' then
+    return new;
+  end if;
+  if public.is_minor(new.date_of_birth)
+     and not public.has_active_consent(auth.uid(), 'child_data', new.household_id) then
+    raise exception 'CHILD_DATA_CONSENT_REQUIRED' using errcode = 'P0001', hint = 'consent_required';
+  end if;
+  return new;
+end $$;
+create trigger trg_family_members_child_consent before insert or update of date_of_birth on public.family_members
+  for each row execute function private.enforce_child_data_consent();
+
+create or replace function private.enforce_health_data_consent()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null or coalesce(current_setting('app.bypass_entitlements', true), '') = 'on' then
+    return new;
+  end if;
+  if not public.has_active_consent(auth.uid(), 'health_data') then
+    raise exception 'CONSENT_REQUIRED' using errcode = 'P0001',
+      detail = json_build_object('kind', 'health_data')::text, hint = 'consent_required';
+  end if;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['medical_conditions','medications','allergies','pregnancy_profiles','sensory_profiles'] loop
+    execute format('create trigger %I before insert on public.%I for each row execute function private.enforce_health_data_consent()',
+                   'trg_' || t || '_health_consent', t);
+  end loop;
+end $$;
+
+-- 22.2 Data subject requests and the post-restore deletion ledger ---------------------------------
+create table public.data_subject_requests (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid references public.users(id) on delete set null,
+  email_hash    text not null check (email_hash ~ '^[0-9a-f]{64}$'),
+  kind          text not null check (kind in ('access','portability','rectification','erasure','restriction','objection','withdraw_consent')),
+  status        text not null default 'received' check (status in ('received','in_progress','completed','rejected')),
+  received_at   timestamptz not null default now(),
+  due_at        timestamptz not null default now() + interval '30 days',
+  completed_at  timestamptz,
+  handled_by    uuid references public.users(id) on delete set null,
+  notes         text check (char_length(notes) <= 4000),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  check (status <> 'completed' or completed_at is not null)
+);
+create index data_subject_requests_open_idx on public.data_subject_requests (due_at) where status in ('received','in_progress');
+create index data_subject_requests_user_idx on public.data_subject_requests (user_id) where user_id is not null;
+call private.attach_updated_at('public.data_subject_requests');
+call private.attach_audit('public.data_subject_requests', 'full');
+alter table public.data_subject_requests enable row level security;
+create policy data_subject_requests_select_own on public.data_subject_requests for select to authenticated
+  using (user_id = auth.uid());
+create policy data_subject_requests_admin on public.data_subject_requests for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- Salted hashes only; replayed by the restore runbook before traffic reopens (16 section 12)
+create table public.deleted_user_ledger (
+  id            uuid primary key default gen_random_uuid(),
+  user_id_hash  text not null unique check (user_id_hash ~ '^[0-9a-f]{64}$'),
+  email_hash    text check (email_hash ~ '^[0-9a-f]{64}$'),
+  erased_at     timestamptz not null default now(),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+call private.attach_updated_at('public.deleted_user_ledger');
+alter table public.deleted_user_ledger enable row level security;
+revoke all on public.deleted_user_ledger from authenticated;
+create policy deleted_user_ledger_admin_read on public.deleted_user_ledger for select to authenticated
+  using (public.is_admin());
+
+-- 22.3 Envelope encryption of free-text health notes ------------------------------------------------
+create table public.household_keys (
+  household_id  uuid primary key references public.households(id) on delete cascade,   -- deleting = crypto-shredding
+  wrapped_dek   bytea not null,
+  key_version   smallint not null default 1 check (key_version >= 1),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+call private.attach_updated_at('public.household_keys');
+alter table public.household_keys enable row level security;
+revoke all on public.household_keys from authenticated, anon;
+create policy household_keys_deny_clients on public.household_keys for select to authenticated using (false);
+
+alter table public.medical_conditions
+  add column notes_enc bytea, add column notes_key_version smallint,
+  add constraint medical_conditions_notes_plain_null check (notes is null),
+  add constraint medical_conditions_notes_enc_pair check ((notes_enc is null) = (notes_key_version is null));
+alter table public.allergies
+  add column reaction_notes_enc bytea, add column reaction_notes_key_version smallint,
+  add constraint allergies_reaction_notes_plain_null check (reaction_notes is null),
+  add constraint allergies_reaction_notes_enc_pair check ((reaction_notes_enc is null) = (reaction_notes_key_version is null));
+alter table public.nutrition_journal
+  add column notes_enc bytea, add column notes_key_version smallint,
+  add constraint nutrition_journal_notes_plain_null check (notes is null),
+  add constraint nutrition_journal_notes_enc_pair check ((notes_enc is null) = (notes_key_version is null));
+alter table public.fasting_logs
+  add column notes_enc bytea, add column notes_key_version smallint,
+  add constraint fasting_logs_notes_plain_null check (notes is null),
+  add constraint fasting_logs_notes_enc_pair check ((notes_enc is null) = (notes_key_version is null));
+alter table public.pregnancy_profiles
+  add column notes_enc bytea, add column notes_key_version smallint,
+  add constraint pregnancy_profiles_notes_enc_pair check ((notes_enc is null) = (notes_key_version is null));
+
+-- Ciphertext columns are written only by health-notes (service role), never by clients.
+create or replace function private.guard_encrypted_notes()
+returns trigger language plpgsql set search_path = '' as $$
+declare v_new jsonb := to_jsonb(new); v_old jsonb := case when tg_op = 'UPDATE' then to_jsonb(old) else '{}'::jsonb end; k text;
+begin
+  if current_user not in ('authenticated','anon') then
+    return new;
+  end if;
+  for k in select key from jsonb_each(v_new) where key like '%\_enc' or key like '%\_key\_version' loop
+    if (v_new -> k) is distinct from coalesce(v_old -> k, 'null'::jsonb) then
+      raise exception 'ENCRYPTED_FIELD_SERVER_ONLY' using errcode = '42501', detail = k,
+        hint = 'write notes through the health-notes Edge Function';
+    end if;
+  end loop;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['medical_conditions','allergies','nutrition_journal','fasting_logs','pregnancy_profiles'] loop
+    execute format('create trigger %I before insert or update on public.%I for each row execute function private.guard_encrypted_notes()',
+                   'trg_' || t || '_guard_enc', t);
+  end loop;
+end $$;
+
+-- KEK lookup for _shared/crypto.ts. Vault secret names: kek_v1, kek_v2, ... Service role only.
+create or replace function public.get_note_kek(p_key_version smallint)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select ds.decrypted_secret from vault.decrypted_secrets ds where ds.name = 'kek_v' || p_key_version;
+$$;
+revoke all on function public.get_note_kek(smallint) from public, anon, authenticated;
+grant execute on function public.get_note_kek(smallint) to service_role;
+
+-- 22.4 Sensitive field visibility (16 template E): exemption reason only for the member or the owner
+create view public.fasting_logs_visible with (security_invoker = true) as
+select fl.id, fl.household_id, fl.family_member_id, fl.fast_date, fl.kind, fl.started_at, fl.ended_at,
+       fl.completed, fl.is_practice_fast, fl.hijri_date, fl.qada_for_hijri_year,
+       case when fm.linked_user_id = auth.uid() or public.household_role_of(fl.household_id) = 'owner'
+            then fl.exemption_reason end as exemption_reason,
+       fl.created_at, fl.updated_at
+from public.fasting_logs fl
+join public.family_members fm on fm.id = fl.family_member_id;
+grant select on public.fasting_logs_visible to authenticated;
+
+-- 22.5 Identity link and unlink audit (11 section 9) -----------------------------------------------
+alter table public.audit_log drop constraint audit_log_action_check;
+alter table public.audit_log add constraint audit_log_action_check
+  check (action in ('insert','update','delete','soft_delete','restore','role_change','export','login','erasure',
+                    'identity.linked','identity.unlinked'));
+
+create or replace function private.audit_identity_change()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_row jsonb := to_jsonb(coalesce(new, old));
+begin
+  insert into public.audit_log (actor_user_id, action, entity, entity_id, diff, ip_hash)
+  values ((select u.id from public.users u where u.id = (v_row ->> 'user_id')::uuid),
+          case when tg_op = 'INSERT' then 'identity.linked' else 'identity.unlinked' end,
+          'auth.identities',
+          null,
+          jsonb_build_object('provider', v_row ->> 'provider'),
+          private.request_ip_hash());
+  return null;
+end $$;
+create trigger on_auth_identity_changed after insert or delete on auth.identities
+  for each row execute function private.audit_identity_change();
+
+-- 22.6 Erasure executor: account-delete/execute processes users past deletion_scheduled_for (04 section 4.2.1)
+select cron.schedule('account-delete-executor', '0 * * * *',
+  $$select private.invoke_edge_function('account-delete/execute') where exists (
+      select 1 from public.users where deletion_scheduled_for <= now())$$);
+```
+
+Notes:
+- `16-security-architecture.md` describes an `encryption_service` role for the KEK. Edge Functions connect as `service_role`, so `get_note_kek()` is granted to `service_role` only; there is no separate login role.
+- `fasting_logs_visible` is the read path for clients that show exemption reasons. Column privileges on `fasting_logs` are not narrowed, because PostgREST `select=*` and `insert ... returning` would break for every client; the app reads exemption reasons only through the view.
+- The consent triggers skip writes made without a user JWT and writes with `app.bypass_entitlements = 'on'`, so seeds, fixtures and the service role are unaffected.
+
+### 22.9 0023 Subscriptions and promos
+
+```sql
+-- supabase/migrations/20261001002300_subscriptions_promos.sql
+-- RevenueCat lifecycle columns and event log, promotional codes, client entitlement RPCs
+-- (17-subscription-architecture.md). has_premium is replaced in 23.1b to honour refunds and sandbox; household_has_premium (0011) delegates to it.
+
+-- 23.1 subscriptions lifecycle columns (last_event_at already exists from 0010)
+alter table public.subscriptions
+  add column entitlement              text not null default 'premium' check (entitlement in ('premium','coach')),
+  add column period_type              text check (period_type in ('trial','intro','normal','promotional')),
+  add column grace_period_expires_at  timestamptz,
+  add column original_transaction_id  text,
+  add column environment              text not null default 'production' check (environment in ('production','sandbox')),
+  add column refunded_at              timestamptz,
+  add column country_code             char(2) check (country_code ~ '^[A-Z]{2}$');
+create unique index subscriptions_user_store_entitlement on public.subscriptions (user_id, store, entitlement);
+create index subscriptions_original_txn_idx on public.subscriptions (original_transaction_id) where original_transaction_id is not null;
+
+-- 23.1b has_premium: exclude refunded rows, coach-only entitlements, and (in production only)
+-- sandbox purchases, per 17-subscription-architecture.md. app.environment is set per project
+-- with: alter database postgres set app.environment = 'production' | 'staging' | 'dev';
+create or replace function public.has_premium(p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.subscriptions s
+    where s.user_id = p_user_id
+      and s.tier = 'premium'
+      and s.entitlement = 'premium'
+      and s.refunded_at is null
+      and (s.environment = 'production'
+           or coalesce(current_setting('app.environment', true), 'dev') <> 'production')
+      and (
+        s.status in ('active','in_grace')
+        or (s.status = 'cancelled' and s.current_period_end > now())
+      )
+      and (s.current_period_end is null or s.current_period_end > now() - interval '3 days')
+  );
+$$;
+
+-- 23.2 revenuecat_events: webhook idempotency and replay (service role writes)
+create table public.revenuecat_events (
+  event_id         text primary key,             -- RevenueCat event.id
+  type             text not null,
+  app_user_id      text not null,
+  event_timestamp  timestamptz not null,
+  environment      text not null check (environment in ('PRODUCTION','SANDBOX')),
+  received_at      timestamptz not null default now(),
+  processed_at     timestamptz,
+  error            text,
+  payload          jsonb not null,               -- PII-scrubbed
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+create index revenuecat_events_user_idx on public.revenuecat_events (app_user_id, event_timestamp desc);
+create index revenuecat_events_unprocessed_idx on public.revenuecat_events (received_at) where processed_at is null;
+call private.attach_updated_at('public.revenuecat_events');
+alter table public.revenuecat_events enable row level security;
+revoke all on public.revenuecat_events from authenticated;
+create policy revenuecat_events_admin_read on public.revenuecat_events for select to authenticated
+  using (public.is_admin());
+
+-- 23.3 Promotional codes for coaches, madrasas and partners (promo-redeem Edge Function)
+create table public.promo_campaigns (
+  id                 uuid primary key default gen_random_uuid(),
+  name               text not null,
+  org_kind           text not null check (org_kind in ('coach','madrasa','school','clinic','community','partner','internal')),
+  grant_days         smallint not null check (grant_days between 7 and 366),
+  max_redemptions    integer not null check (max_redemptions > 0),
+  redeemed_count     integer not null default 0 check (redeemed_count >= 0),
+  starts_at          timestamptz not null,
+  ends_at            timestamptz not null,
+  allowed_countries  char(2)[],
+  created_by         uuid references public.users(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  check (ends_at > starts_at),
+  check (redeemed_count <= max_redemptions)
+);
+create table public.promo_codes (
+  id           uuid primary key default gen_random_uuid(),
+  campaign_id  uuid not null references public.promo_campaigns(id) on delete cascade,
+  code_hash    text not null unique,             -- sha256(upper(code) || pepper)
+  single_use   boolean not null default true,
+  redeemed_at  timestamptz,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index promo_codes_campaign_idx on public.promo_codes (campaign_id);
+create table public.promo_redemptions (
+  id             uuid primary key default gen_random_uuid(),
+  promo_code_id  uuid not null references public.promo_codes(id) on delete restrict,
+  user_id        uuid not null references public.users(id) on delete cascade,
+  granted_until  timestamptz not null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  unique (promo_code_id, user_id)
+);
+create index promo_redemptions_user_idx on public.promo_redemptions (user_id);
+call private.attach_updated_at('public.promo_campaigns');
+call private.attach_updated_at('public.promo_codes');
+call private.attach_updated_at('public.promo_redemptions');
+call private.attach_audit('public.promo_campaigns', 'full');
+call private.attach_audit('public.promo_redemptions', 'full');
+
+alter table public.promo_campaigns enable row level security;
+alter table public.promo_codes enable row level security;
+alter table public.promo_redemptions enable row level security;
+create policy promo_campaigns_admin on public.promo_campaigns for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+create policy promo_codes_admin on public.promo_codes for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+create policy promo_redemptions_select_own on public.promo_redemptions for select to authenticated
+  using (user_id = auth.uid() or public.is_admin());
+create policy promo_redemptions_admin_write on public.promo_redemptions for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- 23.4 Client entitlement RPCs
+create or replace function public.premium_for(p_household uuid default null)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.has_premium(auth.uid())
+      or (p_household is not null and public.is_household_member(p_household) and public.household_has_premium(p_household));
+$$;
+
+create or replace function public.get_my_entitlements(p_household uuid default null)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'premium',          public.premium_for(p_household),
+    'personalPremium',  public.has_premium(auth.uid()),
+    'householdPremium', p_household is not null and public.is_household_member(p_household)
+                        and public.household_has_premium(p_household),
+    'status',           (select s.status from public.subscriptions s
+                          where s.user_id = auth.uid() and s.entitlement = 'premium'
+                          order by s.current_period_end desc nulls last limit 1),
+    'periodType',       (select s.period_type from public.subscriptions s
+                          where s.user_id = auth.uid() and s.entitlement = 'premium'
+                          order by s.current_period_end desc nulls last limit 1),
+    'currentPeriodEnd', (select max(s.current_period_end) from public.subscriptions s where s.user_id = auth.uid()),
+    'willRenew',        (select coalesce(bool_or(s.will_renew), false) from public.subscriptions s where s.user_id = auth.uid())
+  );
+$$;
+revoke all on function public.premium_for(uuid), public.get_my_entitlements(uuid) from public, anon;
+grant execute on function public.premium_for(uuid), public.get_my_entitlements(uuid) to authenticated, service_role;
+
+-- 23.5 Trial reminder preference (17 section 9)
+alter table public.notification_preferences drop constraint notification_preferences_kind_check;
+alter table public.notification_preferences add constraint notification_preferences_kind_check
+  check (kind in ('meal_reminder','hydration_reminder','suhoor_alarm','iftar_alert','fasting_reminder',
+                  'growth_measurement_due','plan_ready','grocery_reminder','weekly_summary',
+                  'coaching_tip','household_activity','subscription','marketing','trial_ending'));
+
+-- runs after on_auth_user_created (trigger names fire in alphabetical order)
+create or replace function private.add_trial_ending_preference()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.notification_preferences (user_id, kind, enabled)
+  values (new.id, 'trial_ending', true)
+  on conflict (user_id, kind) do nothing;
+  return new;
+end $$;
+create trigger on_auth_user_created_trial_pref after insert on auth.users
+  for each row execute function private.add_trial_ending_preference();
+
+insert into public.notification_preferences (user_id, kind, enabled)
+select u.id, 'trial_ending', true from public.users u
+on conflict (user_id, kind) do nothing;
+```
+
+### 22.10 0024 Analytics
+
+```sql
+-- supabase/migrations/20261001002400_analytics.sql
+-- Event ingestion with allowlist, analytics schema with product metrics, family insights
+-- (18-exports-and-analytics.md). Raw retention is 13 months (0014).
+
+-- 24.1 analytics_events columns (partitioned parent; partitions inherit columns and indexes)
+alter table public.analytics_events
+  add column event_id      uuid not null default gen_random_uuid(),   -- client-generated for dedupe
+  add column session_id    uuid,
+  add column received_at   timestamptz not null default now(),
+  add column locale        text,
+  add column country_code  char(2) check (country_code ~ '^[A-Z]{2}$');
+create unique index analytics_events_dedupe on public.analytics_events (event_id, occurred_at);
+create index analytics_events_session_idx on public.analytics_events (session_id, occurred_at) where session_id is not null;
+
+-- 24.2 Event catalog (generated from packages/shared events.ts) and ingestion RPCs
+create table public.analytics_event_catalog (
+  id             uuid primary key default gen_random_uuid(),
+  event          text not null unique check (event ~ '^[a-z][a-z0-9_.]{2,63}$'),
+  allowed_props  text[] not null default '{}',
+  enabled        boolean not null default true,
+  owner          text,
+  added_in       text,              -- app version
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+call private.attach_updated_at('public.analytics_event_catalog');
+call private.apply_catalog_rls('public.analytics_event_catalog');
+
+-- keeps allowlisted keys with scalar values; strings truncated to 40 characters
+create or replace function public.analytics_filter_props(p_event text, p_props jsonb)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_object_agg(p.key,
+           case when jsonb_typeof(p.value) = 'string' then to_jsonb(left(p.value #>> '{}', 40)) else p.value end), '{}'::jsonb)
+  from jsonb_each(case when jsonb_typeof(p_props) = 'object' then p_props else '{}'::jsonb end) as p
+  join public.analytics_event_catalog c on c.event = p_event and p.key = any (c.allowed_props)
+  where jsonb_typeof(p.value) in ('string','number','boolean');
+$$;
+
+create or replace function public.track_events(p_events jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  e jsonb; n integer := 0;
+  v_user public.users;
+  v_headers jsonb := coalesce(nullif(current_setting('request.headers', true), '')::jsonb, '{}'::jsonb);
+begin
+  select * into v_user from public.users u where u.id = auth.uid();
+  if not found or v_user.analytics_opt_out or v_user.processing_restricted then
+    return 0;
+  end if;
+  if jsonb_typeof(p_events) <> 'array' or jsonb_array_length(p_events) > 50 then
+    raise exception 'TOO_MANY_EVENTS' using errcode = '22023';
+  end if;
+  for e in select value from jsonb_array_elements(p_events) loop
+    continue when not exists (select 1 from public.analytics_event_catalog c where c.event = e ->> 'event' and c.enabled);
+    continue when (e ->> 'household_id') is not null and not public.is_household_member((e ->> 'household_id')::uuid);
+    insert into public.analytics_events (event_id, user_id, household_id, session_id, event, props, occurred_at,
+                                         app_version, platform, locale, country_code)
+    values (coalesce((e ->> 'event_id')::uuid, gen_random_uuid()), v_user.id, (e ->> 'household_id')::uuid,
+            (e ->> 'session_id')::uuid, e ->> 'event',
+            public.analytics_filter_props(e ->> 'event', coalesce(e -> 'props', '{}'::jsonb)),
+            least(greatest(coalesce((e ->> 'occurred_at')::timestamptz, now()), now() - interval '7 days'), now()),
+            v_headers ->> 'x-app-version',
+            case when v_headers ->> 'x-platform' in ('ios','android','web') then v_headers ->> 'x-platform' end,
+            v_user.locale, v_user.country_code)
+    on conflict do nothing;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.track_events(jsonb) from public, anon;
+grant execute on function public.track_events(jsonb) to authenticated;
+revoke all on function public.analytics_filter_props(text, jsonb) from public, anon, authenticated;
+grant execute on function public.analytics_filter_props(text, jsonb) to service_role;
+
+-- 24.3 analytics schema: not exposed through PostgREST; read by service role and the Phase 2 analytics_reader
+create schema if not exists analytics;
+revoke all on schema analytics from public, anon, authenticated;
+grant usage on schema analytics to service_role;
+
+create materialized view analytics.mv_user_active_days as
+select distinct ae.user_id,
+       (ae.occurred_at at time zone coalesce(u.timezone, 'UTC'))::date as day
+from public.analytics_events ae
+join public.users u on u.id = ae.user_id and not u.is_internal
+where ae.occurred_at >= now() - interval '400 days';
+create unique index on analytics.mv_user_active_days (user_id, day);
+
+create materialized view analytics.mv_dau as
+select (ae.occurred_at at time zone coalesce(u.timezone, 'UTC'))::date as day,
+       coalesce(u.country_code, 'ZZ')                                   as country_code,
+       count(distinct ae.user_id)                                       as dau,
+       count(distinct ae.user_id) filter (where ae.platform = 'ios')     as dau_ios,
+       count(distinct ae.user_id) filter (where ae.platform = 'android') as dau_android
+from public.analytics_events ae
+join public.users u on u.id = ae.user_id and not u.is_internal
+where ae.event in ('app_opened','serving_logged','meal_logged','hydration_logged','chat_message_sent','fast_logged','plan_viewed')
+  and ae.occurred_at >= now() - interval '400 days'
+group by 1, 2;
+create unique index on analytics.mv_dau (day, country_code);
+
+create materialized view analytics.mv_meal_adherence_daily as
+select dm.household_id, dm.plan_date as day, fm.life_stage,
+       count(*)                                                   as planned,
+       count(*) filter (where dms.status <> 'planned')            as logged,
+       sum(case dms.status when 'eaten' then 1 when 'partly_eaten' then 0.5 when 'swapped' then 1 else 0 end) as adhered
+from public.daily_meal_servings dms
+join public.daily_meals dm on dm.id = dms.daily_meal_id
+join public.family_members fm on fm.id = dms.family_member_id
+where dm.plan_date < current_date and dm.plan_date >= current_date - 400
+group by 1, 2, 3;
+create unique index on analytics.mv_meal_adherence_daily (household_id, day, life_stage);
+
+create materialized view analytics.mv_plan_completion as
+select mp.id as meal_plan_id, mp.household_id, mp.kind, mp.start_date, mp.end_date,
+       (mp.end_date - mp.start_date + 1)                                         as days,
+       count(distinct a.day) filter (where a.logged > 0)                         as days_logged,
+       sum(a.adhered) / nullif(sum(a.planned), 0)                                as adherence,
+       (count(distinct a.day) filter (where a.logged > 0))::numeric / (mp.end_date - mp.start_date + 1) >= 0.7 as completed,
+       coalesce(sum(a.adhered) / nullif(sum(a.planned), 0), 0) >= 0.6            as engaged_complete
+from public.meal_plans mp
+left join analytics.mv_meal_adherence_daily a
+  on a.household_id = mp.household_id and a.day between mp.start_date and mp.end_date
+where mp.end_date < current_date and mp.status in ('active','completed') and mp.parent_plan_id is null
+group by mp.id;
+create unique index on analytics.mv_plan_completion (meal_plan_id);
+
+create materialized view analytics.mv_retention_weekly as
+with cohort as (
+  select user_id, date_trunc('week', min(occurred_at))::date as cohort_week
+  from public.analytics_events where event = 'signup_completed' and user_id is not null group by user_id
+), activity as (
+  select distinct user_id, date_trunc('week', day)::date as active_week from analytics.mv_user_active_days
+)
+select c.cohort_week,
+       ((a.active_week - c.cohort_week) / 7)                                        as week_n,
+       count(distinct a.user_id)                                                    as retained,
+       (select count(*) from cohort c2 where c2.cohort_week = c.cohort_week)        as cohort_size
+from cohort c join activity a on a.user_id = c.user_id and a.active_week >= c.cohort_week
+group by 1, 2;
+create unique index on analytics.mv_retention_weekly (cohort_week, week_n);
+
+create materialized view analytics.mv_food_acceptance_weekly as
+with scored as (
+  select dms.household_id, dms.family_member_id, date_trunc('week', dm.plan_date)::date as week, dms.acceptance
+  from public.daily_meal_servings dms
+  join public.daily_meals dm on dm.id = dms.daily_meal_id
+  where dms.acceptance is not null
+)
+select sc.household_id, sc.family_member_id, sc.week,
+       avg(array_position(enum_range(null::public.acceptance_score), sc.acceptance) - 1) as mean_acceptance,
+       count(*) filter (where sc.acceptance >= '4_ate_some')                             as servings_accepted,
+       count(*)                                                                          as servings_scored,
+       (select count(*) from public.food_exposures fe
+         where fe.family_member_id = sc.family_member_id
+           and fe.exposed_on >= sc.week and fe.exposed_on < sc.week + 7)                  as exposures
+from scored sc
+group by sc.household_id, sc.family_member_id, sc.week;
+create unique index on analytics.mv_food_acceptance_weekly (family_member_id, week);
+
+create materialized view analytics.mv_hydration_daily as
+select hl.household_id, hl.family_member_id,
+       (hl.logged_at at time zone h.timezone)::date                                   as day,
+       sum(case when hl.beverage = 'tea' then hl.volume_ml * 0.8 else hl.volume_ml end) as volume_ml,
+       max(ht.daily_ml)                                                               as target_ml,
+       count(*) filter (where hl.timing = 'pre_meal')                                 as pre_meal_logs
+from public.hydration_logs hl
+join public.households h on h.id = hl.household_id
+join public.hydration_targets ht on ht.family_member_id = hl.family_member_id and ht.daily_ml > 0 and ht.deleted_at is null
+where hl.logged_at >= now() - interval '400 days'
+group by 1, 2, 3;
+create unique index on analytics.mv_hydration_daily (family_member_id, day);
+
+create materialized view analytics.mv_growth_coverage_monthly as
+select date_trunc('month', current_date)::date as month, fm.household_id,
+       count(*) as children,
+       count(*) filter (where g.last_measured_on >= current_date - (case
+           when age(current_date, fm.date_of_birth) < interval '1 year'  then 31
+           when age(current_date, fm.date_of_birth) < interval '2 years' then 62
+           when age(current_date, fm.date_of_birth) < interval '5 years' then 92
+           else 183 end)) as covered
+from public.family_members fm
+left join lateral (select max(gt.measured_on) as last_measured_on from public.growth_tracking gt
+                   where gt.family_member_id = fm.id) g on true
+where fm.deleted_at is null and fm.date_of_birth > current_date - interval '18 years'
+group by fm.household_id;
+create unique index on analytics.mv_growth_coverage_monthly (month, household_id);
+
+create materialized view analytics.mv_paywall_funnel_daily as
+select (v.occurred_at at time zone 'UTC')::date     as day,
+       coalesce(v.props ->> 'trigger', 'unknown')    as trigger,
+       coalesce(v.country_code, 'ZZ')                as country_code,
+       count(distinct v.session_id)                  as views,
+       count(distinct p.session_id)                  as purchases
+from public.analytics_events v
+left join public.analytics_events p
+  on p.session_id = v.session_id and p.event = 'paywall_purchase_succeeded'
+ and p.occurred_at between v.occurred_at and v.occurred_at + interval '30 minutes'
+where v.event = 'paywall_viewed' and v.occurred_at >= now() - interval '400 days'
+group by 1, 2, 3;
+create unique index on analytics.mv_paywall_funnel_daily (day, trigger, country_code);
+
+create materialized view analytics.mv_family_weekly_summary as
+with weekly as (
+  select a.household_id, date_trunc('week', a.day)::date as week,
+         sum(a.adhered) / nullif(sum(a.planned), 0) as meal_adherence
+  from analytics.mv_meal_adherence_daily a
+  group by a.household_id, date_trunc('week', a.day)
+)
+select w.household_id, w.week, w.meal_adherence,
+       (select avg(least(1, h.volume_ml / nullif(h.target_ml, 0))) from analytics.mv_hydration_daily h
+         where h.household_id = w.household_id and h.day >= w.week and h.day < w.week + 7) as hydration_ratio,
+       (select avg(nj.thuluth_adherence) from public.nutrition_journal nj
+         join public.family_members fm on fm.id = nj.family_member_id and fm.life_stage in ('adult','older_adult')
+         where nj.household_id = w.household_id and nj.journal_date >= w.week and nj.journal_date < w.week + 7) as adult_thuluth_avg,
+       (select count(*) from public.exposure_ladders el
+         where el.household_id = w.household_id and el.status = 'accepted' and el.deleted_at is null
+           and el.updated_at >= w.week and el.updated_at < w.week + 7) as new_foods_accepted
+from weekly w;
+create unique index on analytics.mv_family_weekly_summary (household_id, week);
+
+-- Non-personal monthly aggregates kept after raw events age out
+create table analytics.metric_snapshots (
+  id            uuid primary key default gen_random_uuid(),
+  metric        text not null,
+  period_start  date not null,
+  period_end    date not null,
+  dimensions    jsonb not null default '{}'::jsonb,   -- {"country_code":"PK","platform":"android"}; never user ids
+  value         numeric not null,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  unique (metric, period_start, dimensions),
+  check (period_end >= period_start)
+);
+call private.attach_updated_at('analytics.metric_snapshots');
+alter table analytics.metric_snapshots enable row level security;
+create policy metric_snapshots_admin_read on analytics.metric_snapshots for select to authenticated
+  using (public.is_admin());
+
+-- 24.4 Refresh (replaces the 0014 body). The views above were populated at creation, so CONCURRENTLY works.
+create or replace function public.refresh_analytics_views()
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  refresh materialized view public.mv_daily_active_users;
+  refresh materialized view public.mv_feature_usage_daily;
+  refresh materialized view concurrently analytics.mv_user_active_days;
+  refresh materialized view concurrently analytics.mv_dau;
+  refresh materialized view concurrently analytics.mv_meal_adherence_daily;
+  refresh materialized view concurrently analytics.mv_plan_completion;
+  refresh materialized view concurrently analytics.mv_retention_weekly;
+  refresh materialized view concurrently analytics.mv_food_acceptance_weekly;
+  refresh materialized view concurrently analytics.mv_hydration_daily;
+  refresh materialized view concurrently analytics.mv_growth_coverage_monthly;
+  refresh materialized view concurrently analytics.mv_paywall_funnel_daily;
+  refresh materialized view concurrently analytics.mv_family_weekly_summary;
+end $$;
+
+-- 24.5 Premium family dashboard RPC
+create or replace function public.get_family_insights(p_household uuid, p_weeks integer default 8)
+returns setof analytics.mv_family_weekly_summary
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_household_member(p_household) then
+    raise exception 'FORBIDDEN' using errcode = '42501';
+  end if;
+  if not public.premium_for(p_household) then
+    raise exception 'PREMIUM_REQUIRED' using errcode = 'P0001';
+  end if;
+  return query
+    select s.* from analytics.mv_family_weekly_summary s
+    where s.household_id = p_household
+      and s.week >= date_trunc('week', current_date) - make_interval(weeks => p_weeks)
+    order by s.week;
+end $$;
+revoke all on function public.get_family_insights(uuid, integer) from public, anon;
+grant execute on function public.get_family_insights(uuid, integer) to authenticated;
+```
+
+Notes:
+- The view SQL in `18-exports-and-analytics.md` was corrected while consolidating: two views referenced ungrouped outer columns inside subqueries (rewritten with a CTE), two filtered on `deleted_at` columns that `growth_tracking` and `hydration_logs` do not have, and nullable unique-index columns were coalesced so `refresh ... concurrently` is safe.
+- `analytics.*` is not in the PostgREST exposed schemas. `get_family_insights()` is the only client path, and it requires household premium.
+
+### 22.11 0025 Platform: idempotency, rate limits, prayer times cache
+
+```sql
+-- supabase/migrations/20261001002500_platform_idempotency_rate_limits.sql
+-- Idempotency keys, the single rate-limiting mechanism, the prayer-times cache, account-data exports
+-- and server-side feature flag evaluation (04, 06, 09; 00-foundations section 11).
+
+-- 25.1 idempotency_keys (06 section 2.4). Service role only.
+create table public.idempotency_keys (
+  id             uuid primary key default gen_random_uuid(),
+  scope          text not null,                 -- function name, or 'revenuecat'
+  user_id        uuid references public.users(id) on delete cascade,   -- null for webhooks
+  key            text not null check (char_length(key) between 8 and 128),
+  request_hash   text not null,
+  status         text not null check (status in ('in_progress','completed','failed')),
+  response_code  smallint,
+  response_body  jsonb,
+  expires_at     timestamptz not null default now() + interval '24 hours',
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create unique index idempotency_keys_scope_user_key
+  on public.idempotency_keys (scope, coalesce(user_id, '00000000-0000-0000-0000-000000000000'::uuid), key);
+create index idempotency_keys_expiry_idx on public.idempotency_keys (expires_at);
+create index idempotency_keys_user_idx on public.idempotency_keys (user_id) where user_id is not null;
+call private.attach_updated_at('public.idempotency_keys');
+alter table public.idempotency_keys enable row level security;
+revoke all on public.idempotency_keys from authenticated;
+create policy idempotency_keys_admin_read on public.idempotency_keys for select to authenticated using (public.is_admin());
+
+-- 25.2 Rate limiting: the only mechanism (06 section 2.7; 16's rate_limits means this table).
+-- Unlogged on purpose: counters may be lost on crash. updated_at is set by consume_rate_limit itself
+-- (no trigger on this hot path).
+create unlogged table public.rate_limit_buckets (
+  bucket_key    text primary key,              -- e.g. 'ai-chat:{user_id}:min'
+  window_start  timestamptz not null,
+  count         integer not null check (count >= 0),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index rate_limit_buckets_window_idx on public.rate_limit_buckets (window_start);
+alter table public.rate_limit_buckets enable row level security;
+revoke all on public.rate_limit_buckets from authenticated;
+create policy rate_limit_buckets_admin_read on public.rate_limit_buckets for select to authenticated using (public.is_admin());
+
+create or replace function public.consume_rate_limit(p_key text, p_limit integer, p_window_seconds integer)
+returns table (allowed boolean, remaining integer, reset_at timestamptz)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_now           timestamptz := now();
+  v_window_start  timestamptz := to_timestamp(floor(extract(epoch from v_now) / p_window_seconds) * p_window_seconds);
+  v_count         integer;
+begin
+  if p_limit < 0 or p_window_seconds <= 0 then
+    raise exception 'INVALID_RATE_LIMIT' using errcode = '22023';
+  end if;
+  insert into public.rate_limit_buckets as b (bucket_key, window_start, count)
+  values (p_key, v_window_start, 1)
+  on conflict (bucket_key) do update
+    set count        = case when b.window_start = excluded.window_start then b.count + 1 else 1 end,
+        window_start = excluded.window_start,
+        updated_at   = v_now
+  returning b.count into v_count;
+  return query select v_count <= p_limit, greatest(p_limit - v_count, 0), v_window_start + make_interval(secs => p_window_seconds);
+end $$;
+revoke all on function public.consume_rate_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_rate_limit(text, integer, integer) to service_role;
+
+-- 25.3 prayer_times_cache: shared Aladhan results per city, method and month (04 section 7, 06 section 4.9)
+create table public.prayer_times_cache (
+  id            uuid primary key default gen_random_uuid(),
+  country_code  char(2) not null check (country_code ~ '^[A-Z]{2}$'),
+  city          text not null,
+  method        smallint not null,             -- Aladhan method id (1 = Karachi, 0 = Jafari, 4 = Umm al-Qura ...)
+  school        smallint not null default 0 check (school in (0, 1)),   -- 0 Shafi'i/standard, 1 Hanafi asr
+  year          smallint not null check (year between 2020 and 2100),
+  month         smallint not null check (month between 1 and 12),
+  timings       jsonb not null check (jsonb_typeof(timings) = 'array'),  -- [{"date":"2027-02-08","fajr":"05:31",...}]
+  hijri         jsonb not null default '[]'::jsonb,                     -- Aladhan Hijri dates for the same days
+  source        text not null default 'aladhan' check (source in ('aladhan','computed_fallback')),
+  fetched_at    timestamptz not null default now(),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create unique index prayer_times_cache_key
+  on public.prayer_times_cache (country_code, lower(city), method, school, year, month);
+call private.attach_updated_at('public.prayer_times_cache');
+alter table public.prayer_times_cache enable row level security;
+revoke all on public.prayer_times_cache from authenticated;
+create policy prayer_times_cache_admin_read on public.prayer_times_cache for select to authenticated using (public.is_admin());
+
+-- 25.4 exports: GDPR account data export (account-export) has no household
+alter table public.exports drop constraint exports_kind_check;
+alter table public.exports add constraint exports_kind_check
+  check (kind in ('meal_plan','grocery_list','nutrition_report','growth_report','ramadan_pack','family_summary','account_data'));
+alter table public.exports alter column household_id drop not null;
+alter table public.exports add constraint exports_household_required check (kind = 'account_data' or household_id is not null);
+create index exports_user_idx on public.exports (user_id, created_at desc);
+
+-- 25.5 evaluate_feature_flags(): {key: boolean} for the caller (09 section 5). Rules keys:
+-- user_ids (allow list, wins), countries, tiers, min_app_version (from the X-App-Version header), percent.
+create or replace function public.evaluate_feature_flags()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid      uuid := auth.uid();
+  v_country  text;
+  v_tier     text;
+  v_version  text := coalesce(nullif(current_setting('request.headers', true), '')::jsonb, '{}'::jsonb) ->> 'x-app-version';
+  v_out      jsonb := '{}'::jsonb;
+  f          record;
+  v_on       boolean;
+begin
+  select u.country_code into v_country from public.users u where u.id = v_uid;
+  v_tier := case when public.has_premium(v_uid) then 'premium' else 'free' end;
+  for f in select ff.key, ff.enabled, ff.rules from public.feature_flags ff loop
+    v_on := f.enabled;
+    if v_on and f.rules ? 'countries' then
+      v_on := coalesce(v_country = any (array(select jsonb_array_elements_text(f.rules -> 'countries'))), false);
+    end if;
+    if v_on and f.rules ? 'tiers' then
+      v_on := v_tier = any (array(select jsonb_array_elements_text(f.rules -> 'tiers')));
+    end if;
+    if v_on and f.rules ? 'min_app_version' then
+      v_on := v_version ~ '^\d+(\.\d+)*$'
+              and string_to_array(v_version, '.')::int[] >= string_to_array(f.rules ->> 'min_app_version', '.')::int[];
+    end if;
+    if v_on and f.rules ? 'percent' then
+      v_on := v_uid is not null
+              and abs(hashtextextended(f.key || ':' || v_uid::text, 0)) % 100 < (f.rules ->> 'percent')::int;
+    end if;
+    if f.enabled and v_uid is not null and f.rules ? 'user_ids'
+       and v_uid::text in (select jsonb_array_elements_text(f.rules -> 'user_ids')) then
+      v_on := true;
+    end if;
+    v_out := v_out || jsonb_build_object(f.key, coalesce(v_on, false));
+  end loop;
+  return v_out;
+end $$;
+revoke all on function public.evaluate_feature_flags() from public, anon;
+grant execute on function public.evaluate_feature_flags() to authenticated, service_role;
+
+-- 25.6 Housekeeping jobs (UTC)
+select cron.schedule('idempotency-gc', '0 22 * * *',                        -- 03:00 PKT
+  $$delete from public.idempotency_keys where expires_at < now()$$);
+select cron.schedule('rate-limit-gc', '*/15 * * * *',
+  $$delete from public.rate_limit_buckets where window_start < now() - interval '1 day'$$);
+select cron.schedule('prayer-times-retention', '10 22 1 * *',
+  $$delete from public.prayer_times_cache where make_date(year, month, 1) < (now() - interval '18 months')::date$$);
+```
+
+### 22.12 0026 Plan generation queue
+
+```sql
+-- supabase/migrations/20261001002600_plan_generation_queue.sql
+-- Async plan generation: pgmq queue plan_generation, progress column streamed over Realtime,
+-- atomic week writes and activation (00-foundations section 11, 04 section 4.3, 06 sections 3.3 and 4.3).
+
+create extension if not exists pgmq;                 -- Supabase Queues; creates schema pgmq
+select pgmq.create('plan_generation');
+
+-- 26.1 Progress, shape GenerationProgress in 06: {phase, completed_weeks, total_weeks, attempt, error_code, escalation}
+alter table public.meal_plans
+  add column generation_progress jsonb not null default '{}'::jsonb check (jsonb_typeof(generation_progress) = 'object');
+-- meal_plans is already in the supabase_realtime publication (0016), so progress updates reach the app.
+
+-- 26.2 Queue wrappers for Edge Functions (pgmq is not exposed through PostgREST). Service role only.
+create or replace function public.plan_generation_enqueue(p_meal_plan_id uuid, p_attempt integer default 0, p_delay_seconds integer default 0)
+returns bigint
+language sql
+security definer
+set search_path = ''
+as $$
+  select pgmq.send('plan_generation', jsonb_build_object('meal_plan_id', p_meal_plan_id, 'attempt', p_attempt), p_delay_seconds);
+$$;
+
+create or replace function public.plan_generation_read(p_vt_seconds integer default 300, p_qty integer default 1)
+returns table (msg_id bigint, read_ct integer, enqueued_at timestamptz, vt timestamptz, message jsonb)
+language sql
+security definer
+set search_path = ''
+as $$
+  select r.msg_id, r.read_ct, r.enqueued_at, r.vt, r.message from pgmq.read('plan_generation', p_vt_seconds, p_qty) r;
+$$;
+
+create or replace function public.plan_generation_ack(p_msg_id bigint, p_archive boolean default true)
+returns boolean
+language sql
+security definer
+set search_path = ''
+as $$
+  select case when p_archive then pgmq.archive('plan_generation', p_msg_id) else pgmq.delete('plan_generation', p_msg_id) end;
+$$;
+
+revoke all on function public.plan_generation_enqueue(uuid, integer, integer), public.plan_generation_read(integer, integer),
+                       public.plan_generation_ack(bigint, boolean) from public, anon, authenticated;
+grant execute on function public.plan_generation_enqueue(uuid, integer, integer), public.plan_generation_read(integer, integer),
+                          public.plan_generation_ack(bigint, boolean) to service_role;
+
+-- 26.3 write_plan_week: one validated week from the worker, idempotent on retry. Service role only.
+-- p_week = {"week": 1,
+--           "days": [{"plan_date":"2026-10-12",
+--                     "meals":[{"meal_type":"lunch","slot":1,"meal_id":"...","scheduled_time":"13:30",
+--                               "notes":null,"batch_multiplier":1.0,"source_daily_meal_id":null,"is_lunchbox":false,
+--                               "servings":[{"family_member_id":"...","portion_id":"...","adaptation":"none","adapted_meal_id":null}]}]}],
+--           "recommendations": [{"recommendation_id":"...","family_member_id":null}]}
+create or replace function public.write_plan_week(p_meal_plan_id uuid, p_week jsonb)
+returns integer
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_plan   public.meal_plans;
+  d        jsonb;
+  m        jsonb;
+  s        jsonb;
+  v_dm_id  uuid;
+  v_rows   integer := 0;
+begin
+  select * into v_plan from public.meal_plans where id = p_meal_plan_id and deleted_at is null for update;
+  if not found then
+    raise exception 'NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_plan.status <> 'generating' then
+    raise exception 'CONFLICT' using errcode = 'P0001', detail = 'status=' || v_plan.status;
+  end if;
+
+  for d in select value from jsonb_array_elements(coalesce(p_week -> 'days', '[]'::jsonb)) loop
+    if (d ->> 'plan_date')::date not between v_plan.start_date and v_plan.end_date then
+      raise exception 'PLAN_DATE_OUT_OF_RANGE' using errcode = '22023', detail = d ->> 'plan_date';
+    end if;
+    for m in select value from jsonb_array_elements(coalesce(d -> 'meals', '[]'::jsonb)) loop
+      insert into public.daily_meals (meal_plan_id, household_id, plan_date, meal_type, slot, meal_id, scheduled_time,
+                                      notes, batch_multiplier, source_daily_meal_id, is_lunchbox)
+      values (v_plan.id, v_plan.household_id, (d ->> 'plan_date')::date, (m ->> 'meal_type')::public.meal_type,
+              coalesce((m ->> 'slot')::smallint, 1), (m ->> 'meal_id')::uuid, (m ->> 'scheduled_time')::time,
+              m ->> 'notes', coalesce((m ->> 'batch_multiplier')::numeric, 1.0), (m ->> 'source_daily_meal_id')::uuid,
+              coalesce((m ->> 'is_lunchbox')::boolean, false))
+      on conflict (meal_plan_id, plan_date, meal_type, slot) do update
+        set meal_id = excluded.meal_id, scheduled_time = excluded.scheduled_time, notes = excluded.notes,
+            batch_multiplier = excluded.batch_multiplier, source_daily_meal_id = excluded.source_daily_meal_id,
+            is_lunchbox = excluded.is_lunchbox
+      returning id into v_dm_id;
+      v_rows := v_rows + 1;
+
+      for s in select value from jsonb_array_elements(coalesce(m -> 'servings', '[]'::jsonb)) loop
+        insert into public.daily_meal_servings (daily_meal_id, household_id, family_member_id, portion_id, adaptation, adapted_meal_id)
+        values (v_dm_id, v_plan.household_id, (s ->> 'family_member_id')::uuid, (s ->> 'portion_id')::uuid,
+                coalesce(s ->> 'adaptation', 'none'), (s ->> 'adapted_meal_id')::uuid)
+        on conflict (daily_meal_id, family_member_id) do update
+          set portion_id = excluded.portion_id, adaptation = excluded.adaptation, adapted_meal_id = excluded.adapted_meal_id;
+      end loop;
+    end loop;
+  end loop;
+
+  insert into public.plan_recommendations (household_id, meal_plan_id, recommendation_id, family_member_id)
+  select v_plan.household_id, v_plan.id, (r ->> 'recommendation_id')::uuid, (r ->> 'family_member_id')::uuid
+    from jsonb_array_elements(coalesce(p_week -> 'recommendations', '[]'::jsonb)) as r
+   where not exists (select 1 from public.plan_recommendations pr
+                      where pr.meal_plan_id = v_plan.id
+                        and pr.recommendation_id = (r ->> 'recommendation_id')::uuid
+                        and pr.family_member_id is not distinct from (r ->> 'family_member_id')::uuid);
+
+  update public.meal_plans
+     set generation_progress = generation_progress
+           || jsonb_build_object('phase', 'writing',
+                                 'completed_weeks', greatest(coalesce((generation_progress ->> 'completed_weeks')::int, 0),
+                                                             coalesce((p_week ->> 'week')::int, 0)),
+                                 'total_weeks', v_plan.week_count)
+   where id = v_plan.id;
+  return v_rows;
+end $$;
+revoke all on function public.write_plan_week(uuid, jsonb) from public, anon, authenticated;
+grant execute on function public.write_plan_week(uuid, jsonb) to service_role;
+
+-- 26.4 activate_meal_plan (06 section 3.3): draft -> active, archiving the previous active plan of the
+-- same kind. Invoker rights, so meal_plans RLS (can_author_plans) and the 0012 entitlement trigger apply.
+create or replace function public.activate_meal_plan(p_meal_plan_id uuid)
+returns public.meal_plans
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare v_plan public.meal_plans;
+begin
+  select * into v_plan from public.meal_plans where id = p_meal_plan_id and deleted_at is null for update;
+  if not found then
+    raise exception 'NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_plan.status <> 'draft' then
+    raise exception 'CONFLICT' using errcode = 'P0001', detail = 'status=' || v_plan.status;
+  end if;
+  update public.meal_plans set status = 'archived'
+   where household_id = v_plan.household_id and status = 'active' and kind = v_plan.kind
+     and id <> v_plan.id and deleted_at is null;
+  update public.meal_plans set status = 'active' where id = v_plan.id returning * into v_plan;
+  return v_plan;
+end $$;
+revoke all on function public.activate_meal_plan(uuid) from public, anon;
+grant execute on function public.activate_meal_plan(uuid) to authenticated, service_role;
+
+-- 26.5 Crash recovery: kick the worker every minute; it exits immediately when the queue is empty
+select cron.schedule('plan-generation-sweeper', '* * * * *',
+  $$select private.invoke_edge_function('ai-generate-plan/worker')$$);
+```
+
+Worker loop (`ai-generate-plan/worker`, `04-system-architecture.md` section 4.3): `plan_generation_read(300, 1)`; if `read_ct > 3` set the plan `failed` with `generation_progress.error_code = 'AI_UNAVAILABLE'` and ack; otherwise generate one week, validate, `write_plan_week()`, re-enqueue for the next week or set `status = 'draft'`, then `plan_generation_ack()`.
+
+### 22.13 Requested but already covered (not re-added)
+
+| Requested | Doc | Resolution |
+|---|---|---|
+| `household_has_premium(uuid)`, `has_premium(uuid)` | 17 | Defined in 0011; reused unchanged |
+| `can_write_household(uuid)` | 16 | Same as `can_edit_household(uuid)` from 0011 |
+| `household_role_of(uuid)`, `is_household_member(uuid)` | 16 | Defined in 0011 |
+| `assert_same_household()` trigger | 16 | Composite foreign keys `(child_id, household_id)` from 0003 to 0009 already make cross-household attachment impossible |
+| `audit_row_change()` | 16 | Defined in 0012; new tables attach it through `private.attach_audit` |
+| Auth trigger creating `users` | 11 | `on_auth_user_created` in 0012 |
+| `ai_usage.request_id`, `ai_usage.status` | 12 | Added in 0007 |
+| `islamic_sources.verification_status`, `recommendations.review_status` | 13 | Added in 0006 |
+| `hadith_references.edition` | 13 | Same as `numbering_scheme` from 0006 |
+| `growth_tracking.alerts`, `head_circumference_z`, `head_circumference_percentile` | 15 | Same as `flags`, `head_circumference_for_age_z`, `head_circumference_for_age_percentile` from 0009 |
+| Check constraint on `fasting_logs.exemption_reason` | 15 | Present in 0009 |
+| `price_observations.status` | 14 | Same as `moderation_status` from 0004; values `rejected_outlier`, `rejected_manual` added in 0020 |
+| `price_observation_screen()`, `mark_recipe_nutrition_stale()` | 14 | Folded into `private.price_report_moderation()` and `private.ingredient_nutrition_sync()` (0020) |
+| `exports.status` value sets | 06, 18 | 0010 already allows `queued`, `rendering`, `ready`, `failed`, `expired`; 06's `processing` is `rendering` |
+| `subscriptions.last_event_at` | 17 | Added in 0010 |
+| Unique index `notifications (user_id, kind, scheduled_for)` | 06 | Not added: two reminders of the same kind can be due at the same minute for different family members. Idempotency uses `notifications_dedupe_key (user_id, dedupe_key)` from 0010 |
+| Storage bucket `public-catalog` | 04 | Named `recipe-images` in `10-supabase-structure.md` |
+| `tests` schema and helpers | 21 | Test-only, created by the pgTAP suite, never migrated |
+| Household settings keys `allow_mashbooh`, `weekday_cook_limit_min`, `packed_lunches`, `batch_day` | 14 | Keys inside `households.preferences` (0020) |
+| `sensory_profiles.presentation_prefs.summary` | 15 | A JSON key, no DDL |
+
+### 22.14 Phase 2, not migrated
+
+| Addition | Doc | Note |
+|---|---|---|
+| `agent_runs`, `agent_tasks`, `agent_messages`, `blackboard_entries` | 25 | Multi-agent orchestration |
+| `consents.kind = 'partner_access'`, route keys `agent.*`, prompt keys `agent.*`, flags `ai.multi_agent`, `ai.safety_reviewer.blocking`, tool `propose_profile_update`, `mcp-gateway` | 25 | Seed rows and code once the epic is scheduled; `partner_access` needs a check constraint change on `consents` |
+| `coach_profiles`, `plan_approvals` | 23 (E3) | Coach accounts; RLS for the `coach` role already exists |
+| `households.kind`, `family_members.cohort_size` | 23 (E4) | Institutions |
+| `health_integrations` | 23 (E5) | Wearables and health platforms |
+| `packaged_products` | 23 (E6) | Barcode scanning |
+| `coaching_programs`, `program_lessons`, `program_enrollments` | 23 (E7) | Structured programmes |
+| `price_partners` | 23 (E9) | Partner price feeds |
+| `analytics_reader` database role, Metabase | 10, 18 | Internal BI |
+| RevenueCat `coach` entitlement | 17 | `subscriptions.entitlement` already accepts `'coach'`; nothing grants it in MVP |
+
+### 22.15 Traceability
+
+| Addition | Requested by | Migration |
+|---|---|---|
+| `households.preferences` | 01 appendix B, 14 section 22 | 0020 |
+| `family_members.lifestyle` | 01 appendix B | 0021 |
+| `meal_plans.generation_progress`, pgmq `plan_generation`, `plan-generation-sweeper` cron | 04 section 15, 06 section 9, 00 section 11 | 0026 |
+| `activate_meal_plan(uuid)`, `write_plan_week(uuid, jsonb)`, queue wrappers | 04 section 15, 06 section 3.3 | 0026 |
+| `idempotency_keys`, `idempotency-gc` cron | 04, 06 section 2.4 | 0025 |
+| `rate_limit_buckets`, `consume_rate_limit()`, `rate-limit-gc` cron | 04, 06 section 2.7, 16 section 20, 00 section 11 | 0025 |
+| `prayer_times_cache`, `prayer-times-retention` cron | 04, 06 section 4.9 | 0025 |
+| `users.deletion_scheduled_for`, `account-delete-executor` cron | 04, 06 section 4.13 | 0017, 0022 |
+| `exports.kind = 'account_data'`, nullable `exports.household_id` | 04, 06 section 4.12 | 0025 |
+| `chat_messages` column privileges | 06 section 3.8 | 0018 |
+| `evaluate_feature_flags()` | 09 section 12 | 0025 |
+| `users.age_attested_at` | 09, 11 section 18 | 0017 |
+| `has_household_role(uuid, household_role[])` | 11 section 18 | 0017 |
+| `child_data` consent trigger on `family_members` | 11 section 18, 16 section 7.2 | 0022 |
+| `auth.identities` audit trigger, `audit_log.action` values `identity.*` | 11 section 18 | 0022 |
+| `ai_jobs`, `safety_events` | 12 section 21 | 0018 |
+| `ai_eval_cases`, `ai_eval_runs` | 12 section 21, 21 section 20 | 0018 |
+| `ai_usage.prompt_key`, `prompt_version`, `cache_read_tokens`, `cache_write_tokens` | 12 section 21 | 0018 |
+| `ai_memories.kind`, `ai_memories.status` | 12 section 21 | 0018 |
+| `ai_quota_check(uuid, text)` | 12 section 17 | 0018 |
+| `search_islamic_sources()` | 12 section 9 | 0019 |
+| Storage bucket `voice-notes` | 12 section 21 | 0016b (doc 10 section 6.5) |
+| `islamic_sources.code`, `approvals_count`, `retracted_at`, `retraction_reason`, `search_tsv` | 12, 13 section 13 | 0019 |
+| `citable_islamic_sources`, `v_knowledge_status` | 12, 13 section 13 | 0019 |
+| `hadith_references.also_in`; `imam_narrations.edition`, `chapter`, `also_in` | 13 section 13 | 0019 |
+| `source_verifications.reviewer_id`, `round`, `action`, `checklist`; widened `method` values | 13 section 13 | 0019 |
+| `scholar_reviewers`, `scholarly_notes`, `quran_text` | 13 section 13 | 0019 |
+| `scientific_evidence.code`, `reviewed_by`, `reviewed_on`, `summary_i18n`, `retracted_at` | 13 section 13 | 0019 |
+| `recommendations.version`, `tradition_scope` | 13 section 13 | 0019 |
+| `recommendations.science_only` and relaxed publishing gate | 00 section 11 | 0019 |
+| Two-reviewer `source_verifications_apply` logic, new rounds on edit, retraction | 13 sections 3.5, 8.3 to 8.5 | 0019 |
+| Content roles `content_editor`, `scholar_reviewer`, `nutrition_reviewer`, `content_admin` (`has_content_role`) | 13 section 8.1 | 0017, 0019 |
+| `ingredients.yield_factors`, `shelf_life_days`, `purchase_units`, `aisle` | 14 section 22 | 0020 |
+| `portions.tier` (unique keys widened to include tier) | 14 section 22 | 0020 |
+| `daily_meals.batch_multiplier`, `source_daily_meal_id`, `is_lunchbox` | 14 section 22 | 0020 |
+| `meal_plans.weekly_themes` | 14 section 22 | 0020 |
+| `price_observations.unit_grams`, outlier screen | 14 section 22 | 0020 |
+| `pantry_items`, `ingredient_substitutions`, `mv_current_prices` | 14 section 22 | 0020 |
+| Recipe nutrition recompute on ingredient edits | 14 section 22 | 0020 |
+| `growth_tracking.age_days`, `measurement_position`, `entered_by` | 15 section 10 | 0021 |
+| `ramadan_plans.calc_params`, `households.hijri_offset_days` | 15 section 10 | 0021 |
+| `fasting_logs.hijri_date`, `qada_for_hijri_year`, `v_qada_balance` | 15 section 10 | 0021 |
+| `growth_dashboard(uuid)`, `picky_acceptance_summary(uuid, int)` | 15 section 10 | 0021 |
+| `exposure_ladders.status = 'accepted'`, structured `food_exposures.context` values | 15 section 10, 18 | 0021 |
+| `consent_versions`, `has_active_consent()`, `health_data` consent triggers | 16 section 7.2 | 0022 |
+| `data_subject_requests`, `deleted_user_ledger` | 16 sections 7.4, 12 | 0022 |
+| `users.processing_restricted` | 16 section 7.4 | 0017 |
+| `household_keys`, `*_enc` and `*_key_version` columns (incl. pregnancy notes), `get_note_kek()` | 16 section 10, 00 section 11 | 0022 |
+| `fasting_logs_visible` | 16 section 5 | 0022 |
+| `subscriptions.entitlement`, `period_type`, `grace_period_expires_at`, `original_transaction_id`, `environment`, `refunded_at`, `country_code`, unique `(user_id, store, entitlement)` | 17 section 17 | 0023 |
+| `revenuecat_events` | 17 section 17 | 0023 |
+| `promo_campaigns`, `promo_codes`, `promo_redemptions` | 17 section 17 | 0023 |
+| `premium_for(uuid)`, `get_my_entitlements(uuid)` | 17 section 17 | 0023 |
+| `notification_preferences.kind = 'trial_ending'` | 17 section 17 | 0023 |
+| `analytics_events.event_id`, `session_id`, `received_at`, `locale`, `country_code` | 18 section 16 | 0024 |
+| `analytics_event_catalog`, `track_events(jsonb)`, `analytics_filter_props(text, jsonb)` | 18 section 16 | 0024 |
+| Schema `analytics`, its ten materialized views, `metric_snapshots`; `refresh_analytics_views()` extended | 18 section 16 | 0024 |
+| `get_family_insights(uuid, int)` | 18 section 16 | 0024 |
+| `users.analytics_opt_out`, `users.is_internal` | 18 section 16 | 0017 |
+
+### 22.16 Verification and test hooks
+
+All 27 migrations (0001 to 0016 from sections 4 to 17 and `10-supabase-structure.md`, 0016b, and 0017 to 0026) were loaded in order into PostgreSQL 16 with stubs for `auth`, `vault`, `pg_net`, `pg_cron`, `pgvector` (operator `<=>` only), `pgmq`, Storage and Realtime. They apply cleanly. After loading, every table in `public` and `analytics` has RLS enabled and at least one policy, and every table with `updated_at` has its trigger except the unlogged `rate_limit_buckets` (set inside `consume_rate_limit`). Behaviour checked with role and JWT switching:
+
+1. One approval leaves a source `in_review` with `approvals_count = 1`; a second approval from a reviewer of the right tradition makes it `verified`. Editing the hadith text opens round 2 and returns it to `in_review`. A `retract` row sets `retracted_at` and removes it from `citable_islamic_sources`.
+2. A `science_only` recommendation publishes with scientific evidence only. A normal one fails with `RECOMMENDATION_MISSING_VERIFIED_ISLAMIC_SOURCE` until a verified source is linked, and with `RECOMMENDATION_TRADITION_GAP` when `tradition_scope` names a tradition with no covering source.
+3. Adding a 7-year-old without consent fails with `CHILD_DATA_CONSENT_REQUIRED`; a `medical_conditions` insert without `health_data` consent fails with `CONSENT_REQUIRED`; a plaintext `notes` value fails its check; a client write to `notes_enc` fails with `ENCRYPTED_FIELD_SERVER_ONLY`.
+4. `write_plan_week` is denied to `authenticated`, and as `service_role` it writes one week idempotently (same row counts on retry) and updates `generation_progress`. `activate_meal_plan` moves a draft to active.
+5. `consume_rate_limit('k', 2, 60)` allows two calls and refuses the third. `ai_quota_check` returns 20 remaining chat messages and refuses photo analysis for a free user.
+6. `track_events` drops props that are not in the allowlist and returns 0 for uncatalogued events. `get_family_insights` raises `PREMIUM_REQUIRED` for a free household. Selecting `chat_messages.tool_calls` as `authenticated` is denied.
+7. The price screen accepts six seed prices and rejects a 6x outlier as `rejected_outlier`. `refresh_ingredient_prices()` and `refresh_analytics_views()` run twice in a row (the second time concurrently).
+
+Changes to existing acceptance criteria in section 21: criterion 9 now expects 14 `notification_preferences` rows (`trial_ending` added). Fixtures for criteria 3 to 6 must grant `health_data` and `child_data` consents, or run with `app.bypass_entitlements = 'on'`. Criterion 7 also needs two approvals per source. Add pgTAP tests for points 1 to 6 above to `supabase/tests/`.

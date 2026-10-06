@@ -614,20 +614,21 @@ sequenceDiagram
   participant RT as Supabase Realtime
   U->>App: Tap "Create our first week"
   App->>EF: POST { household_id, kind: 'standard', start_date, week_count: 1 }
-  EF->>DB: insert meal_plans (status 'generating')
+  EF->>DB: insert meal_plans (status 'generating'), enqueue pgmq plan_generation
   EF-->>App: { meal_plan_id }
-  App->>RT: subscribe meal_plans:id=eq.{meal_plan_id}
-  loop progress broadcast on channel plan:{meal_plan_id}
-    EF-->>RT: broadcast plan_progress { stage, pct }
-    RT-->>App: update PlanGenerationStepper
+  App->>RT: subscribe channel plan:{meal_plan_id} (meal_plans id=eq.{meal_plan_id})
+  loop ai-generate-plan/worker processes stages
+    EF->>DB: update meal_plans.generation_progress
+    RT-->>App: row change, update PlanGenerationStepper
   end
-  EF->>DB: status 'active', daily_meals + daily_meal_servings inserted
-  RT-->>App: status 'active'
+  EF->>DB: status 'draft', daily_meals + daily_meal_servings inserted
+  RT-->>App: status 'draft'
+  App->>DB: rpc activate_meal_plan (first plan auto, later plans after "Start this plan")
   App->>U: "Your week is ready" then navigate Main > TodayTab > Dashboard
   Note over App: If status 'failed' or 120 s timeout: ErrorState with Retry and "Use a starter template" (curated free template)
 ```
 
-Progress stages shown in `PlanGenerationStepper` (broadcast on Realtime channel `plan:{meal_plan_id}`; contract in `06-api-specification.md`): `reading_profiles` (10%), `targets` (25%), `choosing_meals` (55%), `adapting_portions` (75%), `checking_safety` (90%), `saving` (100%). Each stage shows one short educational line (for example the fluid-timing rule) so the wait teaches something. Free users get a 1-week plan; the Premium multi-week toggle shows `PremiumBadge`.
+Progress stages shown in `PlanGenerationStepper` (UI labels mapped from `meal_plans.generation_progress`, delivered as row changes on Realtime channel `plan:{meal_plan_id}`; contract in `06-api-specification.md` §4.3): six UI stages mapped from the `generation_progress.phase` values in 06: `queued` shows "Reading your family's profiles" (10%), `safety_check` shows "Setting targets" (25%), `generating` shows "Choosing meals" (55%) and then "Adapting portions" once `generation_progress.percent` passes 70, `validating` shows "Checking safety" (90%), `writing` and `done` show "Saving" (100%). When the plan arrives as `draft`, the first onboarding plan is activated automatically; later plans open the plan review screen with a "Start this plan" button. Each stage shows one short educational line (for example the fluid-timing rule) so the wait teaches something. Free users get a 1-week plan; the Premium multi-week toggle shows `PremiumBadge`.
 
 ### 5.5 Daily meal logging and acceptance scoring
 
@@ -1160,7 +1161,7 @@ Free tier stores this profile during intake (so plans can use it); editing later
 | Monthly food budget | `budget_profiles.monthly_amount_minor`, `currency` | `CurrencyField` with suggestions from household size and price book (e.g. Lahore family of four: PKR 70,000 to 90,000) | > 0; max 10,000,000 major units |
 | How strict? | `strictness` | RadioCards flexible / target / hard_cap | default `target` |
 | Category split | `category_split` | "Use recommended split" Switch (default on) else `BudgetSplitEditor` across `budget_categories` | sums to 100% |
-| Shopping day | stored in `notification_preferences` (kind `shopping_reminder`, `quiet_hours` unaffected) and used by grocery list period | DayChips | default Sunday (bazaar day) |
+| Shopping day | stored in `notification_preferences` (kind `grocery_day`, `quiet_hours` unaffected) and used by grocery list period | DayChips | default Sunday (bazaar day) |
 
 Copy: "What would you like to spend on food each month?" helper "We'll suggest seasonal, local swaps to stay within it." Urdu: "آپ ماہانہ کھانے پر کتنا خرچ کرنا چاہتے ہیں؟"
 
@@ -1186,7 +1187,7 @@ Copy: "What would you like to spend on food each month?" helper "We'll suggest s
 
 - **Purpose:** Show generation progress, teach while waiting, handle failure.
 - **Layout:** `PlanGenerationStepper` (6 stages from §5.4), each stage an icon + label, current one with a calm progress bar (no spinner animation in Sensory-calm mode); rotating `TipCard` with a rule-of-thirds tip and a `SourceCitationChip`; "We'll notify you when it's ready" link (enables leaving the screen; the X13 modal variant shows a Close button).
-- **Data:** Realtime on `meal_plans` row and broadcast channel `plan:{id}`; fallback polling every 3 s.
+- **Data:** Realtime channel `plan:{id}` (postgres changes on that `meal_plans` row, including `generation_progress`); fallback polling every 3 s.
 - **States:** *Generating;* *Ready:* checkmark and "Your week is ready" with primary "See today's meals"; *Failed (`status='failed'`):* "We couldn't finish your plan. Your answers are saved." Retry or "Start with a ready-made week" (curated template); *Timeout 120 s:* switch copy to "Taking longer than usual. We'll send a notification when it's done." *Offline:* the request is not sent; `RequiresConnectionNotice`.
 - **Copy (ur):** "آپ کا ہفتہ تیار ہے"
 - **Accessibility:** stage changes announced politely; tip rotation pauses when screen reader is on (user swipes to read the next).
@@ -1486,7 +1487,7 @@ Specified in §7.13.1.
 - **Data:** `growth_tracking` for member ordered by `measured_on`; `growth_reference_lms` for the chosen reference (`who_2006` 0 to 5 years, `who_2007` 5 to 19 years, `cdc_2000` if the household selected US charts in Settings) to draw bands, computed client-side from L, M, S at band z-values; z-scores and percentiles come from the row (computed by `growth-compute`).
 - **Add Measurement modal (X9):** fields `measured_on` (default today, not future, not before birth), `height_cm` (Input variant="numeric" with unit toggle; lying length note for under 2 years: "Measure lying down for children under 2"), `weight_kg`, `head_circumference_cm` (under 24 months, optional). Zod: at least one of height or weight; ranges per age; plausibility check vs previous measurement (height decrease over 1 cm or weight change over 10% within 30 days prompts a confirm). Save → insert, call `growth-compute`, show result.
 - **Growth Alert modal (X10):** for red flags. Layout: calm illustration (a sprouting plant), title, explanation in plain language, what to do ("Book a check-up with your paediatrician. Take this chart with you."), "Export growth report" (premium) or "Show chart to doctor" (opens chart full screen for free users too), "I understand". The member's plan generation is paused for weight-related changes; meals continue unchanged. Alert is stored as a notification for owner and caregivers.
-- **States:** *No measurements:* "Add {name}'s first measurement to start their growth chart." *One measurement (free and premium):* single point plus status. *Free:* latest values and percentile phrase only; chart area shows `PremiumGate fallback="teaser"` (blurred bands with "See growth charts and trends"). Red-flag alerts shown regardless of tier. *Viewer role:* screen hidden. *Offline:* add measurement queued; computation runs when online; status says "We'll update the chart when you're back online."
+- **States:** *No measurements:* "Add {name}'s first measurement to start their growth chart." *One measurement (free and premium):* single point plus status. *Free:* latest values and percentile phrase only; chart area shows `PremiumGate fallback="teaser"` (blurred bands with "See growth charts and trends"). Safety alerts (faltering growth, rapid loss) shown on every tier; non-safety alerts (for example BMI-for-age above the 97th percentile) and alert history are premium. *Viewer role:* screen hidden. *Offline:* add measurement queued; computation runs when online; status says "We'll update the chart when you're back online."
 - **Copy:** Statuses: "Growing steadily along their curve" · "Worth checking: {name}'s weight has moved across a line on the chart. Measure again in 4 weeks." · Red flag title "Let's check in with a doctor" body "{name}'s growth has changed more than we'd expect. This doesn't mean something is wrong, but a paediatrician should take a look." Urdu: "ڈاکٹر سے مشورہ کر لیں" · "{name} کی نشوونما میں توقع سے زیادہ تبدیلی آئی ہے۔ اس کا مطلب یہ نہیں کہ کچھ غلط ہے، لیکن بچوں کے ڈاکٹر کو دکھانا بہتر ہے۔" Never use "underweight", "obese" or "overweight" labels in UI; percentiles only, described neutrally.
 - **Accessibility:** `GrowthChart` provides a data table alternative ("View as table") and a summary label ("Weight for age, 6 measurements, latest around the 40th percentile, steady"); bands distinguished by pattern and label, not colour only.
 - **Analytics:** `growth_measurement_added { indicator_count, life_stage }`, `growth_alert_shown { level: 'watch'|'red_flag' }`, `growth_chart_viewed { indicator, reference }`.
@@ -1559,7 +1560,7 @@ Module content, evidence and stage logic are defined in `15-family-health-module
 
 #### 7.11.3 Exposure Log (`ExposureLog`, K3), free
 
-- **Layout:** Filter by food; list grouped by food (food label, number of exposures, last acceptance via read-only `AcceptanceScorePicker` (proposed `readOnly` prop)); detail rows with date, stage, context. "Log an exposure" sheet same as A5's "Log a try" (stage optional, defaults to `taste` only if the parent chooses; default `tolerate_on_table`).
+- **Layout:** Filter by food; list grouped by food (food label, number of exposures, last acceptance via read-only `AcceptanceScorePicker` (`readOnly` prop)); detail rows with date, stage, context. "Log an exposure" sheet same as A5's "Log a try" (stage optional, defaults to `taste` only if the parent chooses; default `tolerate_on_table`).
 - **Copy:** "It can take 8 to 15 tries before a new food feels familiar. Keep going, kindly." (evidence citation chip from `scientific_evidence`).
 - **Analytics:** `exposure_logged { stage, acceptance, source: 'picky' }`.
 
@@ -1671,7 +1672,7 @@ Module content, evidence and stage logic are defined in `15-family-health-module
 
 - **Purpose:** In-app inbox of `notifications` (channel `in_app` and mirrored push).
 - **Layout:** `SegmentedControl` All / Alerts; `NotificationRow` (icon by kind, title, body, relative time, unread dot); grouped by Today / This week / Earlier; "Mark all as read"; gear → `SettingsNotifications`.
-- **Notification kinds (values of `notifications.kind` and `notification_preferences.kind`):** `meal_reminder`, `hydration_reminder`, `shopping_reminder`, `growth_measurement_due`, `growth_alert`, `allergy_warning`, `plan_ready`, `plan_failed`, `export_ready`, `invite_received`, `invite_accepted`, `ramadan_suhoor`, `ramadan_iftar`, `fast_reminder` (sunnah days), `coaching_tip`, `subscription` (billing issues), `marketing` (opt-in only). The canonical list is maintained in `15-family-health-modules.md` and `06-api-specification.md`; this list is the UX set.
+- **Notification kinds (values of `notifications.kind` and `notification_preferences.kind`):** the canonical list with defaults is in `06-api-specification.md` section 4.15; the inbox shows an icon per kind. Safety kinds (`growth_alert`, `allergy_warning`) have no off switch.
 - **Data:** `notifications` for `user_id`, `scheduled_for <= now()`, paginated; `read_at` update on open.
 - **Actions:** tap → deep link from `data.route`; swipe to mark read (button fallback).
 - **States:** empty "You're all caught up." / "سب کچھ دیکھ لیا گیا۔"; offline cached.

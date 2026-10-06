@@ -163,7 +163,7 @@ Each milestone closes at the end of its sprint demo. Exit criteria are binary; a
 
 - [ ] AI chat streaming with first token p50 under 2.5 s; tools require confirmation; quotas enforced by tier.
 - [ ] Grounding eval: zero unverified citations in 200 sampled answers; crisis eval 100 percent.
-- [ ] Voice (en, ur) and photo meal analysis working for premium; free photo trial of 3.
+- [ ] Voice (en, ur) and photo meal analysis working for premium only (free photo trial is a Phase 2 flagged experiment, Q-09).
 - [ ] Ramadan planner generates a family plan for Ramadan 1448 for all fixture personas, with child and pregnancy/breastfeeding rules; suhoor and iftar notifications scheduled.
 - [ ] Purchases, restores and webhook updates work in App Store and Play sandboxes; server gating verified by tampering test.
 - [ ] TestFlight external beta approved by Apple beta review; Play closed track live; 100 families invited.
@@ -173,7 +173,7 @@ Each milestone closes at the end of its sprint demo. Exit criteria are binary; a
 - [ ] All FRs with priority M in `01-product-requirements.md` implemented (behind flags where needed).
 - [ ] Growth percentiles match WHO reference to two decimal places of z for fixtures.
 - [ ] Picky-eater and autism modules complete; copy lint finds no pressure language.
-- [ ] PDF exports (meal plan, grocery list, growth report) in en and ur.
+- [ ] PDF exports (meal plan, grocery list, growth report) in en and ur, rendered by `export-pdf` through the private Gotenberg service on Cloud Run.
 - [ ] Account export and deletion verified end to end, including grace cancellation.
 - [ ] Content gate passed (section 5).
 - [ ] Open beta live with at least 300 active beta households.
@@ -323,8 +323,9 @@ Religious content: Qur'an and hadith citations are shown only after review by
 named, credentialed scholars (listed in About). The app does not issue
 religious rulings.
 
-Demo account: reviewer@thuluth.app (sign in with email OTP; the code for this
-account is fixed at 123456 in production for review only and rate-limited).
+Demo account: reviewer@thuluth.app (type the address, then tap "Use
+password"; the password is entered in the review information field, never
+in this doc).
 The account has a sample household with premium enabled via a promotional
 entitlement.
 
@@ -335,7 +336,7 @@ Sign in with Apple is offered alongside Google sign-in.
 
 Guideline references the team checks: App Store Review Guidelines 1.4.1 (physical harm, health claims), 2.1 (completeness, demo account), 3.1.1 and 3.1.2 (in-app purchase, subscriptions), 4.8 (Sign in with Apple), 5.1.1 (data collection, account deletion), 5.1.3 (health data, no advertising use). Google Play: Health apps policy and declaration, User Data policy, Families policy (not targeting children), Subscriptions policy, Account deletion requirement.
 
-The fixed review OTP requires a dedicated, audited code path for one allow-listed email; the alternative (a magic-link inbox the reviewer cannot access) causes rejections. `11-authentication.md` defines the mechanism.
+Supabase test OTPs cover phone numbers only, so the reviewer account uses a password path allowed for this one address, per `00-foundations.md` section 11; a magic-link or OTP inbox the reviewer cannot access causes rejections. `11-authentication.md` section 3.1.1 defines the mechanism and its controls.
 
 ### 7.6 Technical readiness
 

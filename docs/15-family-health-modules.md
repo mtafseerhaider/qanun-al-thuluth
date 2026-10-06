@@ -273,7 +273,7 @@ Curves are computed client-side from cached LMS rows (about 30 KB per sex and re
 
 | Free | Premium |
 |---|---|
-| Log measurements, see latest value; red flags still shown (safety is never paywalled) | Percentile charts, z-scores, trends, velocity, alerts history, growth reports (PDF via `export-pdf`, see `18-exports-and-analytics.md`) |
+| Log measurements, see latest value and percentile; safety alerts (faltering growth, rapid loss) shown on every tier (safety is never paywalled) | Percentile charts, z-scores, trends, velocity, non-safety alerts, alerts history, growth reports (PDF via `export-pdf`, see `18-exports-and-analytics.md`) |
 
 ---
 
@@ -970,7 +970,7 @@ One row per member per day in `nutrition_journal`:
 
 | Field | Scale | Prompt |
 |---|---|---|
-| `mood` | 1 to 5 faces | "How was your day?" |
+| `mood` | 1 to 5 icons (no faces, `03-design-system.md` §2.3) | "How was your day?" |
 | `energy` | 1 to 5 | "Energy through the day" |
 | `digestion` | enum-like smallint: 1 comfortable, 2 bloated, 3 constipated or hard stools, 4 loose, 5 other | Constipation trend feeds autism and picky red flags |
 | `thuluth_adherence` | 0 to 3: one point each for food third (stopped at satisfied), fluid third (water before meals), space third (paced meal, no heaviness) | Adults; computed suggestion pre-filled from logs, user confirms |
@@ -1036,7 +1036,7 @@ All messages: plain language, no blame, no diagnosis, "worth checking with your 
 | ID | Criterion |
 |---|---|
 | AC-H1 | `lmsZ` matches WHO Anthro reference fixtures within 0.01 for all indicators, including restricted tails beyond plus or minus 3. |
-| AC-H2 | A child whose weight-for-age falls from the 60th to the 10th percentile (crossing the 50th and 15th lines) within 12 months gets `growth_faltering_two_lines`, growth plan generation returns `RED_FLAG_ESCALATION`. |
+| AC-H2 | A child whose weight-for-age falls from the 60th to the 10th percentile (crossing the 50th and 15th lines) within 12 months gets `growth_faltering_two_lines`, growth plan generation returns `SAFETY_ESCALATION`. |
 | AC-H3 | No percentile, z-score or kcal is rendered on any screen when the active profile is a child account or child-facing mode. |
 | AC-H4 | Autism ladders never auto-advance without parent confirmation; a hard day pauses progression for 24 hours. |
 | AC-H5 | `planFoodChain` returns a chain with every hop distance at or below 1.2 and no allergen or haram node, or `null`. |

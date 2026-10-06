@@ -379,7 +379,7 @@ stateDiagram-v2
 
 ### 4.5 Online-only mutations
 
-Edge Function mutations (`ai-generate-plan`, `ai-adjust-plan`, `grocery-generate`, `export-pdf`, ...) use `networkMode: 'online'`, show a pending state, and invalidate the related household keys on success. Plan generation is asynchronous: the mutation returns `meal_plan_id` with status `generating`, and `qk.household(hid).mealPlan(id)` is polled with `refetchInterval: (q) => q.state.data?.status === 'generating' ? 3000 : false` until `active` or `failed` (Realtime update also invalidates).
+Edge Function mutations (`ai-generate-plan`, `ai-adjust-plan`, `grocery-generate`, `export-pdf`, ...) use `networkMode: 'online'`, show a pending state, and invalidate the related household keys on success. Plan generation is asynchronous: the mutation returns `meal_plan_id` with status `generating`, and `qk.household(hid).mealPlan(id)` is polled with `refetchInterval: (q) => q.state.data?.status === 'generating' ? 3000 : false` until `active` or `failed` (row changes on Realtime channel `plan:{meal_plan_id}`, which carry `meal_plans.generation_progress`, also invalidate).
 
 ## 5. Zustand stores
 
@@ -682,7 +682,7 @@ export interface PreferencesState {
   locale: 'en' | 'ur';                    // Phase 2 adds 'ar' and others (00 §9)
   units: 'metric' | 'imperial';           // mirrors users.units; server copy synced on change
   traditionPreference: 'shared' | 'sunni' | 'shia';   // mirrors users.tradition_preference (source_tradition)
-  sensoryCalm: boolean;                   // low-stimulation palette, no motion, no haptics, no sounds
+  sensoryCalm: boolean;                   // low-stimulation palette (ThemeProvider applies the calm variable set with NativeWind vars(), 03 §11.5; no calm class), no motion, no haptics, no sounds
   haptics: boolean;
   biometricLock: { enabled: boolean; timeout: 'immediate' | '1m' | '5m' };
   showArabicWithTranslation: boolean;

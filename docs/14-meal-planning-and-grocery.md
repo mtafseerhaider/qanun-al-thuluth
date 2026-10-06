@@ -532,8 +532,8 @@ The Thuluth fluid timing (water 20 to 30 minutes before, sips during, freely fro
 | life_stage | Age | Portion approach |
 |---|---|---|
 | infant | 0 to 11 months | No portions; complementary food notes only from 6 months. |
-| toddler | 12 to 47 months | Start serving about one quarter to one third of adult; divided plate; choking-safe textures. |
-| child | 4 to 12 years | Three tiers: `start`, `ideal`, `extra`. Start is what is served; seconds always allowed. |
+| toddler | 12 to 35 months | Start serving about one quarter to one third of adult; divided plate; choking-safe textures. |
+| child | 3 to 12 years | Three tiers: `start`, `ideal`, `extra`. Start is what is served; seconds always allowed. |
 | teen | 13 to 17 years | Adult-like portions, `ideal` plus `extra`; never a deficit. |
 | adult | 18 to 64 | `standard`, scaled to the member's energy target. |
 | older_adult | 65 and above | `standard` scaled, protein emphasis (1.0 to 1.2 g/kg), softer textures on request. |
@@ -1461,7 +1461,7 @@ export const GroceryGenerateResponse = z.object({
 });
 ```
 
-Error codes: `NO_CANDIDATES`, `GATE_FAILED` (details list gate ids), `BUDGET_INFEASIBLE` (details `minFeasibleMinor`), `PREMIUM_REQUIRED`, `PLAN_LIMIT_REACHED`, `RED_FLAG_ESCALATION` (from the health modules, plan generation stops).
+Error codes: `NO_CANDIDATES`, `GATE_FAILED` (details list gate ids), `BUDGET_INFEASIBLE` (details `minFeasibleMinor`), `PREMIUM_REQUIRED`, `PLAN_ALREADY_ACTIVE`, `SAFETY_ESCALATION` (error catalog in `06-api-specification.md` section 2.3; from the health modules, plan generation stops).
 
 ---
 

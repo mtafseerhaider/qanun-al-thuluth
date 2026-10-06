@@ -153,7 +153,7 @@ Muslim parents who want to eat according to their faith and modern nutrition sci
 |---|---|
 | Profile | Usman's mother (64), lives with the family and cooks lunch. Reads Urdu, not English. Has type 2 diabetes managed with metformin. |
 | Goals | Know what to cook today, in Urdu, with simple measures. Manage her own blood sugar. |
-| Key features | `ur` locale with Nastaliq, `caregiver` role, Today screen focused on "what to cook", voice chat in Urdu (premium on the account owner's subscription), `blood_sugar` goal, `older_adult` life stage portions, metformin noted in `medications` (no fasting red flag; sulfonylureas and insulin are red flags). |
+| Key features | `ur` locale with Nastaliq, `caregiver` role, Today screen focused on "what to cook", voice chat in Urdu (premium; AI chat entitlement is per user, so she needs her own premium or a promotional grant, while household features follow the owner's premium), `blood_sugar` goal, `older_adult` life stage portions, metformin noted in `medications` (no fasting red flag; sulfonylureas and insulin are red flags). |
 | Success looks like | Opens the app daily to the Today screen and marks lunch as cooked. |
 
 ### 3.3 Anti-personas
@@ -400,7 +400,7 @@ Format: each requirement has an ID `FR-<MODULE>-NN`, a priority (**M** = MVP mus
 | FR-HH-03 | M | F/P | Invite a co-caregiver by email with role `caregiver` or `viewer` via `household-invite`. | Invite email sent within 60 s; token single-use, expires in 7 days; accepted invite creates `household_members` row; `audit_log` entry recorded. |
 | FR-HH-04 | M | F/P | Role permissions: `owner` full control and billing; `caregiver` edits plans, logs, grocery; `viewer` reads and logs own meals only. | RLS tests in `21-testing-strategy.md` cover each role on each household-scoped table. |
 | FR-HH-05 | M | F/P | Remove a member or leave a household. | Owner cannot leave without transferring ownership; removed users lose access immediately (RLS) and their cached data is purged on next app open. |
-| FR-HH-06 | S | P | Premium status of the household owner applies to all household members' household-scoped features (shared premium). | A caregiver in a premium owner's household can view percentile charts. Personal AI chat quota follows the chatting user's own entitlement OR the household owner's premium, whichever is higher. |
+| FR-HH-06 | S | P | Premium status of the household owner applies to all household members' household-scoped features (shared premium). | A caregiver in a premium owner's household can view percentile charts. Personal AI chat quota follows the chatting user's own entitlement only (`has_premium(user_id)`, `00-foundations.md` section 11). |
 | FR-HH-07 | P2 | P | `coach` role with read access to assigned households and plan approval. | See `23-phase-2-roadmap.md`. |
 
 ### 8.2 AI agent and engines (FR-AI)
@@ -441,7 +441,7 @@ Engine details, constraint solving and validation rules are in `14-meal-planning
 | ID | Pri | Tier | Requirement | Acceptance criteria |
 |---|---|---|---|---|
 | FR-PLAN-01 | M | F/P | Generate a weekly plan asynchronously: `ai-generate-plan` returns `meal_plan_id` with `status = 'generating'`; the client observes status changes. | Status transitions `generating` to `active` (or `failed`) within 90 s p90; Realtime pushes the change; failure leaves a `failed` row with an error code and the client offers retry or template. |
-| FR-PLAN-02 | M | F | Free tier: 1 active weekly plan built from curated templates with light AI personalisation (member portions, allergy exclusions, dislikes, budget tier). | Free user requesting a second active plan gets `PLAN_LIMIT_REACHED`; free plans use `plan.adjust` route over a template, not `plan.generate`. |
+| FR-PLAN-02 | M | F | Free tier: 1 active weekly plan built from curated templates with light AI personalisation (member portions, allergy exclusions, dislikes, budget tier). | Free user requesting a second active plan gets `PLAN_ALREADY_ACTIVE`; free plans use `plan.adjust` route over a template, not `plan.generate`. |
 | FR-PLAN-03 | M | P | Premium: unlimited plans, multi-week (1 to 4 weeks), full AI planning and adjustments, plan kinds `standard`, `ramadan`, `growth`, `weight_management`, `custom`. | Premium user can create a 4-week plan; `meal_plans.week_count = 4`; each week varies at least 70 percent of dinners. |
 | FR-PLAN-04 | M | F/P | Every plan contains, per day, slots for the household's meal pattern (default breakfast, lunch, snack, dinner) as `daily_meals` rows with `scheduled_time`. | Fixture plan has 28 `daily_meals` for a 7-day, 4-slot plan. |
 | FR-PLAN-05 | M | F/P | Per-member servings: each `daily_meals` row has one `daily_meal_servings` row per member eating that meal, with a `portion_id` for the member's life stage and an `adaptation`. | Maryam's servings show `adaptation = 'autism'` with an `adapted_meal_id` or presentation note when the base meal conflicts with her sensory profile. |
@@ -525,7 +525,7 @@ Module logic is in `15-family-health-modules.md`.
 | FR-TRK-01 | M | F/P | Mark a planned serving as `eaten`, `partly_eaten`, `skipped` or `swapped` with `logged_at`. | One tap per member from the Today screen; bulk "everyone ate this" action. |
 | FR-TRK-02 | M | F/P | Manual meal log outside the plan (`meal_logs`, `source = 'manual'`) with description, meal type and time, optional fullness before and after (0 to 10 scale). | Saved offline and synced. |
 | FR-TRK-03 | M | P | Photo meal log via `ai-analyze-meal`: returns identified foods, estimated portions, `estimated_nutrition`, and Thuluth feedback; user can correct items before saving (`source = 'photo_ai'`). | p90 latency under 12 s; corrected items saved; feedback for adults may mention portion and plate balance; for children, feedback never mentions eating less. |
-| FR-TRK-04 | M | F/P | Children's acceptance scoring (`acceptance_score`) on servings and exposures. | Acceptance picker with child-friendly faces; stored on `daily_meal_servings.acceptance`. |
+| FR-TRK-04 | M | F/P | Children's acceptance scoring (`acceptance_score`) on servings and exposures. | Acceptance picker with child-friendly icons (never faces, `03-design-system.md` §2.3); stored on `daily_meal_servings.acceptance`. |
 | FR-TRK-05 | M | F/P | Nutrition journal for adults (mood, energy, digestion, thuluth adherence 0 to 3, notes). | One entry per member per day; streak shown gently (no streak-loss shaming). |
 | FR-TRK-06 | M | F/P | Adult weight log (`weight_tracking`) with BMI; trend chart (free: latest and 4-week sparkline; premium: full trend). Weight entry is never offered for children in this screen (children use growth tracking). | Under-18 member selection redirects to growth tracking. |
 | FR-TRK-07 | S | F/P | Daily nutrition summary per adult (energy, protein, fibre, plate balance) estimated from eaten servings and logs. Children's summaries show food-group variety, never kcal. | Child summary has no kcal values in UI snapshot. |
@@ -534,11 +534,11 @@ Module logic is in `15-family-health-modules.md`.
 
 | ID | Pri | Tier | Requirement | Acceptance criteria |
 |---|---|---|---|---|
-| FR-GRW-01 | M | F/P | Log child measurements (height, weight, head circumference under 2) in `growth_tracking`. | Free: logging and latest value only. |
+| FR-GRW-01 | M | F/P | Log child measurements (height, weight, head circumference under 2) in `growth_tracking`. | Free: logging, latest value and percentile, and safety alerts (FR-GRW-04). |
 | FR-GRW-02 | M | F/P | `growth-compute` computes z-scores and percentiles using WHO 2006 (0 to 5 years) and WHO 2007 (5 to 19 years) by default from `growth_reference_lms`; CDC 2000 selectable. | Fixture values match WHO reference calculators to 2 decimal places of z. |
 | FR-GRW-03 | M | P | Percentile charts with trend lines and the child's history. | Chart renders WHO percentile bands 3, 15, 50, 85, 97. |
-| FR-GRW-04 | M | P | Alerts: crossing two major percentile lines downward, weight-for-age below the 3rd percentile, or BMI-for-age above the 97th percentile produce a gentle "talk to your paediatrician" alert; never a restriction suggestion. | Alert copy contains no diet advice for high BMI; it recommends family habits and a clinician. Downward crossing alert triggers the red-flag plan pause for that child. |
-| FR-GRW-05 | M | F/P | Measurement reminders: monthly under 2, quarterly 2 to 5, twice yearly 5 to 18. | Notification kind `growth_measure_due` scheduled accordingly. |
+| FR-GRW-04 | M | F/P | Alerts: crossing two major percentile lines downward, weight-for-age below the 3rd percentile, or BMI-for-age above the 97th percentile produce a gentle "talk to your paediatrician" alert; never a restriction suggestion. Safety alerts (faltering growth, rapid loss) fire on every tier; non-safety alerts (for example BMI-for-age above the 97th percentile) and alert history are premium (`00-foundations.md` section 8). | Alert copy contains no diet advice for high BMI; it recommends family habits and a clinician. Downward crossing alert triggers the red-flag plan pause for that child. |
+| FR-GRW-05 | M | F/P | Measurement reminders: monthly under 2, quarterly 2 to 5, twice yearly 5 to 18. | Notification kind `growth_measure_due` (`06-api-specification.md` section 4.15) scheduled accordingly. |
 | FR-GRW-06 | M | P | Growth report PDF (`exports.kind = 'growth_report'`) for paediatrician visits. | See FR-EXP. |
 
 ### 8.10 Autism module (FR-AUT)
@@ -615,28 +615,12 @@ The Today dashboard is the home tab. Layout specs are in `02-ux-specification.md
 
 ### 8.15 Notifications (FR-NOT)
 
-Delivered by `notifications-dispatch` via OneSignal (`external_id = users.id`). Notification `kind` keys used in MVP (stored in `notifications.kind` and `notification_preferences.kind`; `05-database-schema.md` is authoritative if it constrains values):
-
-| kind | Default | Description |
-|---|---|---|
-| `daily_plan` | On, 07:00 local | Today's plan summary |
-| `meal_reminder` | Off | Before each scheduled meal |
-| `water_pre_meal` | On | 25 minutes before main meals |
-| `meal_log_prompt` | Off | After meals to log |
-| `journal_prompt` | Off | Evening reflection |
-| `grocery_day` | On | Grocery list ready |
-| `weekly_review` | On | Weekly review ready |
-| `plan_ready` | On | Async plan generation finished |
-| `fast_reminder` | Off (opt-in) | Voluntary fast evening-before and suhoor reminders |
-| `suhoor` / `iftar` | On during Ramadan if planner active | Ramadan schedule |
-| `growth_measure_due` | On | Child measurement reminder |
-| `exposure_nudge` | On if module active | Exposure food of the week |
-| `subscription` | On | Trial ending, billing issue |
+Delivered by `notifications-dispatch` via OneSignal (`external_id = users.id`). Notification `kind` keys (stored in `notifications.kind` and `notification_preferences.kind`) and their defaults are canonical in `06-api-specification.md` section 4.15. Safety kinds (`growth_alert`, `allergy_warning`) cannot be disabled.
 
 | ID | Pri | Tier | Requirement | Acceptance criteria |
 |---|---|---|---|---|
 | FR-NOT-01 | M | F/P | Permission requested in context (after first plan), not at launch. | iOS permission prompt only after a pre-permission screen. |
-| FR-NOT-02 | M | F/P | Per-kind toggles and quiet hours (`notification_preferences`). | Disabled kinds are never dispatched; quiet hours respected except `suhoor`. |
+| FR-NOT-02 | M | F/P | Per-kind toggles and quiet hours (`notification_preferences`). | Disabled kinds are never dispatched; quiet hours respected except `suhoor_reminder` and `iftar_reminder`. |
 | FR-NOT-03 | M | F/P | In-app notification inbox (`notifications`, `channel = 'in_app'`) with read state. | Badge count equals unread rows. |
 | FR-NOT-04 | M | F/P | Deep links from notifications open the relevant screen. | Every kind maps to a route; tested in E2E. |
 | FR-NOT-05 | M | F/P | Max 6 push notifications per user per day excluding Ramadan schedule and `plan_ready`. | Dispatcher enforces the cap. |
@@ -718,7 +702,7 @@ Reference devices: low-mid Android (Samsung Galaxy A14 class, 4 GB RAM, Android 
 | Photo meal analysis | p90 12 s |
 | Grocery list generation | p90 5 s |
 | PDF export | p90 15 s |
-| JS bundle (Hermes bytecode) | under 8 MB; install size under 60 MB |
+| JS bundle (Hermes bytecode) | under 6 MB; install size under 60 MB |
 | Memory | under 300 MB on Android ref during chat with images |
 
 ### 9.2 Offline
@@ -852,7 +836,7 @@ Levers: prompt caching for system and knowledge context, Haiku-class intent rout
 | R2 | **Medical liability:** users treat plans as medical advice; harm to diabetic, pregnant or allergic users. | Medium | High | Wellness positioning and disclaimers; red-flag escalation; hard allergen constraints; medication interaction flags; no fasting plans for high-risk users; clinician-review of rules; liability insurance and terms. | Product + legal |
 | R3 | **AI hallucination:** invented recipes with allergens, wrong nutrition, fabricated citations. | High | High | Plans assembled from the curated catalog only (AI selects and composes, never invents ingredients at MVP); deterministic calculators; output validators; citation grounding; eval suite in CI; user correction flows. | AI lead |
 | R4 | **Child safety:** restriction language, weight stigma, eating-disorder triggers for teens. | Medium | Critical | Server-side child rules; teen ED screening; no kcal in child views; copy lint; red-team evals as release gate. | AI lead + design |
-| R5 | **Store review:** health app rejections (Apple 1.4.1, 5.1.1; Google Health apps policy), Sign in with Apple, account deletion, subscription disclosures, data safety. | Medium | High | Launch checklist in `22-mvp-roadmap.md`; review notes explaining wellness scope and sources; demo account; early TestFlight external beta review. | Product |
+| R5 | **Store review:** health app rejections (Apple 1.4.1, 5.1.1; Google Health apps policy), Sign in with Apple, account deletion, subscription disclosures, data safety. | Medium | High | Launch checklist in `22-mvp-roadmap.md`; store reviewer account with password sign-in allowed for that one address only (`11-authentication.md` section 3.1.1); review notes explaining wellness scope and sources; demo account; early TestFlight external beta review. | Product |
 | R6 | **Ramadan timing:** Ramadan 1448 is expected to begin around 8 February 2027 (subject to moon sighting), shortly after the planned launch. A slip misses the best acquisition window. | Medium | High | Ramadan planner built in Sprint 5 so it is in beta; launch gate allows a Ramadan-only soft launch; feature flags. | Product |
 | R7 | Pricing data quality in Pakistan (inflation, volatility). | High | Medium | Monthly admin refresh, user reports with outlier rejection, show "estimate" and last-updated date. | Backend |
 | R8 | AI cost overrun from free users. | Medium | Medium | Per-user ceilings, template-first free plans, Haiku routing, monitoring alerts on `ai_usage`. | AI lead |
@@ -887,7 +871,7 @@ Each open question has a default the team implements unless the product owner de
 
 | ID | Question | Default decision | Decide by |
 |---|---|---|---|
-| Q-01 | Supabase region for MVP: Mumbai (closest to Pakistan) or Frankfurt (UK/EU GDPR comfort)? | `ap-south-1` Mumbai for latency to Pakistan, with GDPR SCCs documented. See `19-deployment-architecture.md`. | Sprint 0 |
+| Q-01 | Supabase region for MVP: Mumbai (closest to Pakistan) or Frankfurt (UK/EU GDPR comfort)? | Resolved: Frankfurt `eu-central-1` for all environments (GDPR and UK GDPR alignment; Mumbai is not reliably faster from Pakistan). See `00-foundations.md` section 11 and `19-deployment-architecture.md`. | Sprint 0 |
 | Q-02 | Should free users get one AI-generated (not template) first plan as a "wow" moment? | Yes: the first plan for every new household uses `plan.generate`; subsequent free weekly plans are template plus light personalisation. | Sprint 3 |
 | Q-03 | Final prices and trial length. | As FR-SUB-08; 7-day trial on annual only. | Sprint 5 |
 | Q-04 | Which scholars review content, and is one reviewer per tradition enough? | Minimum one credentialed reviewer per tradition plus a second reviewer for any recommendation with health framing. | Sprint 1 |
@@ -895,7 +879,7 @@ Each open question has a default the team implements unless the product owner de
 | Q-06 | Show Hijri date by default? | Off by default in `en`, on in `ur`. | Sprint 2 |
 | Q-07 | Ramadan start date: astronomical or local sighting? | Prefill astronomical calculation; user confirms or shifts by ±1 day; household-level setting. | Sprint 5 |
 | Q-08 | Should children's energy needs be visible to parents at all? | Visible only in a collapsed "for parents" detail inside the assessment, never on plan or tracking screens, never as a target. | Sprint 2 |
-| Q-09 | Is photo meal analysis free once as a trial? | Yes: 3 lifetime photo analyses for free users to demonstrate value, then premium. Counted via `ai_usage` rows with `route_key = 'vision.meal_analysis'`. | Sprint 5 |
+| Q-09 | Is photo meal analysis free once as a trial? | No: photo meal analysis is premium only at launch (`00-foundations.md` sections 8 and 11). A free trial of a few analyses is a Phase 2 experiment behind a feature flag, counted via `ai_usage` rows with `route_key = 'vision.meal_analysis'` if enabled. | Sprint 5 |
 | Q-10 | Do we need a separate admin web app for content review at MVP? | No. Content review uses Supabase Studio with a restricted admin database role (see `16-security-architecture.md`) and review SQL views; a dedicated admin web app is Phase 2 (web companion). | Sprint 1 |
 | Q-11 | Is the 6-member free limit right for large Pakistani joint families? | Keep 6 (matches foundations); revisit with conversion data. | Post-launch |
 | Q-12 | Imperial units default in US? | Yes, `users.units = 'imperial'` when device region is US. | Sprint 1 |

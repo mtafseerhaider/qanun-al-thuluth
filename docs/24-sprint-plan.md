@@ -244,7 +244,7 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 | S0-03 | React Navigation 7 shell: auth stack, onboarding stack, main tabs (Today, Plan, Track, Chat, More) with placeholder screens | mobile-b | 3 | TECH | D2 | S0-02 |
 | S0-04 | NativeWind v4 with token preset from `03-design-system.md`; light and dark themes; base primitives (Text, Button, Card, Input, Screen) | design + mobile-a | 5 | NFR a11y | D2 | S0-02 |
 | S0-05 | i18next setup with `en` and `ur` namespaces, Noto Nastaliq Urdu and Amiri fonts, RTL switch via `I18nManager`, lint rule banning JSX literals | mobile-b | 5 | FR-L10N-01, -02, -03, -09 | D3 | S0-03 |
-| S0-06 | Supabase projects `thuluth-dev`, `thuluth-staging`, `thuluth-prod`; CLI config; local stack; region per Q-01 default | backend | 2 | TECH | D1 | |
+| S0-06 | Supabase projects `thuluth-dev`, `thuluth-staging`, `thuluth-prod`; CLI config; local stack; region `eu-central-1` (Frankfurt) for all environments (00 §11) | backend | 2 | TECH | D1 | |
 | S0-07 | Base migration: all canonical enums from `00-foundations.md` section 5, `set_updated_at()` trigger, `users`, `households`, `household_members`, `is_household_member()` and `has_premium()` helpers, RLS enabled, pgTAP harness | backend | 8 | FR-HH-04, FR-SUB-05 | D2 | S0-06 |
 | S0-08 | `packages/shared`: Zod contract conventions, error envelope type, generated DB types pipeline (`supabase gen types` to `packages/shared/src/db/types.ts`) | lead | 3 | TECH | D2 | S0-07 |
 | S0-09 | `packages/ai-core`: provider interface for Anthropic, OpenAI, Gemini; route resolution from `ai_model_routes`; usage metering to `ai_usage`; one smoke Edge Function call via `chat.default` | ai | 8 | FR-AI-07, FR-AI-08 | D2 | S0-07 |
@@ -255,8 +255,9 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 | S0-14 | Content track kickoff: content schema templates (sources, recommendations, recipes) in spreadsheets mapped to tables; recruit scholar reviewers (Sunni and Shia) and a dietitian; first 20 source drafts | content (PO) | 3 | FR-ISL-09, FR-PLAN-18 | D1 | |
 | S0-15 | Test strategy bootstrap: Maestro installed, first smoke flow, pgTAP example, eval runner skeleton in `evals/` | qa | 5 | TECH | D3 | S0-02, S0-07 |
 | S0-16 | Design: app icon draft, splash, onboarding illustration brief, Today and Plan wireframes approved by PO | design | 3 | FR-ONB, FR-DASH | D1 | |
+| S0-17 | Consolidate schema additions into migrations 0017+: inventory every "Addition beyond 00-foundations" table, column, enum value and function across docs 04 to 18, land them in `05-database-schema.md`, and reserve ordered follow-up migrations from 0017 onward (00 §11) | backend | 1 | TECH | D4 | S0-07 |
 
-**Total:** 69 points.
+**Total:** 70 points.
 
 **Dependencies:** Apple Developer, Google Play Console, RevenueCat, OneSignal and Sentry accounts created by PO on D1. AI provider keys in Supabase secrets.
 
@@ -403,7 +404,7 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 
 **Total:** 83 points.
 
-**Demo:** Generate the grocery list for the Usman plan: estimated total within ±10 percent of the reference basket for the week; switch budget to hard cap and show substitutions (premium). Log water for Maryam offline in cups, reconnect, and see the ring update. Log a Monday fast for Usman; show the qada counter after logging a Ramadan exemption in a past-year fixture. Receive a `water_pre_meal` push 25 minutes before lunch that deep links to the hydration screen.
+**Demo:** Generate the grocery list for the Usman plan: estimated total within ±10 percent of the reference basket for the week; switch budget to hard cap and show substitutions (premium). Log water for Maryam offline in cups, reconnect, and see the ring update. Log a Monday fast for Usman; show the qada counter after logging a Ramadan exemption in a past-year fixture. Receive a `hydration_reminder` push 25 minutes before lunch that deep links to the hydration screen.
 
 **Definition of done (sprint):** M4 exit criteria; notifications on-time rate at least 99 percent in staging over 3 days.
 
@@ -424,11 +425,11 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 | S5-05 | Chat UI: sessions list, streaming bubbles, citation chips, tool confirmation cards, quota indicator, feedback | mobile-a | 8 | FR-CHAT-01, -06, -07, -09, -11, -12 | D2 | S5-01 |
 | S5-06 | `ai-transcribe` and voice recording UI (2 min max, transcript edit) | ai + mobile-b | 5 | FR-CHAT-03 | D4 | S5-03 |
 | S5-07 | `ai-analyze-meal` Edge Function: image downscale, vision route, food and portion estimate, Thuluth feedback with child-safe variant | ai | 8 | FR-TRK-03, FR-CHAT-04 | D2 | S5-02 |
-| S5-08 | Photo meal log UI: capture, analysis result, correction, save to `meal_logs`; free trial of 3 (Q-09) | mobile-b | 5 | FR-TRK-02, -03 | D5 | S5-07 |
+| S5-08 | Photo meal log UI: capture, analysis result, correction, save to `meal_logs`; premium only, free users see the paywall (Q-09) | mobile-b | 5 | FR-TRK-02, -03 | D5 | S5-07 |
 | S5-09 | Long-term memory: extraction after turns, recall by similarity, memory management screen | ai + mobile-a | 5 | FR-CHAT-08, FR-SET-04 | D6 | S5-03 |
 | S5-10 | `ramadan-generate` Edge Function: prayer-time schedule, suhoor/iftar/taraweeh-snack slots, member participation, pregnancy and breastfeeding adjustments, linked `meal_plans` (`kind = 'ramadan'`) | ai + backend | 8 | FR-RAM-02, -03, -04 | D2 | S4-10 |
 | S5-11 | Ramadan planner UI: setup (start date confirm, participation per member), schedule, Ramadan Today variant with iftar countdown; free tips view | mobile-b | 5 | FR-RAM-01, -05, -07, FR-DASH-01 | D6 | S5-10 |
-| S5-12 | Ramadan notifications (`suhoor`, `iftar`) and Ramadan grocery handling | backend | 3 | FR-RAM-05, -06 | D7 | S5-10 |
+| S5-12 | Ramadan notifications (`suhoor_reminder`, `iftar_reminder`) and Ramadan grocery handling | backend | 3 | FR-RAM-05, -06 | D7 | S5-10 |
 | S5-13 | RevenueCat SDK, products, paywall with comparison table, restore, contextual upsell triggers | mobile-a | 5 | FR-SUB-01, -03, -04 | D3 | |
 | S5-14 | `revenuecat-webhook` and `has_premium()` wiring into all gated functions; downgrade behaviour; shared household premium | backend | 5 | FR-SUB-01, -05, -06, FR-HH-06 | D2 | S5-02 |
 | S5-15 | Evals v2: chat grounding (no unverified citations), crisis prompts, meal analysis child feedback, Ramadan safety fixtures | qa + ai | 5 | FR-AI-05, FR-CHAT-10, FR-FAST-07 | D4 | |
@@ -458,7 +459,7 @@ Each sprint's story table below has a **Day** column suggesting when the story s
 | S6-05 | Picky eater: Division of Responsibility guide with scripts (en/ur), exposure log, weekly exposure pair in plan, acceptance analytics, new-food progression | mobile-b + ai | 8 | FR-PCK-01 to -05, -07 | D2 | S6-02 |
 | S6-06 | Autism: safe-food list (free), sensory profile editor, exposure ladders, food chaining suggestions, visual "first, then" cards | mobile-a + ai | 8 | FR-AUT-01 to -08 | D5 | S6-02 |
 | S6-07 | Coaching tips content: 40 tips across picky, autism, ramadan, general, age-banded, each linked to evidence | content | 3 | FR-AUT-07, FR-PCK-01 | D1 | |
-| S6-08 | `export-pdf` Edge Function: HTML templates for `meal_plan`, `grocery_list`, `growth_report` in en and ur (RTL), A4 and Letter, signed URL 24 h | backend | 8 | FR-EXP-01 to -04 | D2 | S6-02 |
+| S6-08 | `export-pdf` Edge Function: HTML templates for `meal_plan`, `grocery_list`, `growth_report` in en and ur (RTL), A4 and Letter, rendered through the private Gotenberg service on Cloud Run (deploy included), signed URL 24 h | backend | 8 | FR-EXP-01 to -04 | D2 | S6-02 |
 | S6-09 | Export UI and share sheet | mobile-b | 2 | FR-EXP-05 | D7 | S6-08 |
 | S6-10 | `account-export` and `account-delete` Edge Functions with 30-day grace, OTP confirmation, anonymisation | backend | 5 | FR-SET-05, -06, FR-EXP-06 | D4 | |
 | S6-11 | Privacy settings: consents withdraw, analytics opt-out, delete account path (3 taps) | mobile-b | 3 | FR-SET-03, FR-AUTH-07, FR-ANL-04 | D8 | S6-10 |
