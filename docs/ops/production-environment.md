@@ -18,7 +18,7 @@ Everything that can be code is code in the repo. Everything else is listed below
 | Launch KPIs and alerts | migration `20261006150100_launch_kpis.sql`, `analytics-rollup` | see `analytics-launch-dashboard.md` |
 | Secret inventory | `docs/ops/secrets.md` | names and locations only |
 
-`deploy-dev.yml` uses `supabase db push --include-seed`. The seed list in `supabase/config.toml` includes `seed/local/000_local_vault.sql` (throwaway Vault values, `project_url = http://host.docker.internal:54321`) and `900_dev_fixtures.sql`. On `thuluth-dev` the vault file only inserts names that are missing, so a hand-set Vault value survives. But if the dev Vault is empty, cron on dev will call the wrong URL. Production never uses `--include-seed`.
+`deploy-dev.yml` pushes migrations with plain `supabase db push` and then applies only the catalog seeds with `tooling/scripts/ops/apply-catalog-seeds.sh` (skipped with a notice until the `development` environment has a `SUPABASE_DB_URL` secret), the same as production. Neither workflow uses `--include-seed`: the seed list in `supabase/config.toml` also holds `seed/local/000_local_vault.sql` (throwaway Vault values, `project_url = http://host.docker.internal:54321`) and `900_dev_fixtures.sql`. Until 2026-10-06 `deploy-dev.yml` did use `--include-seed`, so `thuluth-dev` may still hold the local Vault values (the file only inserts missing names) and the dev fixture rows. Check `select name from vault.secrets` on dev, set real values with `tooling/scripts/ops/vault-secrets.sh`, and remove the fixture accounts by hand if they are not wanted.
 
 ## 2. Owner steps, in order
 
@@ -68,7 +68,7 @@ Everything that can be code is code in the repo. Everything else is listed below
 - [ ] Android: upload the FCM v1 service account JSON from the Firebase project linked to `app.thuluth.mobile`.
 - [ ] Copy the App ID to the function secret `ONESIGNAL_APP_ID` and the EAS variable `EXPO_PUBLIC_ONESIGNAL_APP_ID`. Put the REST API key in `ONESIGNAL_REST_API_KEY`.
 - [ ] Settings: external id = `users.id` (the app already calls `login(userId)`). Allow only the tags `locale` and `tier` (04 §3). Do not enable in-app message analytics or location.
-- [ ] Ramadan load test (suhoor burst, 22 §9): run on staging with the k6 script when it lands. Note: `scripts/load/iftar.js` is referenced in 19 §14 but is not in the repo yet.
+- [ ] Ramadan load test (iftar burst, 19 §14, 22 §9): run `scripts/load/iftar.js` on staging as described in [`load-testing.md`](load-testing.md) and attach the summary to the readiness issue.
 
 ### Step 6: RevenueCat production (T5, day 2 to 3)
 

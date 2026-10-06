@@ -187,9 +187,10 @@ except `.env.example`, whose header says only `EXPO_PUBLIC_*` values reach the b
   `FLAG_SECURE` to app lock, and app lock does not exist yet. Recorded as partial in the checklist.
 - **`console.*` stripping in production (16 §15).** No Babel plugin. Audited call sites are `__DEV__`-guarded or log
   no PII.
-- **Bundle scan for service keys (AC-S3).** CI has gitleaks but no scan of the exported JS bundle. Recommended CI
-  step: `npx expo export` then grep for `"role":"service_role"` JWT payloads and `sk_` / `SUPABASE_SERVICE_ROLE`
-  strings.
+- **Bundle scan for service keys (AC-S3). Closed in the launch follow-up (2026-10-06).** CI job `supply-chain` runs
+  `tooling/scripts/check-mobile-secrets.sh --bundle` (source env reads, public app config, offline `expo export`
+  bundle) and the dependency CVE gate `tooling/scripts/audit-deps.sh` (`pnpm audit --audit-level high --prod`). See
+  the checklist rows STORAGE-2 and CODE-3.
 - **Logged error text.** Functions log `String(err)` for unexpected errors. Provider and Postgres messages do not carry
   request bodies, but a provider could echo input in an error. Sentry for functions is not wired, so these stay in
   Supabase logs (retention 7 days on the platform).

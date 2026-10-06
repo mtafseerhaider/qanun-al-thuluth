@@ -39,7 +39,7 @@ Not used by the code yet, though 19 §8 lists them: `LOG_SALT`, `SENTRY_SALT` an
 | `cron_secret` | `private.invoke_edge_function` (sent as `x-internal-secret`) | the same value as `INTERNAL_CRON_SECRET` | same as above |
 | `audit_ip_salt` | `request_ip_hash`, erasure ledger | 32+ random bytes, hex | IP hashes are unsalted (weak) |
 
-`supabase/seed/local/000_local_vault.sql` holds throwaway values for local and CI only. It must never run against a hosted project. This is why `deploy-prod.yml` does not use `--include-seed`.
+`supabase/seed/local/000_local_vault.sql` holds throwaway values for local and CI only. It must never run against a hosted project. This is why neither `deploy-prod.yml` nor `deploy-dev.yml` uses `--include-seed`; both apply `seed/catalog/*` with `tooling/scripts/ops/apply-catalog-seeds.sh`.
 
 ## 3. Supabase project settings (dashboard: Authentication, Settings)
 
@@ -58,7 +58,7 @@ Not used by the code yet, though 19 §8 lists them: `LOG_SALT`, `SENTRY_SALT` an
 | `production-readonly` | deployment branches and tags: `v*` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | `SUPABASE_PROJECT_REF` | `deploy-prod.yml` plan job |
 | `production` | required reviewer: Tafseer; prevent self-review; tags `v*` and `main` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_DB_URL` (postgres role, pooler session mode port 5432), `EXPO_TOKEN`, `SENTRY_AUTH_TOKEN`, `PLAY_SERVICE_ACCOUNT_JSON` | `SUPABASE_PROJECT_REF`, `API_BASE_URL` (`https://api.thuluth.app`), `SUPABASE_PUBLISHABLE_KEY`, `SENTRY_ORG` | `deploy-prod.yml`, `rollback-prod.yml` |
 | `production-backup` | deployment branch: `main` only | `SUPABASE_DB_URL` (**read-only** `backup_reader` role) | `GCP_WIF_PROVIDER`, `GCP_BACKUP_SA`, `BACKUP_BUCKET`, `BACKUP_AGE_PUBLIC_KEY` | `backup-prod.yml` |
-| `development` (exists) | none | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `EXPO_TOKEN` | `SUPABASE_PROJECT_REF`, `EAS_PROJECT_ID`, `EXPO_PUBLIC_*` | `deploy-dev.yml` |
+| `development` (exists) | none | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_DB_URL` (dev, postgres role, pooler session mode; catalog seeds are skipped until it is set), `EXPO_TOKEN` | `SUPABASE_PROJECT_REF`, `EAS_PROJECT_ID`, `EXPO_PUBLIC_*` | `deploy-dev.yml` |
 
 Use a separate Supabase personal access token for each environment, made from a machine account where possible. Never use the PO's own token.
 

@@ -3,6 +3,9 @@ name: Deploy dev
 # S0-11: merging to main deploys migrations and Edge Functions to thuluth-dev and publishes an
 # EAS Update to the development channel. Each step is skipped until its secrets exist, so the
 # workflow stays green before the Supabase and Expo accounts are connected.
+# Seeds: catalog only (tooling/scripts/ops/apply-catalog-seeds.sh), as in deploy-prod. Never
+# `db push --include-seed`: config.toml's seed list also holds seed/local/000_local_vault.sql
+# (throwaway Vault values) and seed/local/900_dev_fixtures.sql, which must not reach a hosted project.
 
 on:
   push:
@@ -24,6 +27,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -36,14 +40,26 @@ jobs:
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::SUPABASE_DB_URL not set for development; skipping catalog seeds."
+            echo "seeds=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "seeds=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: supabase/setup-cli@v1
         if: steps.cfg.outputs.ready == 'true'
         with:
           version: latest
       - if: steps.cfg.outputs.ready == 'true'
         run: supabase link --project-ref "$PROJECT_REF"
-      - if: steps.cfg.outputs.ready == 'true'
-        run: supabase db push --include-seed
+      - name: Push migrations (no seeds)
+        if: steps.cfg.outputs.ready == 'true'
+        run: supabase db push
+      - name: Catalog seeds
+        if: steps.cfg.outputs.ready == 'true' && steps.cfg.outputs.seeds == 'true'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
+          bash tooling/scripts/ops/apply-catalog-seeds.sh
       - if: steps.cfg.outputs.ready == 'true'
         run: supabase functions deploy --project-ref "$PROJECT_REF"
 

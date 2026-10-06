@@ -67,6 +67,23 @@ jobs:
           path: packages/ai-core/ai-eval-summary.json
           if-no-files-found: ignore
 
+  supply-chain:
+    name: Dependency audit + mobile secret check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # MASVS-CODE-3: high/critical advisories in production deps fail the build (reviewed exceptions:
+      # package.json pnpm.auditConfig.ignoreGhsas). Registry errors are retried, never reported as findings.
+      - name: Dependency vulnerability audit
+        run: bash tooling/scripts/audit-deps.sh
+      # MASVS-STORAGE-2 / 16 section 19: no service-role key or other server secret in the app source,
+      # its public config or the exported JS bundle (offline `expo export`, no credentials).
+      - name: Mobile secret check (self-test)
+        run: bash tooling/scripts/check-mobile-secrets.sh --self-test
+      - name: Mobile secret check (source, config, bundle)
+        run: bash tooling/scripts/check-mobile-secrets.sh --bundle
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest

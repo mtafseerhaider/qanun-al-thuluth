@@ -60,14 +60,14 @@ sequenceDiagram
   participant ST as Storage bucket exports
   App->>EP: POST {householdId, kind, params, locale}
   EP->>EP: requireUser, Zod, premium_for(householdId), rate limit (10/h)
-  EP->>DB: insert exports(status='rendering')
+  EP->>DB: insert exports(status='processing')
   EP->>DB: load data with user-scoped client (RLS)
   EP->>EP: build view model, render HTML (Preact SSR), inline SVG charts
   EP->>R: POST /forms/chromium/convert/html (index.html, fonts, css)
   R-->>EP: application/pdf
   EP->>ST: upload {household_id}/exports/{export_id}.pdf (service role, upload only)
   EP->>DB: update exports(status='ready', storage_path, expires_at = now()+7d)
-  EP-->>App: {exportId, signedUrl (1 h), expiresAt}
+  EP-->>App: {export_id, url (signed, 24 h), expires_at}
 ```
 
 | Step | Detail |
@@ -83,7 +83,7 @@ sequenceDiagram
 | Metadata | PDF title, author "Thuluth", subject, `lang`; no user email or ids in metadata |
 | Observability | Duration and page count logged; no content logged |
 
-`exports.status` values: `rendering`, `ready`, `failed`, `expired` (check constraint; **Addition** of the value set).
+`exports.status` values: `processing`, `ready`, `failed`, `expired` (check constraint, default `processing`; the 06 vocabulary, S6-01; **Addition** of the value set).
 
 Request contract (`packages/shared/src/contracts/export.ts`):
 
@@ -232,8 +232,8 @@ One page: members (names, ages), allergies (with severity icon), safe foods, sen
 | Bucket | `exports` (private) |
 | Path | `{household_id}/exports/{export_id}.pdf` (storage RLS checks the household folder, `16-security-architecture.md`) |
 | Row | `exports`: `household_id`, `user_id`, `kind`, `status`, `storage_path`, `expires_at` |
-| Retention | `expires_at = created_at + 7 days`; a daily `pg_cron` job deletes expired objects and sets `status='expired'` |
-| Signed URLs | `createSignedUrl(path, 3600)`; the app requests a fresh URL from `export-pdf` (`GET ?exportId=`) when the old one lapses, after re-checking membership |
+| Retention | PDF exports: `expires_at = created_at + 7 days` (`EXPORT_OBJECT_TTL_DAYS`). Account-data exports (`kind = 'account_data'`): 24 hours. The hourly `pg_cron` job `exports-purge-expired` deletes expired objects through the Storage API and sets `status='expired'` |
+| Signed URLs | `createSignedUrl(path, 86400)`: 24 hours (`EXPORT_SIGNED_URL_TTL_SECONDS`, FR-EXP-04). The app requests a fresh URL from `export-pdf` (`GET ?export_id=`) when the old one lapses, after re-checking membership; no URL is issued once the row is `expired` |
 | Sharing | The app uses the OS share sheet with the downloaded file (`expo-sharing`); we do not create public links |
 | Re-generation | Same parameters within 10 minutes return the existing ready export (dedupe on a hash of the request) |
 | Account deletion | Exports deleted with the household purge |
@@ -243,7 +243,7 @@ One page: members (names, ages), allergies (with severity icon), safe foods, sen
 | ID | Criterion |
 |---|---|
 | AC-E1 | A 1-week meal plan PDF for a family of four renders in under 8 s p95 and under 20 pages. |
-| AC-E2 | A free user calling `export-pdf` receives `PREMIUM_REQUIRED` and no `exports` row is left in `rendering`. |
+| AC-E2 | A free user calling `export-pdf` receives `PREMIUM_REQUIRED` and no `exports` row is left in `processing`. |
 | AC-E3 | Urdu PDFs render Nastaliq without clipped glyphs and with RTL table order (visual snapshot). |
 | AC-E4 | No child kcal, z-score or percentile appears in `meal_plan` or `family_summary` exports (text extraction test). |
 | AC-E5 | A user from another household cannot obtain a signed URL for the export (403). |
@@ -780,7 +780,7 @@ All internal charts suppress groups with fewer than 10 distinct users (k-anonymi
 | Addition | Kind | Purpose |
 |---|---|---|
 | PDF renderer service (Gotenberg, private, EU) | Infrastructure | HTML to PDF for `export-pdf` |
-| `exports.status` value set (`rendering`, `ready`, `failed`, `expired`) | Check constraint | Export lifecycle |
+| `exports.status` value set (`processing`, `ready`, `failed`, `expired`) | Check constraint | Export lifecycle |
 | `analytics_events.event_id`, `session_id`, `received_at`, `locale`, `country_code` | Columns | Dedupe, sessions, segmentation |
 | `analytics_event_catalog` | Table | Event and prop allowlist |
 | `track_events(jsonb)`, `analytics_filter_props(text, jsonb)` | SQL functions | Event ingestion |

@@ -202,7 +202,7 @@ Folder layout is defined in `07-react-native-folder-structure.md`; components in
 | `analytics-rollup-hourly` | `5 * * * *` | `analytics-rollup` | Refresh hourly materialized views |
 | `analytics-rollup-nightly` | `30 22 * * *` | `analytics-rollup` with `{"scope":"daily"}` | Refresh daily views, create next month partition of `analytics_events`, detach partitions older than 13 months |
 | `account-delete-executor` | `0 * * * *` | `account-delete` internal route | Execute erasures whose grace period has ended |
-| `exports-expiry` | `15 * * * *` | SQL only | Mark `exports` past `expires_at` as expired and delete objects |
+| `exports-purge-expired` | `25 * * * *` | `export-pdf` internal action `purge_expired` | Delete objects of `exports` past `expires_at` through the Storage API and set `status = 'expired'` |
 | `idempotency-gc` | `0 3 * * *` | SQL only | Delete expired `idempotency_keys` and `rate_limit_buckets` rows |
 
 ```sql
@@ -633,12 +633,12 @@ sequenceDiagram
     GOT-->>EF: application/pdf bytes
     EF->>STO: upload exports/{household_id}/{export_id}.pdf
     EF->>PG: update exports (status ready, storage_path, expires_at now()+7 days)
-    EF->>STO: createSignedUrl(path, 3600)
+    EF->>STO: createSignedUrl(path, 86400)
     EF-->>App: 200 {export_id, url, expires_at}
     App->>App: expo-sharing / expo-print preview
 ```
 
-If rendering takes longer than 20 s the function returns `202 {export_id, status: processing}` and finishes in `waitUntil`; the client listens on Realtime `exports` for `status = ready`.
+If rendering takes longer than 20 s the function returns `202 {export_id, status: processing}` and finishes in `waitUntil`; the client listens on Realtime `exports` for `status = ready`. `exports.status` is `processing`, `ready`, `failed` or `expired`. The signed URL lives 24 hours and the object 7 days; a fresh URL comes from `GET export-pdf?export_id=` (06 §4.10).
 
 ## 7. Offline strategy
 
@@ -730,8 +730,8 @@ Edge Functions default to the region nearest the caller. All functions that touc
 | Obligation | Implementation |
 |---|---|
 | Lawful basis and explicit consent for health data (Art. 9) and children's data | `consents` rows (`health_data`, `child_data`, `ai_processing`), checked in Edge Functions before AI processing |
-| Right of access and portability | `account-export` (JSON + PDFs zip) |
-| Right to erasure | `account-delete` with 7 day cancellable grace, then hard delete across tables, storage, RevenueCat subscriber, OneSignal user, Sentry user (by hashed id) |
+| Right of access and portability | `account-export` (JSON + PDFs zip; step-up re-auth; download link and object live 24 hours) |
+| Right to erasure | `account-delete` (step-up re-auth, `REAUTH_REQUIRED`) with a 30-day cancellable grace (FR-SET-05; immediate only for an age-gate decline), then hard delete across tables, storage, RevenueCat subscriber, OneSignal user, Sentry user (by hashed id) |
 | Data minimisation to processors | Gateway redaction (4.3), no health data in push payloads or analytics props |
 | Records of processing and DPAs | Listed in `16-security-architecture.md` |
 | Breach notification within 72 h | Incident runbook in `19-deployment-architecture.md` |

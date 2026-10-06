@@ -72,7 +72,7 @@ select is(
    where n.nspname = 'public'
      and p.proname in ('accept_household_invitation', 'account_deletion_blockers', 'account_export_user_data',
                        'acquire_job_lease', 'release_job_lease', 'ai_quota_check', 'analytics_maintain_partitions',
-                       'cancel_account_deletion', 'consume_rate_limit', 'execute_account_erasure',
+                       'cancel_account_deletion', 'consume_rate_limit', 'due_reassessments', 'execute_account_erasure',
                        'plan_generation_ack', 'plan_generation_enqueue', 'plan_generation_read',
                        'recompute_recipe_nutrition', 'refresh_analytics_views', 'refresh_ingredient_prices',
                        'request_account_deletion')

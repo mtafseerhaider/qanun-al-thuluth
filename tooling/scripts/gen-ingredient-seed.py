@@ -15,7 +15,11 @@ fda-nutrient-database@1.0.2 (data/ABBREV.txt). Values are per 100 g edible porti
 Columns used (SR28 doc p. 44): Energ_Kcal, Protein, Carbohydrt, Fiber_TD, Sugar_Tot, Lipid_Tot,
 FA_Sat, Sodium, Iron, Calcium, Zinc, Vit_A_RAE, Vit_C, Vit_D_mcg, Vit_B12, Folate_DFE, Potassium.
 omega3_g is not in the abbreviated file and stays null.
+
+The input is checked against its sha256 in supabase/seed/checksums.txt (`sr28/ABBREV.txt`) before
+anything is written.
 """
+import hashlib
 import os
 import sys
 
@@ -85,20 +89,20 @@ ING = [
     ('Lemon (leemu)', 'لیموں', F, 'produce_fruit', 'kg', None, 'halal', False, 'wet', 'yellow', '09150', ''),
     ('Tamarind (imli)', 'املی', F, 'spices', 'kg', None, 'halal', False, 'chewy', 'brown', '09322', ''),
     # ---- grains and breads -------------------------------------------------------------------------
-    ('Chakki atta (whole wheat flour)', 'چکی آٹا', 'grain', 'staples', 'kg', None, 'halal', False, '', 'brown', '20080', 'gluten_cereals,wheat'),
-    ('Maida (white flour)', 'میدہ', 'grain', 'staples', 'kg', None, 'halal', False, '', 'white', '20481', 'gluten_cereals,wheat'),
+    ('Chakki atta (whole wheat flour)', 'چکی آٹا', 'grain', 'staples', 'kg', None, 'halal', False, 'dry', 'brown', '20080', 'gluten_cereals,wheat'),
+    ('Maida (white flour)', 'میدہ', 'grain', 'staples', 'kg', None, 'halal', False, 'dry', 'white', '20481', 'gluten_cereals,wheat'),
     ('Basmati rice (chawal)', 'باسمتی چاول', 'grain', 'staples', 'kg', None, 'halal', False, 'soft', 'white', '20444', ''),
     ('Brown rice', 'بھورے چاول', 'grain', 'staples', 'kg', None, 'halal', False, 'chewy', 'brown', '20036', ''),
     ('Whole barley (jau)', 'جو', 'grain', 'staples', 'kg', None, 'halal', True, 'chewy', 'beige', '20004', 'gluten_cereals'),
-    ('Barley flour (jau ka atta)', 'جو کا آٹا', 'grain', 'staples', 'kg', None, 'halal', True, '', 'beige', '20130', 'gluten_cereals'),
+    ('Barley flour (jau ka atta)', 'جو کا آٹا', 'grain', 'staples', 'kg', None, 'halal', True, 'dry', 'beige', '20130', 'gluten_cereals'),
     ('Oats (jai)', 'جئی', 'grain', 'staples', 'kg', None, 'halal', False, 'soft', 'beige', '08120', 'gluten_cereals'),
-    ('Semolina (sooji)', 'سوجی', 'grain', 'staples', 'kg', None, 'halal', False, '', 'beige', '20466', 'gluten_cereals,wheat'),
+    ('Semolina (sooji)', 'سوجی', 'grain', 'staples', 'kg', None, 'halal', False, 'dry', 'beige', '20466', 'gluten_cereals,wheat'),
     ('Vermicelli (seviyan)', 'سویاں', 'grain', 'staples', 'kg', None, 'halal', False, 'soft', 'beige', '20420', 'gluten_cereals,wheat'),
-    ('Maize flour (makai ka atta)', 'مکئی کا آٹا', 'grain', 'staples', 'kg', None, 'halal', False, '', 'yellow', '20020', ''),
+    ('Maize flour (makai ka atta)', 'مکئی کا آٹا', 'grain', 'staples', 'kg', None, 'halal', False, 'dry', 'yellow', '20020', ''),
     ('Millet (bajra)', 'باجرہ', 'grain', 'staples', 'kg', None, 'halal', False, 'chewy', 'beige', '20031', ''),
     ('Sorghum (jowar)', 'جوار', 'grain', 'staples', 'kg', None, 'halal', False, 'chewy', 'beige', '20067', ''),
     ('Broken wheat (daliya)', 'دلیہ', 'grain', 'staples', 'kg', None, 'halal', False, 'chewy', 'beige', '20012', 'gluten_cereals,wheat'),
-    ('Cornflour (corn starch)', 'کارن فلور', 'grain', 'staples', 'kg', None, 'halal', False, '', 'white', '20027', ''),
+    ('Cornflour (corn starch)', 'کارن فلور', 'grain', 'staples', 'kg', None, 'halal', False, 'dry', 'white', '20027', ''),
     ('Roti (chapati), whole wheat', 'روٹی', 'prepared', 'staples', 'piece', 40, 'halal', False, 'soft', 'beige', '28285', 'gluten_cereals,wheat'),
     ('Naan', 'نان', 'prepared', 'staples', 'piece', 90, 'halal', False, 'soft,chewy', 'beige', '28307', 'gluten_cereals,wheat'),
     ('Paratha', 'پراٹھا', 'prepared', 'staples', 'piece', 80, 'halal', False, 'soft,crispy', 'beige', '28286', 'gluten_cereals,wheat'),
@@ -113,7 +117,7 @@ ING = [
     ('Mash daal (urad)', 'ماش کی دال', 'legume', 'protein_plant', 'kg', None, 'halal', False, 'soft', 'white', '16083', ''),
     ('Red kidney beans (lal lobia)', 'لال لوبیا', 'legume', 'protein_plant', 'kg', None, 'halal', False, 'soft', 'red', '16032', ''),
     ('Black-eyed beans (lobia)', 'سفید لوبیا', 'legume', 'protein_plant', 'kg', None, 'halal', False, 'soft', 'white', '16062', ''),
-    ('Besan (gram flour)', 'بیسن', 'legume', 'protein_plant', 'kg', None, 'halal', False, '', 'yellow', '16157', ''),
+    ('Besan (gram flour)', 'بیسن', 'legume', 'protein_plant', 'kg', None, 'halal', False, 'dry', 'yellow', '16157', ''),
     ('Peanuts (moongphali)', 'مونگ پھلی', 'legume', 'snacks', 'kg', None, 'halal', False, 'crunchy', 'brown', '16087', 'peanuts'),
     ('Pigeon peas (arhar daal)', 'ارہر کی دال', 'legume', 'protein_plant', 'kg', None, 'halal', False, 'soft', 'yellow', '16101', ''),
     # ---- meat, poultry, fish, eggs (halal status depends on zabiha sourcing) --------------------------
@@ -139,7 +143,7 @@ ING = [
     ('Cream (malai)', 'ملائی', 'dairy', 'dairy', 'g', None, 'halal', False, 'smooth', 'white', '01053', 'milk'),
     ('Cheddar cheese', 'چیڈر پنیر', 'dairy', 'dairy', 'g', None, 'depends_on_source', False, 'soft', 'yellow', '01009', 'milk'),
     ('Mozzarella cheese', 'موزریلا پنیر', 'dairy', 'dairy', 'g', None, 'depends_on_source', False, 'chewy', 'white', '01026', 'milk'),
-    ('Milk powder', 'خشک دودھ', 'dairy', 'dairy', 'kg', None, 'halal', False, '', 'white', '01090', 'milk'),
+    ('Milk powder', 'خشک دودھ', 'dairy', 'dairy', 'kg', None, 'halal', False, 'dry', 'white', '01090', 'milk'),
     ('Condensed milk', 'گاڑھا میٹھا دودھ', 'dairy', 'dairy', 'g', None, 'halal', False, 'smooth', 'white', '01095', 'milk'),
     ('Buttermilk (chhaach)', 'چھاچھ', 'dairy', 'dairy', 'l', 1030, 'halal', False, 'smooth', 'white', '01088', 'milk'),
     # ---- nuts and seeds ------------------------------------------------------------------------------
@@ -156,38 +160,38 @@ ING = [
     # ---- oils and fats -------------------------------------------------------------------------------
     ('Desi ghee', 'دیسی گھی', 'oil_fat', 'oils_fats', 'kg', None, 'halal', False, 'smooth', 'yellow', '01003', 'milk'),
     ('Banaspati ghee (vegetable shortening)', 'بناسپتی گھی', 'oil_fat', 'oils_fats', 'kg', None, 'halal', False, 'smooth', 'yellow', '04615', ''),
-    ('Sunflower oil', 'سورج مکھی کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, '', 'yellow', '04060', ''),
-    ('Canola oil', 'کینولا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, '', 'yellow', '04582', ''),
-    ('Olive oil', 'زیتون کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', True, '', 'green', '04053', ''),
-    ('Soybean oil', 'سویابین کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, '', 'yellow', '04044', ''),
+    ('Sunflower oil', 'سورج مکھی کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, 'wet', 'yellow', '04060', ''),
+    ('Canola oil', 'کینولا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, 'wet', 'yellow', '04582', ''),
+    ('Olive oil', 'زیتون کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', True, 'wet', 'green', '04053', ''),
+    ('Soybean oil', 'سویابین کا تیل', 'oil_fat', 'oils_fats', 'l', 920, 'halal', False, 'wet', 'yellow', '04044', ''),
     # ---- sweeteners -----------------------------------------------------------------------------------
-    ('Sugar (cheeni)', 'چینی', 'sweetener', 'staples', 'kg', None, 'halal', False, '', 'white', '19335', ''),
+    ('Sugar (cheeni)', 'چینی', 'sweetener', 'staples', 'kg', None, 'halal', False, 'dry', 'white', '19335', ''),
     ('Honey (shehad)', 'شہد', 'sweetener', 'staples', 'kg', None, 'halal', True, 'smooth', 'orange', '19296', ''),
-    ('Brown sugar (shakkar)', 'شکر', 'sweetener', 'staples', 'kg', None, 'halal', False, '', 'brown', '19334', ''),
+    ('Brown sugar (shakkar)', 'شکر', 'sweetener', 'staples', 'kg', None, 'halal', False, 'dry', 'brown', '19334', ''),
     # ---- spices -------------------------------------------------------------------------------------------
-    ('Salt (namak)', 'نمک', 'spice_herb', 'spices', 'kg', None, 'halal', False, '', 'white', '02047', ''),
-    ('Turmeric (haldi)', 'ہلدی', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'yellow', '02043', ''),
-    ('Red chilli powder (lal mirch)', 'لال مرچ', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'red', '02031', ''),
-    ('Cumin seeds (zeera)', 'زیرہ', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'brown', '02014', ''),
-    ('Coriander seeds (dhaniya)', 'دھنیا', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'beige', '02013', ''),
-    ('Black pepper (kali mirch)', 'کالی مرچ', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'black', '02030', ''),
-    ('Cinnamon (darchini)', 'دار چینی', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'brown', '02010', ''),
-    ('Green cardamom (elaichi)', 'سبز الائچی', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'green', '02006', ''),
-    ('Cloves (laung)', 'لونگ', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'brown', '02011', ''),
-    ('Fennel seeds (saunf)', 'سونف', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'green', '02018', ''),
-    ('Fenugreek seeds (methi dana)', 'میتھی دانہ', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'yellow', '02019', ''),
-    ('Mustard seeds (rai)', 'رائی', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'brown', '02024', 'mustard'),
-    ('Bay leaf (tez patta)', 'تیز پات', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'green', '02004', ''),
-    ('Saffron (zafran)', 'زعفران', 'spice_herb', 'spices', 'g', None, 'halal', False, '', 'red', '02037', ''),
+    ('Salt (namak)', 'نمک', 'spice_herb', 'spices', 'kg', None, 'halal', False, 'dry', 'white', '02047', ''),
+    ('Turmeric (haldi)', 'ہلدی', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'yellow', '02043', ''),
+    ('Red chilli powder (lal mirch)', 'لال مرچ', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'red', '02031', ''),
+    ('Cumin seeds (zeera)', 'زیرہ', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'brown', '02014', ''),
+    ('Coriander seeds (dhaniya)', 'دھنیا', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'beige', '02013', ''),
+    ('Black pepper (kali mirch)', 'کالی مرچ', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'black', '02030', ''),
+    ('Cinnamon (darchini)', 'دار چینی', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'brown', '02010', ''),
+    ('Green cardamom (elaichi)', 'سبز الائچی', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'green', '02006', ''),
+    ('Cloves (laung)', 'لونگ', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'brown', '02011', ''),
+    ('Fennel seeds (saunf)', 'سونف', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'green', '02018', ''),
+    ('Fenugreek seeds (methi dana)', 'میتھی دانہ', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'yellow', '02019', ''),
+    ('Mustard seeds (rai)', 'رائی', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry,crunchy', 'brown', '02024', 'mustard'),
+    ('Bay leaf (tez patta)', 'تیز پات', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'green', '02004', ''),
+    ('Saffron (zafran)', 'زعفران', 'spice_herb', 'spices', 'g', None, 'halal', False, 'dry', 'red', '02037', ''),
     # ---- beverages and condiments ------------------------------------------------------------------------
-    ('Black tea, brewed (chai)', 'چائے', 'beverage', 'beverages', 'ml', None, 'halal', False, '', 'brown', '14355', ''),
-    ('Green tea, brewed (sabz chai)', 'سبز چائے', 'beverage', 'beverages', 'ml', None, 'halal', False, '', 'green', '14278', ''),
-    ('Water', 'پانی', 'beverage', 'beverages', 'l', 1000, 'halal', False, '', 'white', '14411', ''),
-    ('Vinegar (sirka)', 'سرکہ', 'condiment', 'spices', 'ml', None, 'halal', True, '', 'white', '02053', ''),
+    ('Black tea, brewed (chai)', 'چائے', 'beverage', 'beverages', 'ml', None, 'halal', False, 'wet', 'brown', '14355', ''),
+    ('Green tea, brewed (sabz chai)', 'سبز چائے', 'beverage', 'beverages', 'ml', None, 'halal', False, 'wet', 'green', '14278', ''),
+    ('Water', 'پانی', 'beverage', 'beverages', 'l', 1000, 'halal', False, 'wet', 'white', '14411', ''),
+    ('Vinegar (sirka)', 'سرکہ', 'condiment', 'spices', 'ml', None, 'halal', True, 'wet', 'white', '02053', ''),
     ('Tomato ketchup', 'ٹماٹو کیچپ', 'condiment', 'spices', 'g', None, 'halal', False, 'smooth', 'red', '11935', ''),
     ('Tomato paste', 'ٹماٹر کا پیسٹ', 'condiment', 'produce_veg', 'g', None, 'halal', False, 'smooth', 'red', '11546', ''),
     # naturally brewed soy sauce can carry trace alcohol from fermentation
-    ('Soy sauce', 'سویا ساس', 'condiment', 'spices', 'ml', None, 'mashbooh', False, '', 'black', '16123', 'soy,gluten_cereals,wheat'),
+    ('Soy sauce', 'سویا ساس', 'condiment', 'spices', 'ml', None, 'mashbooh', False, 'wet', 'black', '16123', 'soy,gluten_cereals,wheat'),
     ('Mayonnaise', 'مایونیز', 'condiment', 'spices', 'g', None, 'depends_on_source', False, 'smooth', 'white', '04025', 'eggs'),
 ]
 
@@ -196,6 +200,10 @@ COLS = {  # ABBREV.txt field index -> seed column
     'sodium_mg': 15, 'iron_mg': 11, 'calcium_mg': 10, 'zinc_mg': 16, 'vitamin_a_mcg': 33,
     'vitamin_c_mg': 20, 'vitamin_d_mcg': 41, 'b12_mcg': 31, 'folate_mcg': 29, 'potassium_mg': 14,
 }
+
+
+TEXTURES = {'smooth', 'soft', 'crunchy', 'chewy', 'crispy', 'mixed', 'lumpy', 'wet', 'dry'}
+COLORS = {'red', 'orange', 'yellow', 'green', 'purple', 'blue', 'white', 'beige', 'brown', 'black', 'mixed'}
 
 
 def q(s):
@@ -211,12 +219,32 @@ def load(path):
     return rows
 
 
+def check_sha256(path):
+    sums = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'supabase', 'seed', 'checksums.txt')
+    want = None
+    with open(sums, encoding='utf-8') as fh:
+        for line in fh:
+            parts = line.split()
+            if len(parts) == 2 and not line.startswith('#') and parts[1] == 'sr28/ABBREV.txt':
+                want = parts[0]
+    with open(path, 'rb') as fh:
+        got = hashlib.sha256(fh.read()).hexdigest()
+    if want is None or got != want:
+        sys.exit(f'{path}: sha256 {got} does not match sr28/ABBREV.txt in supabase/seed/checksums.txt')
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
+    check_sha256(sys.argv[1])
     abb = load(sys.argv[1])
     names = [r[0].lower() for r in ING]
     assert len(names) == len(set(names)), 'duplicate ingredient names'
+    # Food chaining (packages/ai-core/src/health/chaining.ts) reads textures and color: every row
+    # needs both, from the public.texture enum and the ingredients.color check (S1 food catalog).
+    for r in ING:
+        assert r[8] and set(r[8].split(',')) <= TEXTURES, f'{r[0]}: textures {r[8]!r}'
+        assert r[9] in COLORS, f'{r[0]}: color {r[9]!r}'
     out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'supabase', 'seed', 'catalog')
 
     values = []
@@ -250,7 +278,11 @@ def main():
 -- Split chickpeas reuse the whole chickpea entry (no separate SR food).
 -- REVIEW REQUIRED before launch: (1) a registered dietitian checks every nutrient row and the
 -- NDB match; (2) a native Urdu speaker reviews every name_i18n.ur; (3) the scholar panel reviews
--- is_sunnah_food and halal_status (gourd vs pumpkin for dubba, prawns, cheese rennet, soy sauce).
+-- is_sunnah_food and halal_status (gourd vs pumpkin for dubba, prawns, cheese rennet, soy sauce);
+-- (4) a paediatric dietitian or feeding specialist reviews textures and color (food chaining,
+-- 15 section 3.6). Textures describe the ingredient as bought or as usually served: flours,
+-- powders and sugar are dry, whole seeds dry and crunchy, oils and drinks wet. Assigned by
+-- engineering, not yet clinically reviewed.
 """
     sql = header + """
 insert into public.ingredients (

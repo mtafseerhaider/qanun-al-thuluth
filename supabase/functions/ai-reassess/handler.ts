@@ -209,7 +209,15 @@ export function createReassessHandler(deps: ReassessDeps) {
       });
     }
     try {
-      const latest = await deps.store.latestAssessments(input.household_ids);
+      // The database picks the due members (oldest first, capped); a forced run takes every member.
+      const before = input.force
+        ? at
+        : new Date(at.getTime() - REASSESS_INTERVAL_DAYS * 86_400_000);
+      const latest = await deps.store.dueAssessments({
+        before,
+        limit: input.limit,
+        householdIds: input.household_ids,
+      });
       const due = latest
         .filter((a) => input.force || reassessmentDue(a.created_at, at))
         .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))

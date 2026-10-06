@@ -6,7 +6,7 @@ import type {
   MemberContext,
   RecommendationRow,
 } from '../ai-intake-assess/store.ts';
-import { check, selectAll } from '../_shared/platform.ts';
+import { check } from '../_shared/platform.ts';
 
 /**
  * Data access for `ai-reassess` (S6-15, FR-AI-11). Service role, cron only. Member and household
@@ -58,8 +58,15 @@ export interface ReassessStore {
   /** `acquire_job_lease`; null when the RPC is not deployed (the run proceeds unlocked). */
   acquireLease(name: string, holder: string, ttlSeconds: number): Promise<boolean | null>;
   releaseLease(name: string, holder: string): Promise<void>;
-  /** Latest intake/periodic assessment per member (live members only), optionally per household. */
-  latestAssessments(householdIds?: readonly string[]): Promise<LatestAssessment[]>;
+  /**
+   * `due_reassessments`: the latest intake/periodic assessment of each live member whose latest one was
+   * created at or before `before`, oldest first, at most `limit`; optionally only `householdIds`.
+   */
+  dueAssessments(args: {
+    before: Date;
+    limit: number;
+    householdIds?: readonly string[] | undefined;
+  }): Promise<LatestAssessment[]>;
   household(householdId: string): Promise<HouseholdContext | null>;
   /** The household owner's app locale ('en' | 'ur'), for the stored summary. */
   ownerLocale(householdId: string): Promise<string | null>;
@@ -100,31 +107,17 @@ export function supabaseReassessStore(admin: SupabaseClient): ReassessStore {
       const { error } = await admin.rpc('release_job_lease', { p_name: name, p_holder: holder });
       if (error && error.code !== MISSING_FUNCTION) throw error;
     },
-    async latestAssessments(householdIds) {
-      // Newest first per member; the first row seen for a member is its latest.
-      const rows = (await selectAll<unknown>((from, to) => {
-        let q = admin
-          .from('ai_assessments')
-          .select(
-            'id, household_id, family_member_id, kind, created_at, energy_targets, macro_targets, hydration_targets, risk_flags, input_snapshot, family_members!inner(deleted_at)',
-          )
-          .in('kind', ['intake', 'periodic'])
-          .not('family_member_id', 'is', null)
-          .is('family_members.deleted_at', null);
-        if (householdIds?.length) q = q.in('household_id', [...householdIds]);
-        return q
-          .order('family_member_id')
-          .order('created_at', { ascending: false })
-          .range(from, to);
-      })) as Array<LatestAssessment & { family_members: unknown }>;
-      const seen = new Set<string>();
-      const out: LatestAssessment[] = [];
-      for (const { family_members: _fm, ...r } of rows) {
-        if (seen.has(r.family_member_id)) continue;
-        seen.add(r.family_member_id);
-        out.push({ ...r, risk_flags: r.risk_flags ?? [] });
-      }
-      return out;
+    async dueAssessments({ before, limit, householdIds }) {
+      const { data, error } = await admin.rpc('due_reassessments', {
+        p_before: before.toISOString(),
+        p_limit: limit,
+        p_household_ids: householdIds?.length ? [...householdIds] : null,
+      });
+      if (error) throw error;
+      return ((data ?? []) as LatestAssessment[]).map((r) => ({
+        ...r,
+        risk_flags: r.risk_flags ?? [],
+      }));
     },
     household: (id) => intake.household(id),
     async ownerLocale(householdId) {

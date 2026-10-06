@@ -7,7 +7,9 @@ import type {
   ReassessSafetyEventInsert,
   ReassessStore,
 } from '../../functions/ai-reassess/store.ts';
+import { supabaseReassessStore } from '../../functions/ai-reassess/store.ts';
 import type { MemberContext } from '../../functions/ai-intake-assess/store.ts';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const SECRET = 'reassess-secret-for-tests';
 const HH = '00000000-0000-4000-b000-000000000001';
@@ -105,6 +107,11 @@ function memoryStore(opts: { latest?: LatestAssessment[]; lease?: boolean | null
     safety: [] as ReassessSafetyEventInsert[],
     audits: 0,
     leases: [] as string[],
+    dueCalls: [] as Array<{
+      before: string;
+      limit: number;
+      householdIds: readonly string[] | undefined;
+    }>,
   };
   const store: ReassessStore = {
     acquireLease: async (name) => {
@@ -114,10 +121,15 @@ function memoryStore(opts: { latest?: LatestAssessment[]; lease?: boolean | null
     releaseLease: async (name) => {
       state.leases.push(`release:${name}`);
     },
-    latestAssessments: async (ids) =>
-      (opts.latest ?? [PREV_USMAN, PREV_ZAINAB]).filter(
-        (a) => !ids?.length || ids.includes(a.household_id),
-      ),
+    // Mirrors due_reassessments: due at or before `before`, oldest first, capped, household filter.
+    dueAssessments: async ({ before, limit, householdIds }) => {
+      state.dueCalls.push({ before: before.toISOString(), limit, householdIds });
+      return (opts.latest ?? [PREV_USMAN, PREV_ZAINAB])
+        .filter((a) => !householdIds?.length || householdIds.includes(a.household_id))
+        .filter((a) => Date.parse(a.created_at) <= before.getTime())
+        .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+        .slice(0, limit);
+    },
     household: async (id) =>
       id === HH
         ? { id: HH, country_code: 'PK', timezone: 'Asia/Karachi', climate_zone: 'hot_semi_arid' }
@@ -262,4 +274,54 @@ Deno.test('ai-reassess: a missing household is skipped without failing the run',
   assertEquals(body.due, 2);
   assertEquals(body.reassessed, 1);
   assertEquals(state.inserted.length, 1);
+});
+
+Deno.test('ai-reassess: asks the database for due members (28 days back, capped)', async () => {
+  const { handler, state } = memoryStore();
+  await call(handler, { limit: 5 });
+  assertEquals(state.dueCalls, [
+    { before: '2026-09-08T08:00:00.000Z', limit: 5, householdIds: undefined },
+  ]);
+  const forced = memoryStore();
+  await call(forced.handler, { force: true, household_ids: [HH] });
+  assertEquals(forced.state.dueCalls, [
+    { before: NOW.toISOString(), limit: 200, householdIds: [HH] },
+  ]);
+});
+
+Deno.test('ai-reassess store: dueAssessments calls the due_reassessments RPC', async () => {
+  const calls: Array<{ fn: string; args: unknown }> = [];
+  const row = { ...PREV_USMAN, risk_flags: null };
+  const admin = {
+    rpc: (fn: string, args: unknown) => {
+      calls.push({ fn, args });
+      return Promise.resolve({ data: [row], error: null });
+    },
+  } as unknown as SupabaseClient;
+  const store = supabaseReassessStore(admin);
+  const out = await store.dueAssessments({ before: NOW, limit: 50 });
+  assertEquals(calls, [
+    {
+      fn: 'due_reassessments',
+      args: { p_before: NOW.toISOString(), p_limit: 50, p_household_ids: null },
+    },
+  ]);
+  assertEquals(out.length, 1);
+  assertEquals(out[0]!.risk_flags, []);
+  await store.dueAssessments({ before: NOW, limit: 1, householdIds: [HH, HH2] });
+  assertEquals((calls[1]!.args as { p_household_ids: string[] }).p_household_ids, [HH, HH2]);
+});
+
+Deno.test('ai-reassess store: an RPC error is thrown', async () => {
+  const admin = {
+    rpc: () =>
+      Promise.resolve({ data: null, error: { code: 'P0001', message: 'VALIDATION_FAILED' } }),
+  } as unknown as SupabaseClient;
+  const err = await supabaseReassessStore(admin)
+    .dueAssessments({ before: NOW, limit: 0 })
+    .then(
+      () => null,
+      (e: unknown) => e,
+    );
+  assertEquals((err as { message?: string } | null)?.message, 'VALIDATION_FAILED');
 });
