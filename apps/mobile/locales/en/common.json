@@ -6,5 +6,10 @@
   "back": "Back",
   "continue": "Continue",
   "comingSoon": "This screen arrives in a later sprint.",
-  "restart": "Restart app"
+  "restart": "Restart app",
+  "limit": {
+    "title": "You've reached the free plan limit",
+    "households": "The free plan includes {{free}} household. Premium will add more households when it launches.",
+    "familyMembers": "The free plan includes up to {{free}} family members per household. Premium allows up to {{premium}}."
+  }
 }

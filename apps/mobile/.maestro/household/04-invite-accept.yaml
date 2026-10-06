@@ -1,0 +1,47 @@
+# S1-13 / S1-17: accept a caregiver invitation from a deep link while signed out. The token is
+# parked, the invitee signs in with the invited email, and AcceptInvite opens over onboarding.
+#   MAESTRO_INVITE_TOKEN    raw token from a household-invite `create` (owner account, seeded run)
+#   MAESTRO_INVITEE_EMAIL   the invited address
+#   MAESTRO_INBOX_URL / MAESTRO_TEST_OTP as in auth/02-signup-otp.yaml
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 04 accept household invitation
+tags:
+  - household
+  - sprint-1
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: 'auth-welcome.screen'
+    timeout: 20000
+- openLink: https://thuluth.app/invite/${MAESTRO_INVITE_TOKEN}
+- extendedWaitUntil:
+    visible:
+      id: 'auth.invite-banner'
+    timeout: 10000
+- runFlow:
+    file: ../auth/_sign-in-with-otp.yaml
+    env:
+      EMAIL: ${MAESTRO_INVITEE_EMAIL}
+      INBOX_URL: ${MAESTRO_INBOX_URL || "http://127.0.0.1:54324"}
+      OTP: ${MAESTRO_TEST_OTP || ""}
+- extendedWaitUntil:
+    visible:
+      id: 'household-accept-invite.screen'
+    timeout: 20000
+- tapOn:
+    id: 'household-accept-invite.join'
+- extendedWaitUntil:
+    visible:
+      id: 'household-accept-invite.continue'
+    timeout: 15000
+- takeScreenshot: 04-invite-joined
+- tapOn:
+    id: 'household-accept-invite.continue'
+# Invitees skip creating a household; onboarding resumes at step 1.
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-welcome.screen'
+    timeout: 10000

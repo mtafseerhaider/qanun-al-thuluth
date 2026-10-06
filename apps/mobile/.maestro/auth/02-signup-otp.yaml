@@ -1,0 +1,28 @@
+# S1-04 / S1-17: sign up with an email one-time code and land on onboarding step 1.
+# Needs a build pointed at a Supabase project whose mail goes to a test inbox.
+#   MAESTRO_TEST_EMAIL  a fresh address for the run, e.g. qa+$(date +%s)@thuluth.test
+#   MAESTRO_INBOX_URL   Mailpit API base (local Supabase: http://127.0.0.1:54324)
+#   MAESTRO_TEST_OTP    optional fixed code instead of reading the inbox
+# Run: maestro test -e MAESTRO_TEST_EMAIL=... apps/mobile/.maestro/auth/02-signup-otp.yaml
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 02 sign up with email OTP
+tags:
+  - auth
+  - sprint-1
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _sign-in-with-otp.yaml
+    env:
+      EMAIL: ${MAESTRO_TEST_EMAIL}
+      INBOX_URL: ${MAESTRO_INBOX_URL || "http://127.0.0.1:54324"}
+      OTP: ${MAESTRO_TEST_OTP || ""}
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-welcome.screen'
+    timeout: 20000
+- assertVisible:
+    id: 'onboarding-welcome.bismillah'
+- takeScreenshot: 02-signup-otp-onboarding-welcome

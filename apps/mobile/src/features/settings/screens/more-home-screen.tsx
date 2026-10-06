@@ -12,7 +12,7 @@ import { useSessionStore } from '@/stores/use-session-store';
 import { LanguageToggle } from '../components/language-toggle';
 import { ThemeToggle } from '../components/theme-toggle';
 
-/** M1 (Sprint 0): appearance and language settings, plus the hidden debug entry. */
+/** M1 More: account settings, appearance and language, plus the hidden debug entry. */
 export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
   const { t } = useTranslation(['navigation', 'settings']);
   const debugEnabled = useDebugMenuEnabled();
@@ -25,6 +25,19 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
       edges={['top']}
       testID="settings-more-home.screen"
     >
+      {!isDevGuest ? (
+        <Card>
+          <Text variant="overline" tone="muted">
+            {t('settings:home.account')}
+          </Text>
+          <Button
+            label={t('settings:home.open')}
+            variant="secondary"
+            onPress={() => navigation.navigate('Settings')}
+            testID="settings-more-home.settings-button"
+          />
+        </Card>
+      ) : null}
       <Card>
         <Text variant="overline" tone="muted">
           {t('settings:appearance.title')}

@@ -1,0 +1,73 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "done": "Done"
+  },
+  "roles": {
+    "owner": "Owner",
+    "caregiver": "Caregiver",
+    "viewer": "Viewer",
+    "coach": "Coach"
+  },
+  "roleDescriptions": {
+    "owner": "Manages the household, members and subscription.",
+    "caregiver": "Can plan meals, edit family members and log food.",
+    "viewer": "Can see plans and shopping lists but not change them.",
+    "coach": "A health coach with read access to plans."
+  },
+  "people": {
+    "title": "People with access",
+    "you": "You",
+    "someone": "A household member",
+    "roleLine": "{{role}}: {{description}}",
+    "makeCaregiver": "Make caregiver",
+    "makeViewer": "Make viewer",
+    "remove": "Remove",
+    "removeTitle": "Remove from household?",
+    "removeBody": "{{name}} will lose access to this household's plans and family details.",
+    "leave": "Leave household",
+    "leaveTitle": "Leave this household?",
+    "leaveBody": "You will lose access to its plans and family details until you are invited again."
+  },
+  "invitations": {
+    "title": "Pending invitations",
+    "none": "No pending invitations.",
+    "invite": "Invite someone",
+    "meta": "{{role}}, {{expiry}}",
+    "expiresIn_one": "expires in {{count}} day",
+    "expiresIn_other": "expires in {{count}} days",
+    "resend": "Resend",
+    "revoke": "Revoke"
+  },
+  "invite": {
+    "title": "Invite to your household",
+    "body": "They'll get an email with a link. You can also share the link yourself, for example on WhatsApp.",
+    "email": "Their email address",
+    "role": "Their role",
+    "coachSoon": "Coach access arrives in a later update.",
+    "send": "Send invitation",
+    "notYourself": "You're already in this household. Enter someone else's email.",
+    "alreadyMember": "This person is already a member of the household.",
+    "sentTitle": "Invitation sent",
+    "sentBody": "We emailed {{email}}. The invitation is valid for {{days}} days.",
+    "linkLabel": "Invitation link",
+    "linkHelper": "Only the invited email address can use this link.",
+    "share": "Share link",
+    "shareMessage": "Join our family on Thuluth: {{url}}",
+    "inviteAnother": "Invite someone else"
+  },
+  "accept": {
+    "title": "Join a household",
+    "body": "You've been invited to help plan meals for a family on Thuluth.",
+    "join": "Join household",
+    "notNow": "Not now",
+    "joinedTitle": "You've joined",
+    "joinedBody": "You're now a {{role}} in this household.",
+    "alreadyMember": "You're already a member of this household.",
+    "expired": "This invitation has expired. Ask the owner to send a new one.",
+    "invalid": "This invitation link is not valid or has been revoked.",
+    "emailMismatch": "This invitation was sent to a different email address. Sign in with that address to accept it.",
+    "signOutAndSwitch": "Sign out and switch account"
+  }
+}

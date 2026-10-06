@@ -72,6 +72,9 @@ export type OnboardingStackParamList = {
   OnboardingRegion: undefined;
   OnboardingTradition: undefined;
   OnboardingConsents: undefined;
+  /** Sprint 1 steps 3 and 4 (24 S1-10, S1-11); fold into IntakeHousehold / IntakeMembers in Sprint 2. */
+  OnboardingHousehold: undefined;
+  OnboardingMembers: undefined;
   OnboardingNotifications: undefined;
   IntakeWizard: NavigatorScreenParams<IntakeStackParamList>;
   AssessmentSummary: { assessmentIds: Uuid[] };

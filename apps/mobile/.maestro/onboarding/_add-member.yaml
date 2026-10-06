@@ -1,0 +1,45 @@
+# Subflow: add one family member from the members editor. Inputs (env): NAME, DAY, MONTH, YEAR.
+# A child triggers the household-scoped child-data consent card, which is confirmed when shown.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: add family member (subflow)
+---
+- scrollUntilVisible:
+    element:
+      id: 'family-members.add'
+    direction: DOWN
+- tapOn:
+    id: 'family-members.add'
+- tapOn:
+    id: 'family-members.form.name'
+- inputText: ${NAME}
+- tapOn:
+    id: 'family-members.form.dob-day'
+- inputText: ${DAY}
+- tapOn:
+    id: 'family-members.form.dob-month'
+- inputText: ${MONTH}
+- tapOn:
+    id: 'family-members.form.dob-year'
+- inputText: ${YEAR}
+- hideKeyboard
+- assertVisible:
+    id: 'family-members.form.life-stage'
+- runFlow:
+    when:
+      visible:
+        id: 'consent.child-data.checkbox'
+    commands:
+      - tapOn:
+          id: 'consent.child-data.checkbox'
+      - tapOn:
+          id: 'consent.child-data.confirm'
+- scrollUntilVisible:
+    element:
+      id: 'family-members.form.save'
+    direction: DOWN
+- tapOn:
+    id: 'family-members.form.save'
+- extendedWaitUntil:
+    notVisible:
+      id: 'family-members.form'
+    timeout: 10000

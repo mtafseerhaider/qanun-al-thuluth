@@ -2,8 +2,10 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 /**
  * Dynamic Expo config (docs/07-react-native-folder-structure.md §9.3).
- * Plugins are listed only for packages that are installed. RevenueCat, OneSignal, Google and Apple
- * sign-in, image picker, audio and local authentication are added in later sprints.
+ * Plugins are listed only for packages that are installed. RevenueCat, OneSignal, image picker,
+ * audio and local authentication are added in later sprints. Google sign-in's plugin is added only
+ * when EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID is set (it needs the reversed client id as a URL scheme);
+ * without it the Google button is hidden at runtime.
  * The New Architecture is the only architecture in Expo SDK 55+, so there is no `newArchEnabled` flag.
  */
 type AppEnv = 'development' | 'staging' | 'production';
@@ -33,6 +35,13 @@ const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID;
 const SPLASH_BACKGROUND = '#F7F3EA';
 const SPLASH_BACKGROUND_DARK = '#0F1513';
 
+/** `123-abc.apps.googleusercontent.com` -> `com.googleusercontent.apps.123-abc` (11 §5.2). */
+export function googleIosUrlScheme(iosClientId: string | undefined): string | null {
+  const match = /^([\w-]+)\.apps\.googleusercontent\.com$/.exec(iosClientId?.trim() ?? '');
+  return match ? `com.googleusercontent.apps.${match[1]}` : null;
+}
+const GOOGLE_IOS_URL_SCHEME = googleIosUrlScheme(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: `Thuluth${nameSuffix[APP_ENV]}`,
@@ -52,6 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: `app.thuluth.mobile${suffix[APP_ENV]}`,
     supportsTablet: false,
     associatedDomains: ['applinks:thuluth.app'],
+    usesAppleSignIn: true,
     config: { usesNonExemptEncryption: false },
     infoPlist: {
       CFBundleAllowMixedLocalizations: true,
@@ -100,6 +110,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-build-properties', { android: { minSdkVersion: 26 } }],
     'expo-localization',
     'expo-secure-store',
+    'expo-apple-authentication',
+    ...(GOOGLE_IOS_URL_SCHEME
+      ? [
+          [
+            '@react-native-google-signin/google-signin',
+            { iosUrlScheme: GOOGLE_IOS_URL_SCHEME },
+          ] as [string, unknown],
+        ]
+      : []),
     [
       'expo-font',
       {

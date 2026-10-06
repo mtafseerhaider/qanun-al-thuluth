@@ -1,9 +1,9 @@
 -- supabase/tests/database/000_helpers.sql
 -- Runs first (pg_prove sorts files; "000_" precedes the suite folders) and is NOT rolled back,
 -- so the helpers exist for every later test file. Each test file runs in its own transaction.
--- Shape follows 21-testing-strategy.md section 6.2. Sprint 0 differences:
---   * users.age_attested_at does not exist yet (migration 0017), so create_user does not set it.
---   * tests.seed_household() / rls_fixture_coverage arrive with family_members (Sprint 1).
+-- Shape follows 21-testing-strategy.md section 6.2. tests.seed_household() and
+-- tests.rls_fixture_coverage (Sprint 1) give every household-scoped table one fixture row, and the
+-- invariant test fails when a new household-scoped table is not covered.
 create extension if not exists pgtap with schema extensions;
 create schema if not exists tests;
 
@@ -17,6 +17,7 @@ begin
                           raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
   values (v_id, '00000000-0000-0000-0000-000000000000', p_email, 'authenticated', 'authenticated', now(),
           '{"locale":"en"}', '{"provider":"email"}'::jsonb || p_app_meta, now(), now());
+  update public.users set age_attested_at = now() where id = v_id;   -- adult account holder (11 section 13.1)
   return v_id;
 end $$;
 
@@ -72,7 +73,47 @@ begin
   return v_n;
 end $$;
 
+-- Registry of household-scoped tables that tests.seed_household() gives a fixture row
+-- (21-testing-strategy.md section 6.2). Every public base table with a household_id column must be listed.
+create table if not exists tests.rls_fixture_coverage (table_name text primary key);
+
+-- Creates a household owned by p_owner with three family members (the owner as a linked adult,
+-- a 7-year-old with picky_eater, a 4-year-old with autism) and one row in every household-scoped
+-- table. Runs as postgres with entitlements bypassed. Returns the household id.
+create or replace function tests.seed_household(p_owner uuid, p_name text default 'Fixture household')
+returns uuid
+language plpgsql security definer set search_path = public as $$
+declare v_hid uuid;
+begin
+  v_hid := tests.create_household(p_owner, p_name);
+  perform set_config('app.bypass_entitlements', 'on', true);
+  insert into public.family_members (household_id, linked_user_id, name, date_of_birth, sex_at_birth, sort_order)
+  values (v_hid, p_owner, 'Adult', current_date - interval '35 years', 'female', 0),
+         (v_hid, null, 'Son', current_date - interval '7 years', 'male', 1),
+         (v_hid, null, 'Daughter', current_date - interval '4 years', 'female', 2);
+  update public.family_members set special_modules = '{picky_eater}' where household_id = v_hid and name = 'Son';
+  update public.family_members set special_modules = '{autism}' where household_id = v_hid and name = 'Daughter';
+  insert into public.household_invitations (household_id, email, role, token_hash, invited_by)
+  values (v_hid, 'invitee-' || v_hid || '@test.thuluth.app', 'viewer', encode(extensions.digest(v_hid::text, 'sha256'), 'hex'), p_owner);
+  insert into public.budget_profiles (household_id, monthly_amount_minor, currency)
+  values (v_hid, 6000000, 'PKR');
+  insert into public.consents (user_id, household_id, kind, version)
+  values (p_owner, v_hid, 'child_data', '2026-10');
+  insert into public.ai_usage (user_id, household_id, route_key, provider, model)
+  values (p_owner, v_hid, 'chat.free', 'anthropic', 'claude-haiku-4-5-20251001');
+  insert into public.analytics_events (user_id, household_id, event, occurred_at)
+  values (p_owner, v_hid, 'household.created', now());
+  -- audit_log rows are written by the audit triggers above
+  perform set_config('app.bypass_entitlements', 'off', true);
+  insert into tests.rls_fixture_coverage (table_name)
+  select t from unnest(array['household_members','household_invitations','family_members','budget_profiles',
+                             'consents','audit_log','ai_usage','analytics_events']) t
+  on conflict do nothing;
+  return v_hid;
+end $$;
+
 grant usage on schema tests to authenticated, anon, service_role;
+grant select on tests.rls_fixture_coverage to authenticated, anon, service_role;
 grant execute on all functions in schema tests to authenticated, anon, service_role;
 
 select plan(1);

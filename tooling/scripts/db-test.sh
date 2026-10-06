@@ -10,8 +10,8 @@
 #   plain     throwaway vanilla PostgreSQL cluster in a temp dir:
 #             initdb -> tooling/scripts/pg-stubs/supabase-stubs.sql (auth schema, roles, JWT
 #             helpers) -> supabase/migrations/*.sql in order -> seeds in config.toml order ->
-#             pg_prove. Needs PostgreSQL server binaries (16+), pg_cron, pgTAP and pg_prove
-#             (Debian/Ubuntu: postgresql-16 postgresql-16-cron postgresql-16-pgtap
+#             pg_prove. Needs PostgreSQL server binaries (16+), pg_cron, pgvector, pgTAP and pg_prove
+#             (Debian/Ubuntu: postgresql-16 postgresql-16-cron postgresql-16-pgvector postgresql-16-pgtap
 #             libtap-parser-sourcehandler-pgtap-perl).
 #
 # Other env:

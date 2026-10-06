@@ -50,14 +50,28 @@ jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
-enable_anonymous_sign_ins = false
+enable_anonymous_sign_ins = false         # never on (S1-15): every session is a real, attested user
 minimum_password_length = 12            # passwords are disabled for users; this guards admin accounts
 
+# Abuse controls (S1-15, 01 FR-AUTH-09, 11 section 9). GoTrue limits below are per IP per hour
+# (email_sent is project-wide); the per-email OTP limits live in the auth-otp edge function on top
+# of public.consume_rate_limit. Staging and production set the same values in the dashboard.
 [auth.rate_limit]
 email_sent = 30                          # per hour, project-wide on the local stack
 token_refresh = 150
 sign_in_sign_ups = 30
 token_verifications = 30
+
+# CAPTCHA on OTP request (S1-15, 01 FR-AUTH-09). Off on the local stack so tests and the simulator
+# can sign in; enabled on staging and production with the hCaptcha secret from the environment.
+# Deviation: 10-supabase-structure.md section 5 names Turnstile; the PRD and Sprint 1 plan use
+# hCaptcha (the client widget, @hcaptcha/react-native-hcaptcha, sends captchaToken with signInWithOtp).
+# Owner action: create the hCaptcha site, set HCAPTCHA_SECRET for staging/prod, give the site key
+# to the mobile app (EXPO_PUBLIC_HCAPTCHA_SITE_KEY).
+[auth.captcha]
+enabled = false
+provider = "hcaptcha"
+secret = "env(HCAPTCHA_SECRET)"
 
 [auth.email]
 enable_signup = true
@@ -104,3 +118,5 @@ deno_version = 2
 # without an index.ts). JWT modes per function are listed in docs/10-supabase-structure.md section 9.1.
 [functions.ai-smoke]
 verify_jwt = true           # Sprint 0 smoke function (00 section 11); removed when ai-chat ships
+[functions.household-invite]
+verify_jwt = true

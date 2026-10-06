@@ -58,3 +58,9 @@ export function captureException(
 }
 
 export { Sentry };
+
+/** User id only, never email (11 §9 step 3). No-op when Sentry is disabled. */
+export function setSentryUser(userId: string | null): void {
+  if (!enabled) return;
+  Sentry.setUser(userId ? { id: userId } : null);
+}

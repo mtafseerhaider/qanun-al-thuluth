@@ -1,0 +1,39 @@
+# Subflow: from the Welcome screen, request an email code for EMAIL and enter it.
+# Inputs (env): EMAIL, INBOX_URL (Mailpit API base) or OTP (fixed test code).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: sign in with email OTP (subflow)
+---
+- extendedWaitUntil:
+    visible:
+      id: 'auth-welcome.screen'
+    timeout: 20000
+- tapOn:
+    id: 'auth-welcome.get-started-button'
+- extendedWaitUntil:
+    visible:
+      id: 'auth-login.screen'
+    timeout: 10000
+- tapOn:
+    id: 'auth-login.email-input'
+- inputText: ${EMAIL}
+- hideKeyboard
+- tapOn:
+    id: 'auth-login.submit-button'
+- extendedWaitUntil:
+    visible:
+      id: 'auth-otp-verify.screen'
+    timeout: 15000
+- assertVisible:
+    id: 'auth-otp-verify.countdown'
+# Give the mail a moment to land in the test inbox.
+- waitForAnimationToEnd:
+    timeout: 3000
+- runScript:
+    file: ../scripts/fetch-otp.js
+    env:
+      EMAIL: ${EMAIL}
+      INBOX_URL: ${INBOX_URL || "http://127.0.0.1:54324"}
+      OTP: ${OTP || ""}
+- tapOn:
+    id: 'auth-otp-verify.code-input'
+- inputText: ${output.otp}

@@ -12,6 +12,7 @@ jest.mock('react-native-nitro-modules', () => ({
 jest.mock('@sentry/react-native', () => ({
   init: jest.fn(),
   captureException: jest.fn(),
+  setUser: jest.fn(),
   wrap: <T>(component: T) => component,
   reactNavigationIntegration: jest.fn(() => ({ registerNavigationContainer: jest.fn() })),
 }));
