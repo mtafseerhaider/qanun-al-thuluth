@@ -10,7 +10,8 @@
     "./db/database.types": "./src/db/database.types.ts",
     "./constants/*": "./src/constants/*.ts",
     "./utils/*": "./src/utils/*.ts",
-    "./domain/*": "./src/domain/*.ts"
+    "./domain/*": "./src/domain/*.ts",
+    "./intake/*": "./src/intake/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
