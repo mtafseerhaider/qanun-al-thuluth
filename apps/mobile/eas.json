@@ -33,6 +33,15 @@
       "env": { "APP_ENV": "staging", "APP_VARIANT": "preview" },
       "android": { "buildType": "apk" }
     },
+    "internal": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "internal",
+      "environment": "preview",
+      "autoIncrement": true,
+      "env": { "APP_ENV": "staging", "APP_VARIANT": "preview" },
+      "android": { "buildType": "apk" }
+    },
     "e2e": {
       "extends": "preview",
       "withoutCredentials": true,

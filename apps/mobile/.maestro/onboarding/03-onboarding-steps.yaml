@@ -1,5 +1,5 @@
 # S1-08 to S1-11 / S1-17: onboarding steps 1 to 4 for a new account, then (S2) the intake wizard
-# skipped straight to review and the assessment summary, ending on the Today tab.
+# skipped straight to review and the assessment summary, then (S3) the first plan, ending on Today.
 # Signs up first (same env as auth/02-signup-otp.yaml). Uses testIDs only, so it passes in en and ur.
 appId: ${APP_ID || "app.thuluth.mobile.dev"}
 name: 03 onboarding steps 1-4
@@ -66,8 +66,6 @@ tags:
     direction: DOWN
 - tapOn:
     id: 'assessment.continue'
-- extendedWaitUntil:
-    visible:
-      id: 'tab.today'
-    timeout: 15000
+# Sprint 3: step 6, the first plan, before Today
+- runFlow: _finish-first-plan.yaml
 - takeScreenshot: 03-onboarding-done

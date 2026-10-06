@@ -315,7 +315,5 @@ tags:
     direction: DOWN
 - tapOn:
     id: 'assessment.continue'
-- extendedWaitUntil:
-    visible:
-      id: 'tab.today'
-    timeout: 15000
+# Sprint 3: step 6, the first plan, before Today
+- runFlow: ../onboarding/_finish-first-plan.yaml

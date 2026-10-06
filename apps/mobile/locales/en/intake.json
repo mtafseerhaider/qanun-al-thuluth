@@ -520,7 +520,7 @@
     "errorCode": "Code: {{code}}",
     "recommendations": "Key guidance for your family",
     "disclaimer": "Thuluth offers general nutrition education, not medical advice. Please speak to your doctor about health conditions.",
-    "continue": "Continue",
+    "continue": "Create our first week",
     "notRight": "Something's not right",
     "energyRange": "Around {{low}} to {{high}} kcal a day.",
     "tdee": "Daily energy use (TDEE): {{kcal}} kcal",

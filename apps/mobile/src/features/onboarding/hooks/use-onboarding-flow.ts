@@ -22,7 +22,7 @@ type Nav = NativeStackNavigationProp<OnboardingStackParamList>;
 
 /**
  * Step navigation for onboarding: records completion (persisted), moves to the next route, and
- * after the last step (the assessment summary until plan generation lands in Sprint 3) sets
+ * after the last step (step 6, the first plan, once a plan exists) sets
  * `users.onboarding_completed_at` so the root navigator switches to Main (FR-ONB-02).
  */
 export function useOnboardingFlow(step: Exclude<OnboardingStep, 'done'>) {

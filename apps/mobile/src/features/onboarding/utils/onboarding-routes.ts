@@ -11,6 +11,7 @@ type Route = Extract<
   | 'OnboardingMembers'
   | 'IntakeWizard'
   | 'AssessmentSummary'
+  | 'FirstPlanGeneration'
 >;
 
 export const ROUTE_FOR_STEP: Record<Exclude<OnboardingStep, 'done'>, Route> = {
@@ -21,9 +22,10 @@ export const ROUTE_FOR_STEP: Record<Exclude<OnboardingStep, 'done'>, Route> = {
   members: 'OnboardingMembers',
   intake: 'IntakeWizard',
   assessment: 'AssessmentSummary',
+  first_plan: 'FirstPlanGeneration',
 };
 
 /** Where a resumed onboarding opens (FR-ONB-01). `done` resumes on the last step until the server agrees. */
 export function routeForStep(step: OnboardingStep): Route {
-  return step === 'done' ? 'AssessmentSummary' : ROUTE_FOR_STEP[step];
+  return step === 'done' ? 'FirstPlanGeneration' : ROUTE_FOR_STEP[step];
 }

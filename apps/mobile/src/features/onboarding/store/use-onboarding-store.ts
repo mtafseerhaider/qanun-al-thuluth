@@ -7,7 +7,7 @@ import { resetters } from '@/stores/create-store';
 /**
  * Resumable onboarding (09 §5.3, FR-ONB-01). Steps 1 to 4 (welcome, philosophy, household, members)
  * with the consent step before any health data, then step 5 intake and the assessment summary
- * (Sprint 2). The intake wizard keeps its own per-member position in the intake draft store. The server flag
+ * (Sprint 2), and step 6 the first plan (Sprint 3). The intake wizard keeps its own per-member position in the intake draft store. The server flag
  * `users.onboarding_completed_at` is the source of truth for "done"; this store only resumes the flow
  * at the last incomplete step after the app is killed or reloaded for an RTL switch.
  */
@@ -19,6 +19,7 @@ export const ONBOARDING_STEPS = [
   'members',
   'intake',
   'assessment',
+  'first_plan',
 ] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number] | 'done';
 
@@ -44,6 +45,18 @@ export interface OnboardingState {
   /** True when the user joined a household by invitation and skips creating one (FR-AUTH-08). */
   joinedByInvite: boolean;
   startedAt: number | null;
+  /**
+   * The first plan being generated (step 6), so a killed app resumes watching the same plan instead
+   * of starting another. Ids and timings only, no health data.
+   */
+  firstPlan: FirstPlanJob | null;
+}
+
+export interface FirstPlanJob {
+  mealPlanId: string;
+  pollAfterMs: number | null;
+  startedAt: number;
+  mode: 'full' | 'template_personalize' | null;
 }
 
 export interface OnboardingActions {
@@ -53,6 +66,7 @@ export interface OnboardingActions {
   setHouseholdDraft(draft: HouseholdDraft | null): void;
   setCreatedHouseholdId(id: string): void;
   setJoinedByInvite(joined: boolean): void;
+  setFirstPlan(job: FirstPlanJob | null): void;
   reset(): void;
 }
 
@@ -64,6 +78,7 @@ export const initialOnboarding: OnboardingState = {
   createdHouseholdId: null,
   joinedByInvite: false,
   startedAt: null,
+  firstPlan: null,
 };
 
 /** The step after `step`; the household step is skipped for users who joined by invitation. */
@@ -79,7 +94,7 @@ export function nextStep(
 }
 
 export function previousStep(step: OnboardingStep): OnboardingStep | null {
-  if (step === 'done') return 'assessment';
+  if (step === 'done') return 'first_plan';
   const i = ONBOARDING_STEPS.indexOf(step);
   return i > 0 ? (ONBOARDING_STEPS[i - 1] ?? null) : null;
 }
@@ -89,9 +104,9 @@ export function stepNumber(step: OnboardingStep): number {
   return step === 'done' ? ONBOARDING_STEPS.length : ONBOARDING_STEPS.indexOf(step) + 1;
 }
 
-export const ONBOARDING_STORE_VERSION = 1;
+export const ONBOARDING_STORE_VERSION = 2;
 
-/** Pure migration (09 §6.3); v1 is the first shipped shape. Unknown steps resume at welcome. */
+/** Pure migration (09 §6.3). v2 adds `firstPlan` (null for v1). Unknown steps resume at welcome. */
 export function migrateOnboarding(persisted: unknown, _version: number): OnboardingState {
   const p = { ...initialOnboarding, ...(persisted as Partial<OnboardingState> | undefined) };
   const valid = (s: unknown): s is OnboardingStep =>
@@ -100,6 +115,7 @@ export function migrateOnboarding(persisted: unknown, _version: number): Onboard
     ...p,
     currentStep: valid(p.currentStep) ? p.currentStep : 'welcome',
     completedSteps: Array.isArray(p.completedSteps) ? p.completedSteps.filter(valid) : [],
+    firstPlan: p.firstPlan ?? null,
   };
 }
 
@@ -123,6 +139,7 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
         setHouseholdDraft: (householdDraft) => set({ householdDraft }),
         setCreatedHouseholdId: (createdHouseholdId) => set({ createdHouseholdId }),
         setJoinedByInvite: (joinedByInvite) => set({ joinedByInvite }),
+        setFirstPlan: (firstPlan) => set({ firstPlan }),
         reset: () => set(initialOnboarding),
       }),
       {
@@ -138,6 +155,7 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
           createdHouseholdId,
           joinedByInvite,
           startedAt,
+          firstPlan,
         }) => ({
           userId,
           currentStep,
@@ -146,6 +164,7 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
           createdHouseholdId,
           joinedByInvite,
           startedAt,
+          firstPlan,
         }),
       },
     ),

@@ -1,0 +1,83 @@
+{
+  "loading": "Loading your plan…",
+  "disclaimer": "Plans are general guidance, not medical advice.",
+  "status": {
+    "draft": "Ready to start",
+    "generating": "Being prepared",
+    "active": "Active",
+    "completed": "Finished",
+    "archived": "Earlier",
+    "failed": "Not finished"
+  },
+  "kinds": {
+    "standard": "Weekly plan",
+    "ramadan": "Ramadan plan",
+    "growth": "Growth plan",
+    "weight_management": "Weight plan",
+    "custom": "Custom plan"
+  },
+  "plans": {
+    "title": "Meal plans",
+    "new": "New plan",
+    "replaceConfirm": "Your current plan will be replaced by the new one. Logged meals stay in your history.",
+    "replace": "Create new plan",
+    "cancel": "Keep current plan",
+    "emptyTitle": "No plans yet",
+    "emptyBody": "Create a plan and we'll build a week around your family.",
+    "active": "This week",
+    "dates": "{{from}} to {{to}}",
+    "version": "Version {{version}}",
+    "history": "Earlier plans",
+    "openA11y": "Open {{title}}"
+  },
+  "detail": {
+    "week": "Week {{number}}",
+    "theme": "This week's focus",
+    "dayView": "Day",
+    "weekView": "Week",
+    "noMeals": "No meals planned for this day.",
+    "why": "Why this plan",
+    "showHint": "Shows the reasons",
+    "hideHint": "Hides the reasons"
+  },
+  "generation": {
+    "title": "Your first week",
+    "body": "We're putting together meals that fit everyone at your table.",
+    "close": "Close",
+    "offlineTitle": "You're offline",
+    "offlineBody": "Creating a plan needs a connection. Your answers are saved.",
+    "errorCode": "Reference: {{code}}",
+    "starting": "Starting…",
+    "create": "Create our first week",
+    "failedTitle": "We couldn't finish this plan",
+    "failedBody": "Nothing is lost. You can try again or start from a simple family plan we adjust for you.",
+    "clinicianTitle": "Please check with your doctor first",
+    "retry": "Try again",
+    "template": "Use a simple starter plan",
+    "readyTitle": "Your week is ready",
+    "templateNote": "This is a starter plan adjusted for your family. You can swap any meal.",
+    "seeToday": "See today",
+    "startPlan": "Start this plan",
+    "timeout": "This is taking longer than usual. You can keep waiting or use a simple starter plan.",
+    "stageA11y": "Now: {{stage}}",
+    "tipTitle": "While you wait",
+    "nextTip": "Next tip",
+    "stages": {
+      "reading": "Reading your family profile",
+      "targets": "Working out gentle targets",
+      "choosing": "Choosing meals",
+      "adapting": "Adapting for each person",
+      "checking": "Safety checks",
+      "saving": "Saving your week"
+    },
+    "tips": {
+      "water": "Water 20 to 30 minutes before a meal, sips during, and freely after.",
+      "plate": "Half the plate vegetables and fruit, a quarter protein, a quarter grains.",
+      "pace": "Taking about 20 minutes over a meal helps you notice when you've had enough.",
+      "children": "Children decide how much; you decide what and when.",
+      "bismillah": "Starting with Bismillah and eating together makes a meal calmer.",
+      "seconds": "Children can always have seconds when they're still hungry."
+    },
+    "titleLater": "Your new plan"
+  }
+}

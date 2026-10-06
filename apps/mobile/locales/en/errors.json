@@ -33,6 +33,15 @@
     "INVITE_EMAIL_MISMATCH": "This invitation was sent to a different email address.",
     "ALREADY_MEMBER": "This person is already a member of the household.",
     "UNAUTHENTICATED": "Please sign in to continue.",
+    "PREMIUM_REQUIRED": "This is part of Premium.",
+    "QUOTA_EXCEEDED": "You've reached today's limit.",
+    "AI_UNAVAILABLE": "Our assistant is taking a break. Please try again in a minute.",
+    "AI_TIMEOUT": "This is taking longer than usual. Please try again in a minute.",
+    "AI_OUTPUT_INVALID": "We couldn't put that together this time. Please try again.",
+    "SAFETY_ESCALATION": "Let's pause here. This needs a doctor's advice.",
+    "FEATURE_DISABLED": "This is paused for a short while. Please try again later.",
+    "PLAN_ALREADY_ACTIVE": "You already have an active plan this week.",
+    "PLAN_NOT_ADJUSTABLE": "This plan can't be changed any more.",
     "UNKNOWN": "Something went wrong. Please try again."
   }
 }

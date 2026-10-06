@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { BootScreen } from '@/features/auth';
 import { AcceptInviteScreen, InviteCaregiverScreen } from '@/features/household';
 import { SourceDetailSheet } from '@/features/knowledge';
+import { SwapMealSheet } from '@/features/meals';
+import { PlanGenerationProgressScreen } from '@/features/plan';
 import { useSessionStore, type SessionStatus } from '@/stores/use-session-store';
 
 import { AuthStack } from './auth-stack';
@@ -74,11 +76,27 @@ export function RootNavigator() {
             }}
           />
           {branch === 'Main' ? (
-            <Stack.Screen
-              name="InviteCaregiverModal"
-              component={InviteCaregiverScreen}
-              options={{ title: t('screens.inviteCaregiver') }}
-            />
+            <>
+              <Stack.Screen
+                name="InviteCaregiverModal"
+                component={InviteCaregiverScreen}
+                options={{ title: t('screens.inviteCaregiver') }}
+              />
+              <Stack.Screen
+                name="PlanGenerationProgress"
+                component={PlanGenerationProgressScreen}
+                options={{ title: t('screens.planGenerationProgress'), gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="SwapMealSheet"
+                component={SwapMealSheet}
+                options={{
+                  title: t('screens.swapMeal'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.7, 1],
+                }}
+              />
+            </>
           ) : null}
         </Stack.Group>
       ) : null}

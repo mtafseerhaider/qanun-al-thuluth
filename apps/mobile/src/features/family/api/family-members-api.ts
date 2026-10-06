@@ -25,10 +25,11 @@ export type FamilyMember = Pick<
   | 'activity_level'
   | 'life_stage'
   | 'sort_order'
+  | 'special_modules'
 >;
 
 const COLUMNS =
-  'id, household_id, linked_user_id, name, date_of_birth, sex_at_birth, height_cm, weight_kg, activity_level, life_stage, sort_order';
+  'id, household_id, linked_user_id, name, date_of_birth, sex_at_birth, height_cm, weight_kg, activity_level, life_stage, sort_order, special_modules';
 
 export async function listFamilyMembers(householdId: string): Promise<FamilyMember[]> {
   const { data, error } = await client()

@@ -31,11 +31,24 @@ export const linking: LinkingOptions<RootStackParamList> = {
     screens: {
       Main: {
         screens: {
-          TodayTab: { screens: { Dashboard: 'today' } },
-          PlanTab: { screens: { MealPlans: 'plans' } },
+          TodayTab: { screens: { Dashboard: 'today', MealDetail: 'meal/:dailyMealId' } },
+          PlanTab: {
+            screens: {
+              MealPlans: 'plans',
+              MealPlanDetail: 'plan/:mealPlanId',
+              RecipeDetail: 'recipe/:recipeId',
+            },
+          },
           ChatTab: { screens: { ChatThread: 'chat/:sessionId?' } },
           FamilyTab: { screens: { FamilyManagement: 'family' } },
-          MoreTab: { screens: { MoreHome: 'more', Debug: 'debug', Settings: 'settings' } },
+          MoreTab: {
+            screens: {
+              MoreHome: 'more',
+              Debug: 'debug',
+              Settings: 'settings',
+              AlphaFeedback: 'feedback',
+            },
+          },
         },
       },
     },

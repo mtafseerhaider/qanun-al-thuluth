@@ -18,6 +18,13 @@
     "settingsProfile": "Profile",
     "acceptInvite": "Invitation",
     "inviteCaregiver": "Invite someone",
-    "sourceDetail": "Sources"
+    "sourceDetail": "Sources",
+    "mealPlanDetail": "Plan",
+    "mealDetail": "Meal",
+    "recipeDetail": "Recipe",
+    "planGenerationProgress": "New plan",
+    "swapMeal": "Swap meal",
+    "alphaFeedback": "Feedback",
+    "firstPlan": "Your first week"
   }
 }

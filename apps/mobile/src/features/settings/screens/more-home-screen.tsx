@@ -47,6 +47,18 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
       <Card>
         <LanguageToggle />
       </Card>
+      <Card>
+        <Text variant="overline" tone="muted">
+          {t('settings:feedback.title')}
+        </Text>
+        <Text tone="muted">{t('settings:feedback.body')}</Text>
+        <Button
+          label={t('settings:feedback.open')}
+          variant="secondary"
+          onPress={() => navigation.navigate('AlphaFeedback')}
+          testID="settings-more-home.feedback-button"
+        />
+      </Card>
       {debugEnabled || isDevGuest ? (
         <Card>
           <Text variant="overline" tone="muted">

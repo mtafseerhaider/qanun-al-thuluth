@@ -28,6 +28,13 @@ export const ROUTES = {
   FamilyManagement: 'FamilyManagement',
   MoreHome: 'MoreHome',
   Debug: 'Debug',
+  FirstPlanGeneration: 'FirstPlanGeneration',
+  MealPlanDetail: 'MealPlanDetail',
+  MealDetail: 'MealDetail',
+  RecipeDetail: 'RecipeDetail',
+  PlanGenerationProgress: 'PlanGenerationProgress',
+  SwapMealSheet: 'SwapMealSheet',
+  AlphaFeedback: 'AlphaFeedback',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

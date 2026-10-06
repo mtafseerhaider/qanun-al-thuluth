@@ -205,3 +205,32 @@ export async function fetchRecommendation(
     evidence,
   };
 }
+
+/** Recommendation ids linked to any of these Islamic sources (recipe "Related guidance", S3-09). */
+export async function fetchRecommendationIdsForSources(
+  sourceIds: readonly string[],
+): Promise<string[]> {
+  if (sourceIds.length === 0) return [];
+  const { data, error } = await client()
+    .from('recommendation_evidence')
+    .select('recommendation_id')
+    .in('islamic_source_id', [...sourceIds]);
+  if (error) throw toDbAppError(error);
+  return [
+    ...new Set(
+      ((data ?? []) as Array<{ recommendation_id: string }>).map((r) => r.recommendation_id),
+    ),
+  ];
+}
+
+/** Ids of verified recommendations in a stable order (Today's tip of the day rotates through them). */
+export async function fetchVerifiedRecommendationIds(limit = 60): Promise<string[]> {
+  const { data, error } = await client()
+    .from('recommendations')
+    .select('id')
+    .eq('review_status', 'verified')
+    .order('code', { ascending: true })
+    .limit(limit);
+  if (error) throw toDbAppError(error);
+  return ((data ?? []) as Array<{ id: string }>).map((r) => r.id);
+}

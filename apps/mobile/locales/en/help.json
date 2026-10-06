@@ -1,0 +1,19 @@
+{
+  "feedback": {
+    "title": "Alpha feedback",
+    "body": "Thanks for trying an early version of Thuluth. What worked, what didn't, what confused you?",
+    "category": "What is it about?",
+    "categories": {
+      "bug": "Something broke",
+      "idea": "An idea",
+      "content": "Food or guidance content",
+      "other": "Something else"
+    },
+    "message": "Your feedback",
+    "messageHint": "Please don't include health details about your family.",
+    "send": "Send feedback",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your feedback is saved on this phone and will reach the team in a later update.",
+    "privacy": "Feedback is stored encrypted on this phone for now. Nothing is sent until the feedback service is ready."
+  }
+}

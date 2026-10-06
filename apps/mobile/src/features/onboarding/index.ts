@@ -5,6 +5,7 @@ export { OnboardingHouseholdScreen } from './screens/onboarding-household-screen
 export { OnboardingMembersScreen } from './screens/onboarding-members-screen';
 export { OnboardingIntakeScreen } from './screens/onboarding-intake-screen';
 export { OnboardingAssessmentScreen } from './screens/onboarding-assessment-screen';
+export { OnboardingFirstPlanScreen } from './screens/onboarding-first-plan-screen';
 export {
   ONBOARDING_STEPS,
   useOnboardingStore,

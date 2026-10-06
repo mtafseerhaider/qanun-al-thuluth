@@ -18,6 +18,13 @@
     "settingsProfile": "پروفائل",
     "acceptInvite": "دعوت",
     "inviteCaregiver": "کسی کو مدعو کریں",
-    "sourceDetail": "حوالہ جات"
+    "sourceDetail": "حوالہ جات",
+    "mealPlanDetail": "پلان",
+    "mealDetail": "کھانا",
+    "recipeDetail": "ترکیب",
+    "planGenerationProgress": "نیا پلان",
+    "swapMeal": "کھانا بدلیں",
+    "alphaFeedback": "رائے",
+    "firstPlan": "آپ کا پہلا ہفتہ"
   }
 }

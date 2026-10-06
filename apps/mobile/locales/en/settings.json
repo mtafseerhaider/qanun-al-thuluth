@@ -47,5 +47,10 @@
     "confirmBody": "Your family data stays safe on the server. Anything saved only on this device is removed.",
     "cancel": "Cancel",
     "confirm": "Sign out"
+  },
+  "feedback": {
+    "title": "Early version",
+    "body": "Tell us what works and what doesn't.",
+    "open": "Send feedback"
   }
 }

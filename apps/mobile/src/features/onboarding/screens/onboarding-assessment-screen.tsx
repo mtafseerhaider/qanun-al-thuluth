@@ -10,9 +10,9 @@ import { useOnboardingFlow } from '../hooks/use-onboarding-flow';
 import { useOnboardingStore } from '../store/use-onboarding-store';
 
 /**
- * O7 Assessment Summary inside onboarding (02 §7.4.1, 24 S2-15). Until first-plan generation lands
- * (Sprint 3), Continue completes onboarding; the intake drafts are cleared once the server has
- * everything (08 §7.3).
+ * O7 Assessment Summary inside onboarding (02 §7.4.1, 24 S2-15). "Create our first week" moves to
+ * step 6 (First plan, S3-07), which completes onboarding and clears the intake drafts once a plan
+ * exists (08 §7.3).
  */
 export function OnboardingAssessmentScreen() {
   const flow = useOnboardingFlow('assessment');
@@ -29,12 +29,7 @@ export function OnboardingAssessmentScreen() {
 
   return (
     <AssessmentSummaryScreen
-      onContinue={() =>
-        flow.goNext({
-          memberCount: members.data?.length ?? 0,
-          onFinished: () => useIntakeDraftStore.getState().reset(),
-        })
-      }
+      onContinue={() => flow.goNext({ memberCount: members.data?.length ?? 0 })}
       onEdit={onEdit}
       continuing={flow.finishing}
       continueError={flow.finishError}

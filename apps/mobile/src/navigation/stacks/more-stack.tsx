@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { DebugScreen, useDebugMenuEnabled } from '@/features/debug';
+import { AlphaFeedbackScreen } from '@/features/help';
 import { MoreHomeScreen, SettingsProfileScreen, SettingsScreen } from '@/features/settings';
 
 import type { MoreStackParamList } from '../types';
@@ -23,6 +24,11 @@ export function MoreStack() {
         name="SettingsProfile"
         component={SettingsProfileScreen}
         options={{ title: t('screens.settingsProfile') }}
+      />
+      <Stack.Screen
+        name="AlphaFeedback"
+        component={AlphaFeedbackScreen}
+        options={{ title: t('screens.alphaFeedback') }}
       />
       {debugEnabled ? (
         <Stack.Screen
