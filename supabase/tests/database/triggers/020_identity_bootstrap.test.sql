@@ -33,7 +33,7 @@ select is((select role from public.household_members where household_id = '22222
   'owner'::public.household_role, 'the creator gets an owner membership');
 select throws_ok(
   format($$insert into public.households (owner_user_id, name) values (%L, 'Second')$$, :'owner'),
-  'P0001', 'ENTITLEMENT_HOUSEHOLD_LIMIT', 'free owner cannot create a second household');
+  'P0001', 'LIMIT_REACHED:households', 'free owner cannot create a second household');
 select tests.clear_authentication();
 
 insert into public.subscriptions (user_id, tier, status, product_id, store, rc_app_user_id, current_period_end)

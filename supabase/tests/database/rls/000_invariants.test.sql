@@ -35,6 +35,7 @@ select is(
    join pg_namespace n on n.oid = c.relnamespace
    join pg_attribute a on a.attrelid = c.oid and a.attname = 'updated_at' and not a.attisdropped
    where n.nspname = 'public' and c.relkind in ('r','p') and not c.relispartition
+     and c.relname <> 'rate_limit_buckets'   -- 05 22.11: consume_rate_limit sets updated_at itself (hot path, no trigger)
      and not exists (
        select 1 from pg_trigger t
        where t.tgrelid = c.oid and not t.tgisinternal

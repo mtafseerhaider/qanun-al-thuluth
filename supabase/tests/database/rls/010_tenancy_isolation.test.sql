@@ -91,9 +91,9 @@ select tests.authenticate_as(:'owner_a');
 select is(
   tests.affected_rows(format($q$update public.households set name = 'Renamed' where id = %L$q$, :'hid_a')),
   1::bigint, 'owner updates household settings');
-select lives_ok(
+select throws_ok(
   format($$insert into public.household_members (household_id, user_id, role) values (%L, %L, 'viewer')$$, :'hid_a', :'newbie'),
-  'owner adds a viewer');
+  '42501', null, 'owner cannot insert memberships directly (Sprint 1: only household-invite via accept_household_invitation, 06 section 3.1)');
 select throws_ok(
   format($$insert into public.household_members (household_id, user_id, role) values (%L, %L, 'owner')$$, :'hid_a', :'outsider'),
   '42501', null, 'owner cannot add a second owner');
