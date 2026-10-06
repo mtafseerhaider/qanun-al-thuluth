@@ -73,7 +73,7 @@ The names below are every variable `app.config.ts` reads (checked against the co
 | `EXPO_PUBLIC_RC_ANDROID_KEY` | Plain text | Android public key for `.dev` | for `.staging` | for `app.thuluth.mobile` |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Plain text | dev web client id | staging | prod ([auth-providers.md](auth-providers.md)) |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Plain text | dev iOS client id | staging | prod |
-| `EXPO_PUBLIC_HCAPTCHA_SITE_KEY` | Plain text | dev hCaptcha site key | staging site key | prod site key ([auth-providers.md](auth-providers.md) step 4) |
+| `EXPO_PUBLIC_HCAPTCHA_SITE_KEY` | Plain text | leave empty unless CAPTCHA is on for `thuluth-dev` | staging site key | prod site key ([auth-providers.md](auth-providers.md) step 4) |
 | `SENTRY_AUTH_TOKEN` | **Secret** | optional | yes | yes ([sentry.md](sentry.md)) |
 
 Example for one value:
@@ -168,7 +168,7 @@ eas submit --platform android --profile production --latest
 
 - iOS: the first time, EAS asks for the App Store Connect app id (the `ascAppId`, [apple-app-store.md](apple-app-store.md) step 4) and uses the API key from step 6. The build appears in TestFlight after Apple's processing (10 to 30 minutes).
 - Android: the very first upload must be done by hand in the Play Console ([google-play.md](google-play.md) step 3). After that EAS uploads with the service account.
-- Note: the `submit` profiles in `eas.json` are empty (`"production": {}`), so `eas submit` asks questions and cannot run in CI with `--non-interactive`. Before automating submission (20 §7), add `ios.ascAppId`, and `android.track` (`internal`) and `android.releaseStatus` (`draft`) to the `production` submit profile in a PR. Do not add `serviceAccountKeyPath` unless the path is git-ignored: `.gitignore` does not ignore a `secrets/` folder today, although 19 §3 says it does. Keeping the key in EAS credentials (step 6) avoids the file entirely.
+- Note: the `submit` profiles in `eas.json` are empty (`"production": {}`), so `eas submit` asks questions and cannot run in CI with `--non-interactive`. Before automating submission (20 §7), add `ios.ascAppId`, and `android.track` (`internal`) and `android.releaseStatus` (`draft`) to the `production` submit profile in a PR. If you add `serviceAccountKeyPath`, keep the file under `secrets/`, which `.gitignore` ignores (19 §3). Keeping the key in EAS credentials (step 6) avoids the file entirely.
 
 ### 9. OTA updates and channel pinning
 
@@ -181,7 +181,7 @@ eas update --branch staging --environment preview --message "v1.0.1+ota.1: fix c
 eas update --branch production --environment production --message "v1.0.1+ota.1: fix copy" --rollout-percentage 10
 ```
 
-Why this matters: the values the app reads (`Constants.expoConfig.extra` in `src/lib/env.ts`) come from the update when an update is running. An update published without a variable switches that feature off on every phone that downloads it. Note: `deploy-dev.yml` publishes to the `development` channel with only `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_SENTRY_DSN` (from GitHub variables) and no `--environment`, so every dev OTA update drops the OneSignal, RevenueCat and Google ids. Until that workflow is fixed (add `--environment development`, or pass the other variables), expect push, purchases and Google sign-in to be off on dev builds after an update.
+Why this matters: the values the app reads (`Constants.expoConfig.extra` in `src/lib/env.ts`) come from the update when an update is running. An update published without a variable switches that feature off on every phone that downloads it. `deploy-dev.yml` publishes to the `development` channel with `--environment development`, so keep every variable in the EAS `development` environment: a missing one is missing from every dev update.
 
 Rollout, rollback and channel pinning on production run through `rollback-prod.yml` (Actions > **Production rollout and rollback**, actions `advance-ota`, `republish-ota`, `pin-channel`). The commands and when to use them are in [`launch-runbook.md`](../ops/launch-runbook.md) §5 and §6. Never publish an update to `production` during the iftar window (17:00 to 20:00 PKT in Ramadan).
 
@@ -229,7 +229,7 @@ npx expo config --type public | grep -E 'bundleIdentifier|package|projectId'
 |---|---|---|
 | `eas build` says the project is not configured, or asks to create a new project | `EAS_PROJECT_ID` is not exported in the shell (`app.config.ts` reads it from the environment) | `export EAS_PROJECT_ID=<eas-project-id>` and run again |
 | The app starts but nothing loads, sign-in does nothing | The build had no `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` (the client is null and features degrade, `src/lib/supabase/client.ts`) | Check the build page's environment variables; fix the EAS environment and rebuild, or publish an update with `--environment` |
-| Push or purchases stopped working on dev phones after a merge to `main` | `deploy-dev.yml` published an update without those variables (step 9) | Publish `eas update --branch development --environment development`; fix the workflow |
+| Push or purchases stopped working on dev phones after a merge to `main` | the EAS `development` environment lacks those variables, so `deploy-dev.yml` published an update without them (step 9) | Add them to the EAS `development` environment and run **Deploy dev** again |
 | An update never reaches the phones | Runtime version (fingerprint) differs: the update was built from code with native changes | Make a new store or internal build; updates only reach binaries with the same fingerprint |
 | iOS build fails on the provisioning profile after adding OneSignal | The App ID lacks Push Notifications or App Groups | [apple-app-store.md](apple-app-store.md) step 2, then `eas credentials` > remove the profile and build again |
 | Source maps are not uploaded (Sentry shows minified stacks) | `SENTRY_AUTH_TOKEN` missing from that EAS environment | [sentry.md](sentry.md) step 4 |

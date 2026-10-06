@@ -222,7 +222,7 @@ update public.users set is_internal = true
 | Database password | 1Password, GitHub environment secret | `<env> SUPABASE_DB_PASSWORD`, `SUPABASE_DB_PASSWORD` |
 | Session pooler URL (postgres role) | 1Password, GitHub environment secret | `<env> SUPABASE_DB_URL`, `SUPABASE_DB_URL` |
 | Project ref | GitHub environment variable | `SUPABASE_PROJECT_REF` |
-| Publishable key | EAS environment variable, GitHub variable | `EXPO_PUBLIC_SUPABASE_ANON_KEY` (EAS), `SUPABASE_PUBLISHABLE_KEY` (GitHub `production`), `EXPO_PUBLIC_SUPABASE_ANON_KEY` (GitHub `development`) |
+| Publishable key | EAS environment variable, GitHub variable | `EXPO_PUBLIC_SUPABASE_ANON_KEY` (EAS), `SUPABASE_PUBLISHABLE_KEY` (GitHub `production`) |
 | API URL | EAS environment variable, GitHub variable | `EXPO_PUBLIC_SUPABASE_URL` (prod: `https://api.thuluth.app`), `API_BASE_URL` (GitHub `production`) |
 | `APP_ENV` | function secret | `APP_ENV` |
 | `app.environment` | database setting | `alter database postgres set app.environment = ...` |

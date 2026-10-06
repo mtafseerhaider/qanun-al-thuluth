@@ -75,7 +75,7 @@ eas env:create --environment production --name EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID 
 
 Use `--environment development` for dev and `--environment preview` for staging. `app.config.ts` turns the iOS client ID into the reversed URL scheme for the Google plugin. This is native configuration, so a **new build** is needed after you set or change `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`. An OTA update is not enough ([`eas-builds.md`](eas-builds.md)).
 
-> **Note (dev OTA updates):** `deploy-dev.yml` publishes dev OTA updates with only `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_SENTRY_DSN`, taken from GitHub variables. An update published that way has no Google client IDs in its config, so the Google button disappears on dev builds after such an update. Report this to the mobile lead ([`github-environments.md`](github-environments.md)).
+Dev OTA updates from `deploy-dev.yml` use `eas update --environment development`, so they carry the Google client IDs from the EAS `development` environment ([`github-environments.md`](github-environments.md)).
 
 ### 4. hCaptcha (keys first, Supabase last)
 
@@ -88,7 +88,7 @@ CAPTCHA protects the email-code request. The app sends a `captchaToken` with `si
    eas env:create --environment production --name EXPO_PUBLIC_HCAPTCHA_SITE_KEY --value <site key> --visibility plaintext
    ```
 
-3. Ship a build made with that variable and with the app's CAPTCHA change ([`eas-builds.md`](eas-builds.md) step 7). Check on a phone that email sign-in still works with CAPTCHA still off in Supabase.
+3. Ship a **new build** made with that variable ([`eas-builds.md`](eas-builds.md) step 7). The CAPTCHA widget adds native modules (`@hcaptcha/react-native-hcaptcha`, `react-native-webview`), so an OTA update cannot add it to an older binary. Check on a phone that email sign-in still works with CAPTCHA still off in Supabase.
 4. Only when that build is the **minimum supported version** (`app.min_supported_version`, [`feature-flags-and-app-config.md`](feature-flags-and-app-config.md)), so every phone that can still sign in sends a token, turn CAPTCHA on in Supabase: **Authentication > Attack Protection**, enable CAPTCHA, choose **hCaptcha**, paste the secret. Do it on staging first, then prod. Never turn it on before that build is the minimum supported version. Even then, a signed-out person on an older build sees a sign-in error rather than the update screen, because the app reads `app.min_supported_version` only after sign-in; so wait until few active installs run older builds.
 5. Test at once: request an email code on the new build (it arrives), and check the store reviewer can still sign in.
 

@@ -63,7 +63,7 @@ Do this for each bundle id in the table above (three App IDs). EAS can create th
 | **App Groups** | Added by `onesignal-expo-plugin` for its notification service extension (group `group.<bundle id>.onesignal`). EAS creates the group and the extension's App ID (`<bundle id>.OneSignalNotificationServiceExtension`) during `eas credentials` or the first build. Let it. |
 | **In-App Purchase** | On by default for every explicit App ID. Leave it on. |
 
-Do not tick anything else (no HealthKit, no iCloud, no Time Sensitive Notifications). Note: the push sender asks for `ios_interruption_level: time_sensitive` on suhoor and iftar reminders (`_shared/integrations/onesignal.ts`), but the app does not request the Time Sensitive Notifications entitlement, so iOS delivers those at the normal level. Adding it is a code change, not a console setting.
+Also tick **Time Sensitive Notifications**: `app.config.ts` requests the entitlement `com.apple.developer.usernotifications.time-sensitive`, so suhoor and iftar reminders (sent with `ios_interruption_level: time_sensitive`, `_shared/integrations/onesignal.ts`) break through Focus. EAS capability sync normally turns it on during the build. Do not tick anything else (no HealthKit, no iCloud).
 
 4. Click **Continue** and **Register**.
 

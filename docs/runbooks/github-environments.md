@@ -66,11 +66,8 @@ Open each environment and use **Add environment secret** and **Add environment v
 | secret | `EXPO_TOKEN` | `shared EXPO_TOKEN` |
 | variable | `SUPABASE_PROJECT_REF` | `<dev-ref>` |
 | variable | `EAS_PROJECT_ID` | the EAS project id |
-| variable | `EXPO_PUBLIC_SUPABASE_URL` | `https://<dev-ref>.supabase.co` |
-| variable | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | the dev publishable key |
-| variable | `EXPO_PUBLIC_SENTRY_DSN` | the `thuluth-mobile` DSN ([`sentry.md`](sentry.md)) |
 
-> **Note:** `deploy-dev.yml` passes only these three `EXPO_PUBLIC_*` values to `eas update`. Dev OTA updates therefore lose `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_ONESIGNAL_APP_ID`, `EXPO_PUBLIC_RC_IOS_KEY` and `EXPO_PUBLIC_RC_ANDROID_KEY`, so Google sign-in, push and purchases stop working on dev builds after an update. Report this to the mobile lead. The workflow would need to pass them, or run `eas update --environment development`.
+`deploy-dev.yml` publishes with `eas update --environment development`, so every `EXPO_PUBLIC_*` value comes from the EAS `development` environment ([`eas-builds.md`](eas-builds.md) step 3), not from GitHub. Keep that EAS environment complete: a variable missing there is missing from every dev update.
 
 **`production-readonly`** (read by the `plan` job of `deploy-prod.yml`)
 
@@ -169,7 +166,7 @@ The tag must look exactly like `v1.2.3`. `v1.0.0-rc.1` is refused. For a beta, u
 | Project ref | all three Supabase ones | `SUPABASE_PROJECT_REF` (variable) |
 | Expo token | `development`, `production` | `EXPO_TOKEN` |
 | API URL and publishable key for the smoke test | `production` | `API_BASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (variables) |
-| Dev app config for OTA | `development` | `EAS_PROJECT_ID`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_SENTRY_DSN` (variables) |
+| EAS project for OTA | `development` | `EAS_PROJECT_ID` (variable; the app's `EXPO_PUBLIC_*` values live in EAS) |
 | Backup | `production-backup` | `GCP_WIF_PROVIDER`, `GCP_BACKUP_SA`, `BACKUP_BUCKET`, `BACKUP_AGE_PUBLIC_KEY` (variables) |
 
 Function runtime secrets (AI keys, RevenueCat, OneSignal, Postmark, Gotenberg) never go into GitHub. They live in Supabase only (20 §11, [`supabase-secrets-and-vault.md`](supabase-secrets-and-vault.md)).
