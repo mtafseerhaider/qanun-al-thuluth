@@ -4953,8 +4953,12 @@ create unique index subscriptions_user_store_entitlement on public.subscriptions
 create index subscriptions_original_txn_idx on public.subscriptions (original_transaction_id) where original_transaction_id is not null;
 
 -- 23.1b has_premium: exclude refunded rows, coach-only entitlements, and (in production only)
--- sandbox purchases, per 17-subscription-architecture.md. app.environment is set per project
--- with: alter database postgres set app.environment = 'production' | 'staging' | 'dev';
+-- sandbox purchases, per 17-subscription-architecture.md. app.environment is set on non-production
+-- projects with: alter database postgres set app.environment = 'development' | 'staging';
+-- prod leaves it unset. As implemented (20261006130100_subscriptions_promos.sql, hardened in
+-- 20261006150500_security_review_hardening.sql) sandbox rows count only when app.environment is
+-- 'local', 'development', 'staging' or 'test' AND the allow_sandbox_premium flag is on; an unset or
+-- unknown value counts as production.
 create or replace function public.has_premium(p_user_id uuid)
 returns boolean
 language sql
@@ -4969,7 +4973,8 @@ as $$
       and s.entitlement = 'premium'
       and s.refunded_at is null
       and (s.environment = 'production'
-           or coalesce(current_setting('app.environment', true), 'dev') <> 'production')
+           or (coalesce(current_setting('app.environment', true), '') in ('local','development','staging','test')
+               and exists (select 1 from public.feature_flags f where f.key = 'allow_sandbox_premium' and f.enabled)))
       and (
         s.status in ('active','in_grace')
         or (s.status = 'cancelled' and s.current_period_end > now())

@@ -77,7 +77,7 @@ enable_anonymous_sign_ins = false
 enable_manual_linking = true            # needed for linkIdentity (section 6)
 
 [auth.rate_limit]
-email_sent = 30                         # emails per hour, project-wide (custom SMTP raises the ceiling)
+email_sent = 1000                       # emails per hour, project-wide (custom SMTP required on hosted)
 token_verifications = 30                # OTP verifications per 5 minutes per IP
 token_refresh = 150                     # refreshes per 5 minutes per IP
 sign_in_sign_ups = 30                   # sign-in/sign-up requests per 5 minutes per IP
@@ -129,6 +129,8 @@ Production email uses a custom SMTP provider with SPF, DKIM and DMARC on `thulut
 ### 3.1.1 Store reviewer account
 
 App Store and Play reviewers cannot read an inbox, so production has one dedicated reviewer account, `reviewer@thuluth.app` (`00-foundations.md` section 11). Supabase test OTPs apply to phone numbers only, so this account signs in with a password: an admin sets it in the `thuluth-prod` dashboard, the login screen reveals a password field only when that exact address is typed, and a Supabase "before user created" Auth hook rejects every password-based sign-up so no other account can use this path. Sprint 0 verifies the hook blocks password sign-up through the public API. The account is a normal user with a sample household and premium through a promotional entitlement (`17-subscription-architecture.md`). Controls: the password is stored in the team password manager and in the review notes only (`22-mvp-roadmap.md` §7.5), the normal `token_verifications` rate limit applies, sign-ins for the address are written to `audit_log`, and the password is rotated after each review cycle. Dev and staging do not enable the password path.
+
+Implementation (`supabase/migrations/20261006160200_auth_signup_guard.sql`): the hook `public.hook_before_user_created(event jsonb)` admits only sign-ups whose provider is `email` (OTP), `google` or `apple`. The hook payload has no password field, so it cannot tell a password sign-up from an OTP sign-up; the password rule is a `before insert or update of encrypted_password, email` trigger on `auth.users` (`private.guard_password_auth_user`) that refuses any password GoTrue (`supabase_auth_admin`) sets on an address other than `reviewer@thuluth.app`, at sign-up and when a passwordless user calls `updateUser({ password })`. GoTrue then answers 500 ("Database error saving new user"). `supabase/config.toml` registers the hook for the local stack only; on hosted projects enable it under Authentication > Hooks > Before User Created.
 
 ### 3.2 Flow
 
@@ -306,7 +308,7 @@ Rules:
 
 - The Apple button uses `AppleAuthentication.AppleAuthenticationButton` (Apple Human Interface Guidelines) and is shown only when `AppleAuthentication.isAvailableAsync()` resolves true.
 - Button order on iOS: Apple, Google, Email. On Android: Google, Email.
-- **Credential revocation:** if a user revokes the app in Apple ID settings, Apple sends a server-to-server notification. v1 handles it passively: the next `signInWithIdToken` fails and the user is signed out on the next refresh failure. Account deletion (section 15) must call Apple's token revocation endpoint if Apple is a linked identity (App Store requirement for apps offering account deletion with Sign in with Apple). That call happens inside `account-delete`. We do not store Apple refresh tokens; instead, at deletion time the app asks the user to re-authenticate with Apple (section 15), which yields a fresh `authorizationCode`. The client sends it to `account-delete`, which exchanges it for a refresh token at Apple's token endpoint and immediately revokes it.
+- **Credential revocation:** if a user revokes the app in Apple ID settings, Apple sends a server-to-server notification. v1 handles it passively: the next `signInWithIdToken` fails and the user is signed out on the next refresh failure. Account deletion (section 15) must call Apple's token revocation endpoint if Apple is a linked identity (App Store requirement for apps offering account deletion with Sign in with Apple). That call happens inside `account-delete`. We do not store Apple refresh tokens; instead, at deletion time the app asks the user to re-authenticate with Apple (section 15), which yields a fresh `authorizationCode`. The client sends it to `account-delete`, which exchanges it for a refresh token at Apple's token endpoint and immediately revokes it. **Status: not implemented yet.** `account-delete` accepts the code and has an optional `revokeApple` dependency, but nothing wires it up (no Apple key or client secret is read), so deletion logs `apple_revoke_not_configured` and the Apple grant is not revoked. Open item before App Store submission; see `docs/runbooks/auth-providers.md`.
 
 ```mermaid
 sequenceDiagram

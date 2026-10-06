@@ -141,7 +141,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
 | `LIMIT_REACHED` | 409 | No | Tier count limit (`details.resource`: `households` or `family_members`) |
 | `CONSENT_REQUIRED` | 403 | After consent | `details.consents`: missing kinds |
 | `UPGRADE_REQUIRED` | 426 | After update | App below `app.min_supported_version` |
-| `FEATURE_DISABLED` | 503 | Later | Kill switch flag off (`details.flag`) |
+| `FEATURE_DISABLED` | 503 | Later | Kill switch flag off (`details.flag`). During maintenance (`app.maintenance` on) every user-facing function answers this before any work, with `details.reason = 'maintenance'`, `details.flag = 'app.maintenance'` and `Retry-After: 300` (`supabase/functions/_shared/maintenance.ts`); `health`, cron and internal routes and `revenuecat-webhook` are exempt |
 | `SAFETY_ESCALATION` | 422 | No | Red flag; `details.escalation` (see 2.9 `Escalation`) |
 | `AI_UNAVAILABLE` | 503 | Yes | All routes failed |
 | `AI_TIMEOUT` | 504 | Yes | Route timeouts exhausted |

@@ -14,4 +14,6 @@ Operations docs for Sprint 7 (S7-06, S7-11, S7-12). The design docs (`../19-depl
 | [on-call-rota.md](on-call-rota.md) | Rota template, hours, channels, handover |
 | [incident-templates.md](incident-templates.md) | Declaration, status page text (en/ur), incident note, breach assessment |
 
+Configuration runbooks for every external service, per environment, are in [`../runbooks/`](../runbooks/README.md).
+
 Workflows: `.github/workflows/deploy-prod.yml`, `rollback-prod.yml`, `backup-prod.yml`. Scripts: `tooling/scripts/ops/`.

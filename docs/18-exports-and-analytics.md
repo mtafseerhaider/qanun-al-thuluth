@@ -49,7 +49,7 @@ Per `00-foundations.md` section 8 there are no PDF exports on the free tier. Acc
 
 ## 2. Rendering pipeline
 
-Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only with a bearer token over TLS (canonical in `00-foundations.md` section 3; Cloud Run infrastructure in `04-system-architecture.md` and `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
+Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only over TLS with HTTP Basic auth (user `thuluth`, password `GOTENBERG_TOKEN`; see `supabase/functions/export-pdf/renderer.ts` and `docs/runbooks/pdf-renderer-gotenberg.md`) (canonical in `00-foundations.md` section 3; Cloud Run infrastructure in `04-system-architecture.md` and `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
 
 ```mermaid
 sequenceDiagram
@@ -63,7 +63,7 @@ sequenceDiagram
   EP->>DB: insert exports(status='processing')
   EP->>DB: load data with user-scoped client (RLS)
   EP->>EP: build view model, render HTML (Preact SSR), inline SVG charts
-  EP->>R: POST /forms/chromium/convert/html (index.html, fonts, css)
+  EP->>R: POST /forms/chromium/convert/html (index.html, HTTP Basic auth)
   R-->>EP: application/pdf
   EP->>ST: upload {household_id}/exports/{export_id}.pdf (service role, upload only)
   EP->>DB: update exports(status='ready', storage_path, expires_at = now()+7d)
@@ -76,7 +76,7 @@ sequenceDiagram
 | View model | `buildViewModel(kind, data, locale)` in `supabase/functions/export-pdf/view-models/`; pure, unit-tested, no I/O |
 | HTML | Preact components rendered with `preact-render-to-string` (`npm:` pinned); all user text escaped by Preact |
 | Charts | Server-side SVG from `packages/shared/src/charts/` (growth curves, adherence bars), no JavaScript in the PDF |
-| Renderer request | Multipart: `index.html`, `styles.css`, font files (from `export-pdf/assets/fonts/`); options `paperWidth/Height` per locale (A4 default; US Letter for `en-US`), `preferCssPageSize=true`, `printBackground=true`, `emulatedMediaType=print`, `waitDelay=0`, `failOnConsoleExceptions=true` |
+| Renderer request | Multipart: `index.html` (styles inlined; fonts are installed in the renderer image, `tooling/gotenberg/Dockerfile`); options `paperWidth/Height` per locale (A4 default; US Letter for `en-US`), margins, `preferCssPageSize=false` (the paper size comes from these options), `printBackground=true`, `emulatedMediaType=print`, `waitDelay=0s`, `failOnConsoleExceptions=true`, `metadata`; header `Authorization: Basic base64("thuluth:" + GOTENBERG_TOKEN)` |
 | Network isolation | Renderer runs with outbound network disabled (all assets are inlined or uploaded with the request), so injected `<img src=http://...>` cannot exfiltrate data |
 | Timeouts | Renderer 20 s; function total 45 s; on timeout `exports.status='failed'` and `EXPORT_TIMEOUT` |
 | Size guard | Monthly meal plan for 20 members capped at 60 pages; larger requests split into per-week PDFs |
@@ -110,7 +110,7 @@ export const ExportResponse = z.object({ exportId: z.string().uuid(), signedUrl:
 supabase/functions/export-pdf/
   index.ts                         # handler: auth, validation, orchestration
   render.ts                        # Preact SSR + renderer client
-  renderer-client.ts               # Gotenberg multipart call with token
+  renderer.ts                      # Gotenberg multipart call with HTTP Basic auth
   view-models/
     meal-plan.ts  grocery-list.ts  nutrition-report.ts  growth-report.ts  ramadan-pack.ts  family-summary.ts
   templates/

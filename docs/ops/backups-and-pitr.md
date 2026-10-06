@@ -13,7 +13,7 @@
 | B5 | Offsite bucket | GCP project `thuluth-backup` (separate billing account), bucket in `europe-west3` | uniform access, **object versioning on**, lifecycle delete after 35 days, **retention policy 35 days, locked** after the first successful run, CMEK optional | [ ] |
 | B6 | Workload identity federation | GCP IAM > Workload Identity Pools | pool for `token.actions.githubusercontent.com`, condition `assertion.repository == '<org>/qanun-al-thuluth' && assertion.environment == 'production-backup'`; service account with `roles/storage.objectCreator` on the bucket only (no delete) | [ ] |
 | B7 | Backup DB role | psql as postgres | `create role backup_reader login password '…' bypassrls; grant pg_read_all_data to backup_reader;` Its URL becomes the `production-backup` secret `SUPABASE_DB_URL` | [ ] |
-| B8 | age key pair | PO laptop, offline | `age-keygen -o thuluth-backup.key`. Store the private key **offline** (printed and in 1Password "break-glass"). The public key becomes the variable `BACKUP_AGE_PUBLIC_KEY` | [ ] |
+| B8 | age key pair | PO laptop, offline | `age-keygen -o thuluth-backup.key`. Store the private key **offline** (printed, and in the 1Password vault "Thuluth Break-glass" as "prod age-backup-private-key"). The public key becomes the variable `BACKUP_AGE_PUBLIC_KEY` | [ ] |
 | B9 | GitHub environment | `production-backup` | `main` only; secrets and vars as in `secrets.md` §4 | [ ] |
 | B10 | First run | Actions > Nightly offsite backup (prod) > Run workflow | summary shows the `.age` object | [ ] |
 | B11 | Storage sync | weekly `rclone` of `avatars`, `meal-photos`, `chat-attachments` (19 §10.2 layer 3) | **not automated yet**: needs Storage S3 credentials; do by hand weekly until then | [ ] |

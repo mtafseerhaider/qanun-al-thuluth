@@ -215,7 +215,7 @@ select cron.schedule(
     url     := 'https://api.thuluth.app/functions/v1/notifications-dispatch',
     headers := jsonb_build_object(
       'content-type', 'application/json',
-      'x-internal-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'internal_cron_secret')
+      'x-internal-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
     ),
     body    := jsonb_build_object('triggered_at', now()),
     timeout_milliseconds := 55000
