@@ -4,7 +4,9 @@ import type {
   AiUsageInsert,
   ChatRequest,
   ChatResponse,
+  GrowthRow,
   KnowledgeMatch,
+  SensoryLite,
   SourceHit,
 } from '@thuluth/ai-core';
 import type { ConsentKind } from '@thuluth/shared/domain/consent.ts';
@@ -48,6 +50,8 @@ export interface ChatMemoryOptions {
   rules?: Record<string, unknown>;
   memoryEnabled?: boolean;
   locale?: string;
+  growth?: Record<string, GrowthRow[]>;
+  sensory?: Record<string, SensoryLite>;
 }
 
 export function memoryChatStore(opts: ChatMemoryOptions = {}) {
@@ -188,6 +192,11 @@ export function memoryChatStore(opts: ChatMemoryOptions = {}) {
           }
         : null,
     mealLog: async () => null,
+    growthRows: async (_h, memberId, limit) =>
+      [...(opts.growth?.[memberId] ?? [])]
+        .sort((a, b) => b.measured_on.localeCompare(a.measured_on))
+        .slice(0, limit),
+    sensoryProfile: async (_h, memberId) => opts.sensory?.[memberId] ?? null,
 
     knowledge: {
       matchKnowledge: async (): Promise<KnowledgeMatch[]> => [

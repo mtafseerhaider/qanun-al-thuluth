@@ -133,6 +133,20 @@ export const TOOL_INPUTS = {
     familyMemberId: uuid,
     targetFood: z.string().min(2).max(100),
     strategy: z.enum(['exposure_ladder', 'food_chaining']),
+    startStage: z
+      .enum([
+        'tolerate_on_table',
+        'look',
+        'touch',
+        'smell',
+        'lick',
+        'taste',
+        'chew_spit',
+        'eat_small',
+        'eat_portion',
+      ])
+      .optional(),
+    bridgeFromSafeFood: z.string().max(100).nullable().optional(),
   }),
   plan_ramadan: z.object({
     hijriYear: z.number().int().min(1447).max(1500),
@@ -311,7 +325,8 @@ const META: Record<AgentToolName, ToolMeta> = {
     label: { en: 'Looking up verified sources...', ur: 'تصدیق شدہ حوالے دیکھ رہا ہوں...' },
   },
   get_growth_status: {
-    description: 'Not available yet (growth charts arrive in a later release). Do not call.',
+    description:
+      "Get a child's latest growth percentiles (WHO/CDC, computed from logged measurements), any alert such as crossing two major percentile lines or weight-for-age below the 3rd percentile, and (premium) the trend. Use before discussing a child's growth or appetite concerns. It never returns weights, calories or targets, and you must never give a child a weight, calorie or portion target.",
     tier: 'free',
     sideEffects: 'none',
     timeoutMs: 3000,
@@ -326,7 +341,8 @@ const META: Record<AgentToolName, ToolMeta> = {
     label: { en: 'Preparing the meal log...', ur: 'کھانے کا اندراج تیار کر رہا ہوں...' },
   },
   create_exposure_ladder: {
-    description: 'Not available in chat yet. Do not call.',
+    description:
+      'Propose a gentle exposure ladder or food chain to help a picky or autistic child become comfortable with a target food. Steps follow the stages tolerate_on_table, look, touch, smell, lick, taste, chew_spit, eat_small, eat_portion; a food chain moves from a safe food through similar foods. Returns a proposal the parent saves in the app; nothing is saved from chat. Never use pressure, bribes, rewards or hiding foods.',
     tier: 'premium',
     sideEffects: 'writes',
     timeoutMs: 3000,
@@ -377,8 +393,6 @@ const META: Record<AgentToolName, ToolMeta> = {
 export const NOT_AVAILABLE_TOOLS: ReadonlySet<AgentToolName> = new Set([
   'generate_meal_plan',
   'build_grocery_list',
-  'get_growth_status',
-  'create_exposure_ladder',
   'analyze_meal_photo',
 ]);
 

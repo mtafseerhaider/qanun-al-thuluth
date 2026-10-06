@@ -2,6 +2,7 @@ import {
   calculateEnergy,
   checkRamadanParticipation,
   climateBand,
+  growthStatusView,
   dailyFluidTarget,
   hydrationSchedule,
   householdExclusions,
@@ -11,6 +12,7 @@ import {
   nameSimilarity,
   NOT_AVAILABLE_TOOLS,
   notAvailable,
+  proposeExposureLadder,
 } from '@thuluth/ai-core';
 import type {
   AgentToolName,
@@ -25,6 +27,7 @@ import type {
   ToolResult,
 } from '@thuluth/ai-core';
 import { formatMinor } from '@thuluth/shared';
+import { ChatToolCard } from '@thuluth/shared/contracts/ai-chat.ts';
 
 import { ageMonthsOf, isMinor, memberView } from './context.ts';
 import type { ChatContext } from './context.ts';
@@ -87,6 +90,10 @@ export function chatToolExecutor(deps: ExecutorDeps): ToolExecutor {
         return logFasting(ctx, input as ToolInput<'log_fasting'>, tc);
       case 'plan_ramadan':
         return planRamadan(ctx, input as ToolInput<'plan_ramadan'>, tc);
+      case 'get_growth_status':
+        return growthStatus(deps, input as ToolInput<'get_growth_status'>, tc);
+      case 'create_exposure_ladder':
+        return exposureLadder(deps, input as ToolInput<'create_exposure_ladder'>, tc);
       default:
         return notAvailable(name as AgentToolName, tc.locale);
     }
@@ -608,5 +615,118 @@ function planRamadan(
         : 'Summarise each member’s setup kindly. The user saves it in the Ramadan planner.',
     },
     summary: t(tc.locale, 'Ramadan setup checked', 'رمضان کی تیاری دیکھ لی گئی'),
+  };
+}
+
+// ---- growth and exposure ladders (S6) ------------------------------------------------------------
+
+/**
+ * `get_growth_status` (12 §8.10): the percentiles `growth-compute` stored, alert codes and, for
+ * premium, the trend. No weights, heights, kcal or targets are returned for anyone.
+ */
+async function growthStatus(
+  deps: ExecutorDeps,
+  input: ToolInput<'get_growth_status'>,
+  tc: ToolContext,
+): Promise<ToolResult> {
+  const { ctx } = deps;
+  const m = memberOf(ctx, input.familyMemberId);
+  if (!m) return unknownMember();
+  if (!isMinor(ctx, m)) {
+    return fail(
+      'NOT_A_CHILD',
+      'Growth charts are for children under 18. For adults, talk about habits and the weight log in the app; do not compute anything.',
+    );
+  }
+  const rows = await deps.store.growthRows(ctx.household.id, m.id, 24);
+  const view = growthStatusView(rows, {
+    includeTrend: input.includeTrend === true,
+    premium: ctx.tier === 'premium',
+  });
+  const trendLocked = input.includeTrend === true && ctx.tier !== 'premium';
+  return {
+    ok: true,
+    data: {
+      ...view,
+      ...(trendLocked ? { trendNote: 'The growth trend is a Premium feature.' } : {}),
+    },
+    summary: view.latest
+      ? t(tc.locale, `${m.name}: growth checked`, `${m.name}: بڑھوتری دیکھ لی گئی`)
+      : t(tc.locale, `${m.name}: no measurements yet`, `${m.name}: ابھی کوئی پیمائش نہیں`),
+  };
+}
+
+/**
+ * `create_exposure_ladder` (12 §8.12): a proposal card the parent saves in the app; nothing is
+ * written here. The card kind is validated against the shared contract and left off when the
+ * contract does not list it yet, so the SSE stream always validates.
+ */
+async function exposureLadder(
+  deps: ExecutorDeps,
+  input: ToolInput<'create_exposure_ladder'>,
+  tc: ToolContext,
+): Promise<ToolResult> {
+  const { ctx } = deps;
+  const m = memberOf(ctx, input.familyMemberId);
+  if (!m) return unknownMember();
+  if (ctx.role !== 'owner' && ctx.role !== 'caregiver') {
+    return fail('FORBIDDEN', 'Only the household owner or a caregiver can set up a food ladder.');
+  }
+  const pm = ctx.planMembers.find((p) => p.id === m.id);
+  if (!pm) return unknownMember();
+  const [{ catalog }, sensory] = await Promise.all([
+    deps.store.catalog(ctx.household.id),
+    m.special_modules.includes('autism')
+      ? deps.store.sensoryProfile(ctx.household.id, m.id)
+      : Promise.resolve(null),
+  ]);
+  const severe = ctx.planMembers.flatMap((x) =>
+    x.allergies
+      .filter((a) => a.severity === 'severe' || a.severity === 'anaphylactic')
+      .map((a) => a.allergenCode),
+  );
+  const result = proposeExposureLadder({
+    member: pm,
+    targetFood: input.targetFood,
+    strategy: input.strategy,
+    startStage: input.startStage,
+    bridgeFromSafeFood: input.bridgeFromSafeFood ?? null,
+    ingredients: catalog.ingredients,
+    sensory,
+    allowMashbooh: ctx.household.preferences?.allow_mashbooh === true,
+    severeAllergenCodes: severe,
+  });
+  if (!result.ok) return fail(result.code, result.message);
+  const p = result.proposal;
+  const card = ChatToolCard.safeParse({
+    kind: 'exposure_ladder_proposal',
+    family_member_id: m.id,
+    target_food: p.targetFood,
+    target_ingredient_id: p.targetIngredientId,
+    strategy: p.strategy,
+    steps: p.steps,
+  });
+  const foods = p.chain.map((c) => c.label);
+  return {
+    ok: true,
+    data: {
+      proposed: true,
+      saved: false,
+      strategy: p.strategy,
+      fallback: p.fallback,
+      targetFood: p.targetFood,
+      chain: foods,
+      steps: p.steps.map((s) => ({ step: s.step_no, food: s.food_label, stage: s.stage })),
+      notes: p.notes,
+      instruction: card.success
+        ? 'A proposal card is shown. Nothing is saved until the parent reviews it and taps Save. Describe the steps warmly, with no pressure, bribes or hiding foods.'
+        : 'Describe these steps warmly, with no pressure, bribes or hiding foods, and tell the parent they can save the ladder from the child’s Food ladders screen. Nothing was saved.',
+    },
+    summary: t(
+      tc.locale,
+      `Food ladder for ${m.name} ready to review`,
+      `${m.name} کے لیے غذا کا مرحلہ وار منصوبہ تیار`,
+    ),
+    ...(card.success ? { card: card.data as Record<string, unknown> } : {}),
   };
 }

@@ -17,6 +17,7 @@ import { fromPostgrestError } from '../../functions/_shared/errors.ts';
 import type { NotificationRow } from '../../functions/_shared/notifications/templates.ts';
 import type {
   AssessmentFacts,
+  FeedingContext,
   MealPlanRow,
   MemberRecord,
   PlanHouseholdRow,
@@ -116,6 +117,8 @@ export interface MemoryOptions {
   openSafety?: Array<string | null>;
   plans?: MealPlanRow[];
   meals?: Map<string, StoredDailyMeal[]>;
+  /** `food_exposures`, active ladders and sensory profiles per member (S6 exposure pair). */
+  feeding?: FeedingContext[];
 }
 
 export function memoryStore(opts: MemoryOptions = {}) {
@@ -157,6 +160,8 @@ export function memoryStore(opts: MemoryOptions = {}) {
     userPremium: false,
     /** `household_is_read_only` (17 §10.3): a free owner's extra household. */
     readOnly: false,
+    /** `since` of the last `feedingContext` read. */
+    feedingSince: null as string | null,
   };
   let n = 0;
   const entitlements: EntitlementStore = {
@@ -206,6 +211,10 @@ export function memoryStore(opts: MemoryOptions = {}) {
     budgetProfile: async () => null,
     catalog: async () => ({ catalog, includeInReview: false }),
     seasonal: async () => new Map(),
+    feedingContext: async (_h, ids, since) => {
+      state.feedingSince = since;
+      return (opts.feeding ?? []).filter((f) => ids.includes(f.family_member_id));
+    },
     verifiedRecommendations: async () => [
       {
         id: '00000000-0000-4000-d000-000000000001',

@@ -25,6 +25,10 @@ export interface CatalogIngredient {
   isSunnahFood: boolean;
   /** Medication-interaction tags; derived from the name when absent (see `interactionTagsFor`). */
   interactionTags?: readonly string[] | undefined;
+  /** `ingredients.textures` (sensory matching, food chaining; 15 §3.6). */
+  textures?: readonly string[] | undefined;
+  /** `ingredients.color` (natural colour, 15 §3.6). */
+  color?: string | null | undefined;
 }
 
 /** `portions` row for a meal. */

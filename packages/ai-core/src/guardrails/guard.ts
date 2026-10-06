@@ -3,6 +3,7 @@ import type { ChildRestrictionContext } from './child-restriction.ts';
 import { classifyInput, classifyOutputWithModel } from './classify.ts';
 import type { Classified, ClassifyDeps } from './classify.ts';
 import { findCureClaims } from './cure-claims.ts';
+import { removeFeedingPressure } from './feeding-pressure.ts';
 import { injectDisclaimer } from './disclaimer.ts';
 import { findRulingAssertions, hasScholarReferral } from './fiqh.ts';
 import {
@@ -53,6 +54,14 @@ export function guardOutput(draft: string, ctx: GuardContext): GuardResult {
       flags.add('child_restriction_blocked');
       text = CHILD_GROWTH_FIRST[ctx.locale];
       replaced = true;
+    } else {
+      // Division of Responsibility (15 §3.8, §4.2): pressure, bribes, rewards and hiding foods go.
+      const pressure = removeFeedingPressure(text, ctx.locale);
+      if (pressure.hits.length) {
+        violations.push(...pressure.hits);
+        flags.add('feeding_pressure_removed');
+        text = pressure.text;
+      }
     }
   }
 

@@ -644,3 +644,62 @@ Deno.test(
     assertEquals(all.headers.get('x-members-excluded'), null);
   },
 );
+
+Deno.test(
+  'weekly exposure pair (S6-05): one new food a week beside a safe food, from exposure history',
+  async () => {
+    const { handler, bg, state } = setup({
+      feeding: [
+        {
+          family_member_id: IBRAHIM,
+          exposures: [
+            {
+              ingredientId: 'i-spinach',
+              exposedOn: '2026-10-01',
+              stage: 'touch',
+              acceptance: '2_touched',
+            },
+          ],
+          ladder_targets: [],
+          sensory: null,
+        },
+      ],
+    });
+    const res = await handler(post({ week_count: 2 }));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    await bg.drain();
+    const plan = state.plans.get(meal_plan_id);
+    assertEquals(plan?.status, 'draft');
+    assertEquals(state.feedingSince, '2026-07-08');
+    const pairs = (plan?.generation_meta as { exposure_pairs?: Array<Record<string, unknown>> })
+      .exposure_pairs!;
+    const ibrahim = pairs.filter((p) => p.family_member_id === IBRAHIM);
+    assertEquals(ibrahim.length, 2); // one per week
+    assertEquals(ibrahim[0]!.new_ingredient_id, 'i-spinach'); // the food in progress continues
+    assertEquals(ibrahim[0]!.source, 'in_progress');
+    assertEquals(ibrahim[0]!.familiar_label, 'Roti');
+    const slots = ibrahim[0]!.slots as Array<{ plan_date: string }>;
+    assert(slots.length >= 1 && slots.length <= 4);
+    assertEquals(new Set(slots.map((s) => s.plan_date)).size, slots.length);
+    // Maryam (autism) also gets a pair; adults never do.
+    assert(pairs.some((p) => p.family_member_id !== IBRAHIM));
+    const notes = (state.meals.get(meal_plan_id) ?? []).map((m) => m.notes ?? '');
+    const learning = notes.filter((n) => n.includes('Learning plate for Ibrahim'));
+    assertEquals(learning.length, slots.length + (ibrahim[1]!.slots as unknown[]).length);
+    for (const n of learning) {
+      assert(n.includes('spinach'));
+      assert(!/one more bite|finish|reward|must eat/i.test(n));
+    }
+  },
+);
+
+Deno.test('weekly exposure pair: free plans add none', async () => {
+  const { handler, bg, state } = setup({ premium: false });
+  const res = await handler(post({ week_count: 1 }));
+  const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+  await bg.drain();
+  const plan = state.plans.get(meal_plan_id);
+  assertEquals(plan?.status, 'draft');
+  assertEquals((plan?.generation_meta as { exposure_pairs?: unknown[] }).exposure_pairs, []);
+  assert(!(state.meals.get(meal_plan_id) ?? []).some((m) => m.notes?.includes('Learning plate')));
+});

@@ -553,3 +553,144 @@ Deno.test('ai-chat Urdu locale answers the crisis template in Urdu', async () =>
   assertMatch(text, /1122/);
   assertMatch(text, /[؀-ۿ]/);
 });
+
+// ---- S6: get_growth_status and create_exposure_ladder --------------------------------------------
+
+/** The data of the last tool result the model saw. */
+function lastToolData(req: { messages: Array<{ content: Array<Record<string, unknown>> }> }) {
+  const part = req.messages.at(-1)?.content.find((p) => p.type === 'tool_result');
+  return part
+    ? (JSON.parse(String(part.content)) as {
+        ok: boolean;
+        data?: Record<string, unknown>;
+        error?: { code: string };
+      })
+    : null;
+}
+
+const growthRow = (d: string, wfa: number, z: number, flags: string[] = []) => ({
+  measured_on: d,
+  reference: 'who_2007',
+  age_months: 96,
+  height_for_age_percentile: 40,
+  weight_for_age_percentile: wfa,
+  bmi_for_age_percentile: 45,
+  head_circumference_for_age_percentile: null,
+  weight_for_age_z: z,
+  height_for_age_z: -0.25,
+  flags,
+  computed_at: `${d}T10:00:00Z`,
+});
+
+Deno.test('ai-chat get_growth_status returns percentiles and alerts, never targets', async () => {
+  let seen: ReturnType<typeof lastToolData> = null;
+  const t = setup({
+    premium: true,
+    growth: {
+      [IBRAHIM]: [
+        growthRow('2026-04-01', 50, 0),
+        growthRow('2026-07-01', 25, -0.67),
+        growthRow('2026-10-01', 10, -1.28, ['red_flag.crossed_two_major_percentiles']),
+      ],
+    },
+    script: (req, _m, step) => {
+      if (step === 0)
+        return toolOut('get_growth_status', { familyMemberId: IBRAHIM, includeTrend: true });
+      seen = lastToolData(req as never);
+      return textOut(
+        'Ibrahim has moved from the 50th to the 10th percentile. Aim for 1400 kcal a day so he gains 2 kg.',
+      );
+    },
+  });
+  const events = await readSse(await t.handler(chat({ text: 'How is Ibrahim growing?' })));
+  assertContract(events);
+  const data = seen!.data!;
+  assertEquals(data.alerts, ['crossed_two_major_percentiles']);
+  assertEquals((data.trend as { direction: string }).direction, 'falling');
+  assertEquals(data.seeClinician, true);
+  const { instruction: _i, ...rest } = data;
+  assertFalse(/kcal|kg|_cm|target/i.test(JSON.stringify(rest)));
+  const text = textOf(events);
+  assertFalse(/1400|2 kg/.test(text));
+});
+
+Deno.test('ai-chat get_growth_status: trend is premium, adults get no growth chart', async () => {
+  const seen: Array<ReturnType<typeof lastToolData>> = [];
+  const t = setup({
+    growth: { [IBRAHIM]: [growthRow('2026-04-01', 50, 0), growthRow('2026-10-01', 48, -0.05)] },
+    script: (req, _m, step) => {
+      if (step === 0)
+        return toolOut('get_growth_status', { familyMemberId: IBRAHIM, includeTrend: true });
+      if (step === 1) {
+        seen.push(lastToolData(req as never));
+        return toolOut('get_growth_status', { familyMemberId: USMAN });
+      }
+      seen.push(lastToolData(req as never));
+      return textOut('His growth line looks steady.');
+    },
+  });
+  const events = await readSse(await t.handler(chat({ text: 'Is Ibrahim growing well?' })));
+  assertContract(events);
+  assertEquals(seen[0]!.data!.trend, null);
+  assertMatch(String(seen[0]!.data!.trendNote), /Premium/);
+  assertEquals(seen[1]!.ok, false);
+  assertEquals(seen[1]!.error!.code, 'NOT_A_CHILD');
+});
+
+Deno.test('ai-chat create_exposure_ladder proposes steps and writes nothing', async () => {
+  let seen: ReturnType<typeof lastToolData> = null;
+  const t = setup({
+    premium: true,
+    script: (req, _m, step) => {
+      if (step === 0)
+        return toolOut('create_exposure_ladder', {
+          familyMemberId: MARYAM,
+          targetFood: 'cucumber',
+          strategy: 'exposure_ladder',
+          startStage: 'look',
+        });
+      seen = lastToolData(req as never);
+      return textOut('Here is a gentle plan. Make her finish the cucumber every time.');
+    },
+  });
+  const events = await readSse(await t.handler(chat({ text: 'Help Maryam with cucumber' })));
+  assertContract(events);
+  const data = seen!.data!;
+  assertEquals(data.saved, false);
+  assertEquals(data.targetFood, 'Cucumber (kheera)');
+  const steps = data.steps as Array<{ stage: string }>;
+  assertEquals(steps[0]!.stage, 'look');
+  assertEquals(steps.at(-1)!.stage, 'eat_portion');
+  const result = of(events, 'tool.result')[0]!.data;
+  assertEquals(result.ok, true);
+  // The contract has no ladder card kind yet: the card is left off and the stream still validates.
+  assertEquals(result.card, undefined);
+  // Feeding pressure about a child is removed from the reply.
+  assertFalse(/finish the cucumber/i.test(textOf(events)));
+  assertEquals(t.state.safety.length, 0);
+});
+
+Deno.test('ai-chat create_exposure_ladder refuses an allergen target', async () => {
+  const seen: Array<ReturnType<typeof lastToolData>> = [];
+  const t = setup({
+    premium: true,
+    script: (req, _m, step) => {
+      if (step === 0)
+        return toolOut('create_exposure_ladder', {
+          familyMemberId: MARYAM,
+          targetFood: 'peanuts',
+          strategy: 'food_chaining',
+        });
+      seen.push(lastToolData(req as never));
+      return textOut('Let us pick a different food.');
+    },
+  });
+  // Maryam with a severe peanut allergy in this household.
+  t.state.members = t.state.members.map((m) =>
+    m.id === MARYAM
+      ? { ...m, allergies: [{ allergen_code: 'peanuts', severity: 'severe', kind: 'allergy' }] }
+      : m,
+  );
+  await readSse(await t.handler(chat({ text: 'Ladder for peanuts for Maryam' })));
+  assertEquals(seen[0]!.error!.code, 'UNSAFE_TARGET');
+});

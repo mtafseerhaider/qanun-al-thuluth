@@ -166,7 +166,7 @@ describe('tool catalog', () => {
   });
 
   it('answers unavailable tools politely', () => {
-    const r = notAvailable('get_growth_status', 'en');
+    const r = notAvailable('analyze_meal_photo', 'en');
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('NOT_AVAILABLE');
   });
