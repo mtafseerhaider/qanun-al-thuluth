@@ -122,3 +122,7 @@ verify_jwt = true           # Sprint 0 smoke function (00 section 11); removed w
 verify_jwt = true
 [functions.ai-intake-assess]
 verify_jwt = true           # S2-09 intake assessment (06 section 4.2)
+[functions.ai-generate-plan]
+verify_jwt = false          # dual mode (10 section 9.1): user JWT verified in code; /worker needs x-internal-secret
+[functions.ai-adjust-plan]
+verify_jwt = true           # S3-14 plan adjustment (06 section 4.4)
