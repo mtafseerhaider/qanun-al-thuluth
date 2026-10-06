@@ -11,7 +11,8 @@
     "./constants/*": "./src/constants/*.ts",
     "./utils/*": "./src/utils/*.ts",
     "./domain/*": "./src/domain/*.ts",
-    "./intake/*": "./src/intake/*.ts"
+    "./intake/*": "./src/intake/*.ts",
+    "./prayer/*": "./src/prayer/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
