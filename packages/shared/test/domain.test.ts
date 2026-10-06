@@ -41,3 +41,44 @@ describe('ConsentGrant', () => {
     expect(ConsentGrant.safeParse({ kind: 'terms', version: 'v' }).success).toBe(true);
   });
 });
+
+describe('intake', () => {
+  it('blocks weight goals for minors and flags medications', async () => {
+    const { disallowedGoalsForAge, medicationFlagsFor, SensoryProfileInput } =
+      await import('../src/domain/intake.ts');
+    expect(disallowedGoalsForAge(['weight_loss', 'energy', 'weight_gain'], 8)).toEqual([
+      'weight_loss',
+      'weight_gain',
+    ]);
+    expect(disallowedGoalsForAge(['weight_loss'], 37)).toEqual([]);
+    expect(medicationFlagsFor('Lantus 10 units')).toEqual(['insulin']);
+    expect(medicationFlagsFor('Ritalin LA')).toEqual(['stimulant_appetite_suppression']);
+    expect(
+      SensoryProfileInput.safeParse({ texture_likes: ['soft'], texture_avoids: ['soft'] }).success,
+    ).toBe(false);
+  });
+
+  it('never returns kcal targets for children', async () => {
+    const { MemberAssessment } = await import('../src/contracts/ai-intake-assess.ts');
+    const base = {
+      assessment_id: '00000000-0000-4000-8000-000000000001',
+      family_member_id: '00000000-0000-4000-8000-000000000002',
+      summary: 's',
+      macro_targets: null,
+      hydration_target_ml: 1600,
+      risk_flags: [],
+      escalation: null,
+      recommendation_ids: [],
+    };
+    expect(
+      MemberAssessment.safeParse({
+        ...base,
+        life_stage: 'child',
+        energy_targets: { kcal_per_day: 1500, method: 'x' },
+      }).success,
+    ).toBe(false);
+    expect(
+      MemberAssessment.safeParse({ ...base, life_stage: 'child', energy_targets: null }).success,
+    ).toBe(true);
+  });
+});
