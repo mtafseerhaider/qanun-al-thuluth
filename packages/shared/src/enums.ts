@@ -19,10 +19,23 @@ export const GOAL_TYPES = [
   'blood_sugar',
   'heart_health',
 ] as const;
-export const SPECIAL_MODULES = ['pregnancy', 'breastfeeding', 'autism', 'adhd', 'picky_eater'] as const;
+export const SPECIAL_MODULES = [
+  'pregnancy',
+  'breastfeeding',
+  'autism',
+  'adhd',
+  'picky_eater',
+] as const;
 export const MEAL_TYPES = ['suhoor', 'breakfast', 'lunch', 'snack', 'dinner', 'iftar'] as const;
 export const MEAL_STATUSES = ['planned', 'eaten', 'partly_eaten', 'skipped', 'swapped'] as const;
-export const PLAN_STATUSES = ['draft', 'generating', 'active', 'completed', 'archived', 'failed'] as const;
+export const PLAN_STATUSES = [
+  'draft',
+  'generating',
+  'active',
+  'completed',
+  'archived',
+  'failed',
+] as const;
 export const PLAN_KINDS = ['standard', 'ramadan', 'growth', 'weight_management', 'custom'] as const;
 export const SEVERITIES = ['mild', 'moderate', 'severe', 'anaphylactic'] as const;
 export const EVIDENCE_GRADES_HADITH = [
@@ -36,7 +49,13 @@ export const EVIDENCE_GRADES_HADITH = [
   'daif_shia',
   'ungraded',
 ] as const;
-export const EVIDENCE_GRADES_SCIENCE = ['high', 'moderate', 'low', 'very_low', 'expert_opinion'] as const;
+export const EVIDENCE_GRADES_SCIENCE = [
+  'high',
+  'moderate',
+  'low',
+  'very_low',
+  'expert_opinion',
+] as const;
 export const SOURCE_TRADITIONS = ['shared', 'sunni', 'shia'] as const;
 export const SOURCE_KINDS = ['quran', 'hadith', 'imam_narration', 'scholarly'] as const;
 export const VERIFICATION_STATUSES = ['unverified', 'in_review', 'verified', 'rejected'] as const;
