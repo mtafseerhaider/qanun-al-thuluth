@@ -70,6 +70,7 @@ const CHILD_RULES: Record<string, string> = {
  * - `CONSENT_REQUIRED` / `CHILD_DATA_CONSENT_REQUIRED` (0022 consent guards) -> CONSENT_REQUIRED
  *   with `details.consents`
  * - `MODULE_NOT_APPLICABLE` (23514, pregnancy/breastfeeding goal on a child) -> VALIDATION_FAILED
+ * - `PLAN_ALREADY_ACTIVE` / `PREMIUM_REQUIRED` (S3-02 plan entitlement trigger) -> same codes
  * - 42501 RLS -> FORBIDDEN, 23505 unique -> CONFLICT
  */
 export function fromPostgrestError(err: PgErrorLike): HttpError {
@@ -104,6 +105,20 @@ export function fromPostgrestError(err: PgErrorLike): HttpError {
       ...detail,
       ...plain,
       rule: 'module_not_applicable',
+    });
+  }
+  // S3-02 plan entitlement trigger (detail JSON: resource, limit, current / reason, kind, week_count).
+  if (message === 'PLAN_ALREADY_ACTIVE') {
+    return new HttpError(
+      'PLAN_ALREADY_ACTIVE',
+      'The free plan allows one active meal plan. Upgrade or replace the current plan.',
+      detailJson(err),
+    );
+  }
+  if (message === 'PREMIUM_REQUIRED') {
+    return new HttpError('PREMIUM_REQUIRED', 'This plan option needs Premium.', {
+      feature: 'plan.multi_week_or_kind',
+      ...detailJson(err),
     });
   }
   if (err.code === '42501') return new HttpError('FORBIDDEN', 'Not allowed');

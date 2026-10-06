@@ -1,0 +1,55 @@
+{
+  "loading": "Loading recipe…",
+  "retry": "Try again",
+  "unavailable": "This recipe isn't available yet. It may still be under review.",
+  "time": "Prep {{prep}} min · Cook {{cook}} min",
+  "badges": {
+    "kid": "Kid-friendly",
+    "autism": "Sensory-friendly",
+    "ramadan": "Good for Ramadan",
+    "sunnah": "Sunnah food"
+  },
+  "notReviewed": "This recipe hasn't been checked by our dietitian yet.",
+  "servings": {
+    "label_one": "{{count}} serving",
+    "label_other": "{{count}} servings",
+    "a11y_one": "{{count}} serving",
+    "a11y_other": "{{count}} servings",
+    "less": "Fewer servings",
+    "more": "More servings"
+  },
+  "ingredients": "Ingredients",
+  "quantity": "{{qty}} {{unit}}",
+  "optional": "(optional)",
+  "halalNote": "* Choose a halal (zabiha) source for meat, poultry and fish.",
+  "steps": "Steps",
+  "stepNumber": "{{n}}.",
+  "timer": "About {{minutes}} min",
+  "portions": "Portions",
+  "portionAdult": "{{measure}} (about {{grams}} g)",
+  "stages": {
+    "adult": "Adults",
+    "older_adult": "Older adults",
+    "teen": "Teens",
+    "child": "Children",
+    "toddler": "Toddlers",
+    "infant": "Babies"
+  },
+  "nutrition": {
+    "title": "Nutrition",
+    "perAdult": "Per adult serving",
+    "value": "{{value}} {{unit}}",
+    "kcal": "Energy",
+    "protein": "Protein",
+    "carbs": "Carbohydrate",
+    "fiber": "Fibre",
+    "fat": "Fat",
+    "sodium": "Sodium",
+    "iron": "Iron",
+    "calcium": "Calcium"
+  },
+  "showHint": "Shows nutrition",
+  "hideHint": "Hides nutrition",
+  "related": "Related guidance",
+  "disclaimer": "General guidance, not medical advice."
+}

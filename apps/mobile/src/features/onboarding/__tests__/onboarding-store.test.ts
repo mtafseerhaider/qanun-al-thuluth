@@ -50,7 +50,8 @@ describe('useOnboardingStore', () => {
     expect(nextStep('philosophy', { skipHousehold: true })).toBe('consents');
     expect(nextStep('members')).toBe('intake');
     expect(nextStep('intake')).toBe('assessment');
-    expect(nextStep('assessment')).toBe('done');
+    expect(nextStep('assessment')).toBe('first_plan');
+    expect(nextStep('first_plan')).toBe('done');
   });
 
   it('persists only serialisable progress under a versioned key', () => {
@@ -64,6 +65,7 @@ describe('useOnboardingStore', () => {
         'completedSteps',
         'createdHouseholdId',
         'currentStep',
+        'firstPlan',
         'householdDraft',
         'joinedByInvite',
         'startedAt',
@@ -115,5 +117,23 @@ it('numbers steps and walks back', () => {
   expect(stepNumber('members')).toBe(5);
   expect(previousStep('household')).toBe('consents');
   expect(previousStep('welcome')).toBeNull();
-  expect(previousStep('done')).toBe('assessment');
+  expect(previousStep('done')).toBe('first_plan');
+  expect(previousStep('first_plan')).toBe('assessment');
+});
+
+describe('first plan (step 6)', () => {
+  it('remembers the generating plan so a killed app resumes watching it', () => {
+    const job = { mealPlanId: 'plan-1', pollAfterMs: 2000, startedAt: 10, mode: 'full' as const };
+    useOnboardingStore.getState().setFirstPlan(job);
+    expect(useOnboardingStore.getState().firstPlan).toEqual(job);
+    expect(routeForStep('first_plan')).toBe('FirstPlanGeneration');
+    expect(routeForStep('done')).toBe('FirstPlanGeneration');
+  });
+
+  it('migrates a v1 store without a first plan', () => {
+    expect(migrateOnboarding({ currentStep: 'assessment', completedSteps: [] }, 1)).toMatchObject({
+      currentStep: 'assessment',
+      firstPlan: null,
+    });
+  });
 });

@@ -46,6 +46,7 @@ export const EventSchemas = {
         'members',
         'intake',
         'assessment',
+        'first_plan',
       ]),
     })
     .strict(),
@@ -103,6 +104,66 @@ export const EventSchemas = {
     })
     .strict(),
   evidence_link_opened: z.object({}).strict(),
+  // Sprint 3: plans (02 §7.4.2, §7.6), Today (02 §7.5), logging and swap (02 §5.5), alpha feedback.
+  plan_generate_requested: z
+    .object({
+      kind: z.enum(['standard', 'growth', 'weight_management', 'custom']),
+      weeks: z.number().int().min(1).max(4),
+      source: z.enum(['onboarding', 'plans', 'retry', 'template']),
+    })
+    .strict(),
+  plan_generation_completed: z
+    .object({
+      duration_ms: z.number().int().min(0),
+      status: z.enum(['draft', 'active']),
+      mode: z.enum(['full', 'template_personalize', 'unknown']),
+    })
+    .strict(),
+  plan_generation_failed: z
+    .object({
+      code: z
+        .string()
+        .regex(/^[A-Z_]+$/)
+        .max(48),
+    })
+    .strict(),
+  plan_viewed: z
+    .object({
+      kind: z.enum(['standard', 'ramadan', 'growth', 'weight_management', 'custom']),
+      week_index: z.number().int().min(0).max(12),
+    })
+    .strict(),
+  meal_detail_viewed: z
+    .object({ meal_type: z.enum(['suhoor', 'breakfast', 'lunch', 'snack', 'dinner', 'iftar']) })
+    .strict(),
+  meal_serving_logged: z
+    .object({
+      status: z.enum(['planned', 'eaten', 'partly_eaten', 'skipped', 'swapped']),
+      has_acceptance: z.boolean(),
+      meal_type: z.enum(['suhoor', 'breakfast', 'lunch', 'snack', 'dinner', 'iftar']),
+      life_stage: z.enum(['infant', 'toddler', 'child', 'teen', 'adult', 'older_adult']),
+    })
+    .strict(),
+  meal_bulk_logged: z
+    .object({
+      daily_meal_id_count: z.number().int().min(0).max(50),
+      source: z.enum(['dashboard', 'meal_detail']),
+    })
+    .strict(),
+  meal_swapped: z
+    .object({
+      reason: z.enum(['allergy', 'budget', 'autism', 'picky', 'season', 'preference', 'ai']),
+      source: z.enum(['catalog', 'ai']),
+    })
+    .strict(),
+  recipe_opened: z.object({ recipe_source: z.enum(['curated', 'ai_generated', 'user']) }).strict(),
+  recommendation_opened: z.object({ surface: z.enum(['dashboard', 'plan', 'recipe']) }).strict(),
+  dashboard_section_tapped: z
+    .object({ section: z.enum(['meals', 'tip', 'quick_log', 'plan', 'feedback']) })
+    .strict(),
+  alpha_feedback_sent: z
+    .object({ category: z.enum(['bug', 'idea', 'content', 'other']), has_screen: z.boolean() })
+    .strict(),
   setting_changed: z
     .object({ key: z.enum(['display_name', 'locale', 'units', 'tradition', 'theme']) })
     .strict(),

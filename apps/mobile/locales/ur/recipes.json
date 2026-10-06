@@ -1,0 +1,55 @@
+{
+  "loading": "ترکیب لوڈ ہو رہی ہے…",
+  "retry": "دوبارہ کوشش کریں",
+  "unavailable": "یہ ترکیب ابھی دستیاب نہیں۔ شاید ابھی جانچ میں ہے۔",
+  "time": "تیاری {{prep}} منٹ · پکانا {{cook}} منٹ",
+  "badges": {
+    "kid": "بچوں کے لیے موزوں",
+    "autism": "حسی لحاظ سے آسان",
+    "ramadan": "رمضان کے لیے اچھا",
+    "sunnah": "سنت غذا"
+  },
+  "notReviewed": "اس ترکیب کو ابھی ہمارے ماہر غذائیت نے نہیں جانچا۔",
+  "servings": {
+    "label_one": "{{count}} حصہ",
+    "label_other": "{{count}} حصے",
+    "a11y_one": "{{count}} حصہ",
+    "a11y_other": "{{count}} حصے",
+    "less": "کم حصے",
+    "more": "زیادہ حصے"
+  },
+  "ingredients": "اجزاء",
+  "quantity": "{{qty}} {{unit}}",
+  "optional": "(اختیاری)",
+  "halalNote": "* گوشت، مرغی اور مچھلی حلال (ذبیحہ) ذریعے سے لیں۔",
+  "steps": "طریقہ",
+  "stepNumber": "{{n}}۔",
+  "timer": "تقریباً {{minutes}} منٹ",
+  "portions": "حصے",
+  "portionAdult": "{{measure}} (تقریباً {{grams}} گرام)",
+  "stages": {
+    "adult": "بالغ",
+    "older_adult": "بزرگ",
+    "teen": "نوجوان",
+    "child": "بچے",
+    "toddler": "چھوٹے بچے",
+    "infant": "شیرخوار"
+  },
+  "nutrition": {
+    "title": "غذائیت",
+    "perAdult": "ایک بالغ حصے میں",
+    "value": "{{value}} {{unit}}",
+    "kcal": "توانائی",
+    "protein": "پروٹین",
+    "carbs": "کاربوہائیڈریٹ",
+    "fiber": "ریشہ",
+    "fat": "چکنائی",
+    "sodium": "سوڈیم",
+    "iron": "آئرن",
+    "calcium": "کیلشیم"
+  },
+  "showHint": "غذائیت دکھاتا ہے",
+  "hideHint": "غذائیت چھپاتا ہے",
+  "related": "متعلقہ رہنمائی",
+  "disclaimer": "عمومی رہنمائی، طبی مشورہ نہیں۔"
+}

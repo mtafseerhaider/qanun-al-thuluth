@@ -644,6 +644,177 @@ export type Database = {
           },
         ];
       };
+      daily_meal_servings: {
+        Row: {
+          acceptance: Database['public']['Enums']['acceptance_score'] | null;
+          adaptation: string;
+          adapted_meal_id: string | null;
+          created_at: string;
+          daily_meal_id: string;
+          family_member_id: string;
+          household_id: string;
+          id: string;
+          logged_at: string | null;
+          portion_id: string | null;
+          status: Database['public']['Enums']['meal_status'];
+          updated_at: string;
+        };
+        Insert: {
+          acceptance?: Database['public']['Enums']['acceptance_score'] | null;
+          adaptation?: string;
+          adapted_meal_id?: string | null;
+          created_at?: string;
+          daily_meal_id: string;
+          family_member_id: string;
+          household_id: string;
+          id?: string;
+          logged_at?: string | null;
+          portion_id?: string | null;
+          status?: Database['public']['Enums']['meal_status'];
+          updated_at?: string;
+        };
+        Update: {
+          acceptance?: Database['public']['Enums']['acceptance_score'] | null;
+          adaptation?: string;
+          adapted_meal_id?: string | null;
+          created_at?: string;
+          daily_meal_id?: string;
+          family_member_id?: string;
+          household_id?: string;
+          id?: string;
+          logged_at?: string | null;
+          portion_id?: string | null;
+          status?: Database['public']['Enums']['meal_status'];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'daily_meal_servings_adapted_meal_id_fkey';
+            columns: ['adapted_meal_id'];
+            isOneToOne: false;
+            referencedRelation: 'meals';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'daily_meal_servings_daily_meal_id_household_id_fkey';
+            columns: ['daily_meal_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'daily_meals';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'daily_meal_servings_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'daily_meal_servings_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'daily_meal_servings_portion_id_fkey';
+            columns: ['portion_id'];
+            isOneToOne: false;
+            referencedRelation: 'portions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      daily_meals: {
+        Row: {
+          batch_multiplier: number;
+          created_at: string;
+          household_id: string;
+          id: string;
+          is_lunchbox: boolean;
+          meal_id: string;
+          meal_plan_id: string;
+          meal_type: Database['public']['Enums']['meal_type'];
+          notes: string | null;
+          plan_date: string;
+          scheduled_time: string | null;
+          slot: number;
+          source_daily_meal_id: string | null;
+          swapped_from_meal_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          batch_multiplier?: number;
+          created_at?: string;
+          household_id: string;
+          id?: string;
+          is_lunchbox?: boolean;
+          meal_id: string;
+          meal_plan_id: string;
+          meal_type: Database['public']['Enums']['meal_type'];
+          notes?: string | null;
+          plan_date: string;
+          scheduled_time?: string | null;
+          slot?: number;
+          source_daily_meal_id?: string | null;
+          swapped_from_meal_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          batch_multiplier?: number;
+          created_at?: string;
+          household_id?: string;
+          id?: string;
+          is_lunchbox?: boolean;
+          meal_id?: string;
+          meal_plan_id?: string;
+          meal_type?: Database['public']['Enums']['meal_type'];
+          notes?: string | null;
+          plan_date?: string;
+          scheduled_time?: string | null;
+          slot?: number;
+          source_daily_meal_id?: string | null;
+          swapped_from_meal_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'daily_meals_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'daily_meals_meal_id_fkey';
+            columns: ['meal_id'];
+            isOneToOne: false;
+            referencedRelation: 'meals';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'daily_meals_meal_plan_id_household_id_fkey';
+            columns: ['meal_plan_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'meal_plans';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'daily_meals_source_fk';
+            columns: ['source_daily_meal_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'daily_meals';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'daily_meals_swapped_from_meal_id_fkey';
+            columns: ['swapped_from_meal_id'];
+            isOneToOne: false;
+            referencedRelation: 'meals';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       devices: {
         Row: {
           app_version: string;
@@ -1610,6 +1781,7 @@ export type Database = {
           meal_id: string;
           notes: string | null;
           reason: string;
+          review_status: Database['public']['Enums']['verification_status'];
           updated_at: string;
         };
         Insert: {
@@ -1619,6 +1791,7 @@ export type Database = {
           meal_id: string;
           notes?: string | null;
           reason: string;
+          review_status?: Database['public']['Enums']['verification_status'];
           updated_at?: string;
         };
         Update: {
@@ -1628,6 +1801,7 @@ export type Database = {
           meal_id?: string;
           notes?: string | null;
           reason?: string;
+          review_status?: Database['public']['Enums']['verification_status'];
           updated_at?: string;
         };
         Relationships: [
@@ -1647,8 +1821,117 @@ export type Database = {
           },
         ];
       };
+      meal_plans: {
+        Row: {
+          budget_profile_id: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          deleted_at: string | null;
+          end_date: string;
+          failure_reason: string | null;
+          generated_by_assessment_id: string | null;
+          generation_meta: NonNullable<Json>;
+          generation_progress: NonNullable<Json>;
+          household_id: string;
+          id: string;
+          kind: Database['public']['Enums']['plan_kind'];
+          parent_plan_id: string | null;
+          rationale: string | null;
+          start_date: string;
+          status: Database['public']['Enums']['plan_status'];
+          title: string | null;
+          updated_at: string;
+          version: number;
+          week_count: number;
+          weekly_themes: NonNullable<Json>;
+        };
+        Insert: {
+          budget_profile_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          deleted_at?: string | null;
+          end_date: string;
+          failure_reason?: string | null;
+          generated_by_assessment_id?: string | null;
+          generation_meta?: NonNullable<Json>;
+          generation_progress?: NonNullable<Json>;
+          household_id: string;
+          id?: string;
+          kind?: Database['public']['Enums']['plan_kind'];
+          parent_plan_id?: string | null;
+          rationale?: string | null;
+          start_date: string;
+          status?: Database['public']['Enums']['plan_status'];
+          title?: string | null;
+          updated_at?: string;
+          version?: number;
+          week_count?: number;
+          weekly_themes?: NonNullable<Json>;
+        };
+        Update: {
+          budget_profile_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          deleted_at?: string | null;
+          end_date?: string;
+          failure_reason?: string | null;
+          generated_by_assessment_id?: string | null;
+          generation_meta?: NonNullable<Json>;
+          generation_progress?: NonNullable<Json>;
+          household_id?: string;
+          id?: string;
+          kind?: Database['public']['Enums']['plan_kind'];
+          parent_plan_id?: string | null;
+          rationale?: string | null;
+          start_date?: string;
+          status?: Database['public']['Enums']['plan_status'];
+          title?: string | null;
+          updated_at?: string;
+          version?: number;
+          week_count?: number;
+          weekly_themes?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'meal_plans_budget_profile_id_household_id_fkey';
+            columns: ['budget_profile_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'budget_profiles';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'meal_plans_created_by_user_id_fkey';
+            columns: ['created_by_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meal_plans_generated_by_assessment_id_household_id_fkey';
+            columns: ['generated_by_assessment_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_assessments';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'meal_plans_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meal_plans_parent_plan_id_household_id_fkey';
+            columns: ['parent_plan_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'meal_plans';
+            referencedColumns: ['id', 'household_id'];
+          },
+        ];
+      };
       meals: {
         Row: {
+          code: string | null;
           components: NonNullable<Json>;
           created_at: string;
           deleted_at: string | null;
@@ -1656,12 +1939,14 @@ export type Database = {
           id: string;
           meal_type: Database['public']['Enums']['meal_type'];
           plate_split: NonNullable<Json>;
+          review_status: Database['public']['Enums']['verification_status'];
           source: string;
           title: string;
           title_i18n: NonNullable<Json>;
           updated_at: string;
         };
         Insert: {
+          code?: string | null;
           components: NonNullable<Json>;
           created_at?: string;
           deleted_at?: string | null;
@@ -1669,12 +1954,14 @@ export type Database = {
           id?: string;
           meal_type: Database['public']['Enums']['meal_type'];
           plate_split?: NonNullable<Json>;
+          review_status?: Database['public']['Enums']['verification_status'];
           source?: string;
           title: string;
           title_i18n?: NonNullable<Json>;
           updated_at?: string;
         };
         Update: {
+          code?: string | null;
           components?: NonNullable<Json>;
           created_at?: string;
           deleted_at?: string | null;
@@ -1682,6 +1969,7 @@ export type Database = {
           id?: string;
           meal_type?: Database['public']['Enums']['meal_type'];
           plate_split?: NonNullable<Json>;
+          review_status?: Database['public']['Enums']['verification_status'];
           source?: string;
           title?: string;
           title_i18n?: NonNullable<Json>;
@@ -1865,6 +2153,68 @@ export type Database = {
           },
         ];
       };
+      plan_recommendations: {
+        Row: {
+          chat_message_id: string | null;
+          created_at: string;
+          family_member_id: string | null;
+          household_id: string;
+          id: string;
+          meal_plan_id: string | null;
+          recommendation_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          chat_message_id?: string | null;
+          created_at?: string;
+          family_member_id?: string | null;
+          household_id: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          recommendation_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          chat_message_id?: string | null;
+          created_at?: string;
+          family_member_id?: string | null;
+          household_id?: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          recommendation_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'plan_recommendations_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'plan_recommendations_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'plan_recommendations_meal_plan_id_household_id_fkey';
+            columns: ['meal_plan_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'meal_plans';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'plan_recommendations_recommendation_id_fkey';
+            columns: ['recommendation_id'];
+            isOneToOne: false;
+            referencedRelation: 'recommendations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       portions: {
         Row: {
           created_at: string;
@@ -1877,6 +2227,7 @@ export type Database = {
           life_stage: Database['public']['Enums']['life_stage'];
           meal_id: string | null;
           recipe_id: string | null;
+          review_status: Database['public']['Enums']['verification_status'];
           tier: string;
           updated_at: string;
         };
@@ -1891,6 +2242,7 @@ export type Database = {
           life_stage: Database['public']['Enums']['life_stage'];
           meal_id?: string | null;
           recipe_id?: string | null;
+          review_status?: Database['public']['Enums']['verification_status'];
           tier?: string;
           updated_at?: string;
         };
@@ -1905,6 +2257,7 @@ export type Database = {
           life_stage?: Database['public']['Enums']['life_stage'];
           meal_id?: string | null;
           recipe_id?: string | null;
+          review_status?: Database['public']['Enums']['verification_status'];
           tier?: string;
           updated_at?: string;
         };
@@ -3115,9 +3468,45 @@ export type Database = {
         Args: { p_invitation_id: string; p_user_id: string };
         Returns: undefined;
       };
+      activate_meal_plan: {
+        Args: { p_meal_plan_id: string };
+        Returns: {
+          budget_profile_id: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          deleted_at: string | null;
+          end_date: string;
+          failure_reason: string | null;
+          generated_by_assessment_id: string | null;
+          generation_meta: NonNullable<Json>;
+          generation_progress: NonNullable<Json>;
+          household_id: string;
+          id: string;
+          kind: Database['public']['Enums']['plan_kind'];
+          parent_plan_id: string | null;
+          rationale: string | null;
+          start_date: string;
+          status: Database['public']['Enums']['plan_status'];
+          title: string | null;
+          updated_at: string;
+          version: number;
+          week_count: number;
+          weekly_themes: NonNullable<Json>;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'meal_plans';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       age_in_months: { Args: { p_dob: string; p_on?: string }; Returns: number };
       can_author_plans: { Args: { p_household_id: string }; Returns: boolean };
       can_edit_household: { Args: { p_household_id: string }; Returns: boolean };
+      catalog_review_statuses: {
+        Args: Record<PropertyKey, never>;
+        Returns: Database['public']['Enums']['verification_status'][];
+      };
       compute_bmi: {
         Args: { p_height_cm: number; p_weight_kg: number };
         Returns: number;
@@ -3186,6 +3575,28 @@ export type Database = {
         }[];
       };
       my_household_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      plan_generation_ack: {
+        Args: { p_archive?: boolean; p_msg_id: number };
+        Returns: boolean;
+      };
+      plan_generation_enqueue: {
+        Args: {
+          p_attempt?: number;
+          p_delay_seconds?: number;
+          p_meal_plan_id: string;
+        };
+        Returns: number;
+      };
+      plan_generation_read: {
+        Args: { p_qty?: number; p_vt_seconds?: number };
+        Returns: {
+          enqueued_at: string;
+          message: Json;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        }[];
+      };
       recommendation_completeness: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -3232,9 +3643,39 @@ export type Database = {
         Args: { p_id: string; p_table: string };
         Returns: undefined;
       };
+      swap_daily_meal: {
+        Args: { p_alternative_meal_id: string; p_daily_meal_id: string };
+        Returns: {
+          batch_multiplier: number;
+          created_at: string;
+          household_id: string;
+          id: string;
+          is_lunchbox: boolean;
+          meal_id: string;
+          meal_plan_id: string;
+          meal_type: Database['public']['Enums']['meal_type'];
+          notes: string | null;
+          plan_date: string;
+          scheduled_time: string | null;
+          slot: number;
+          source_daily_meal_id: string | null;
+          swapped_from_meal_id: string | null;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'daily_meals';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       transfer_household_ownership: {
         Args: { p_household_id: string; p_new_owner: string };
         Returns: undefined;
+      };
+      write_plan_week: {
+        Args: { p_meal_plan_id: string; p_week: Json };
+        Returns: number;
       };
     };
     Enums: {

@@ -108,6 +108,11 @@ const WEIGHT_REQUEST =
  * `child_weight_request`). Deliberately broad: a false positive only adds the growth-first
  * instruction, while a miss could produce restriction advice.
  */
+/** The text refers to a child (son, daughter, "8-year-old", بیٹا, ...). */
+export function mentionsChild(text: string): boolean {
+  return CHILD_REF.test(text);
+}
+
 export function detectChildWeightRequest(text: string): boolean {
   return CHILD_REF.test(text) && WEIGHT_REQUEST.test(text);
 }

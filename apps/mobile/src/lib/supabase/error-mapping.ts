@@ -86,6 +86,10 @@ export function toDbAppError(error: unknown): AppError {
   if (message.startsWith('CHILD_DATA_CONSENT_REQUIRED'))
     return new AppError('CHILD_DATA_CONSENT_REQUIRED', message, { status: 403 });
   if (isNetworkFailure(e)) return new AppError('NETWORK_ERROR', message);
+  // Plan RPCs (05 §22.12 activate_meal_plan, swap_daily_meal) raise these as P0001.
+  if (message.startsWith('SWAP_NOT_ALLOWED'))
+    return new AppError('VALIDATION_FAILED', message, { status: 400, details: { reason: 'swap' } });
+  if (message.startsWith('CONFLICT')) return new AppError('CONFLICT', message, { status: 409 });
   if (code === '42501' || message.startsWith('FORBIDDEN'))
     return new AppError('FORBIDDEN', message, { status: 403 });
   if (code === '23505') return new AppError('CONFLICT', message, { status: 409 });
@@ -123,6 +127,15 @@ const CODES_WITH_COPY = new Set<string>([
   'INVITE_EMAIL_MISMATCH',
   'ALREADY_MEMBER',
   'UNAUTHENTICATED',
+  'PREMIUM_REQUIRED',
+  'QUOTA_EXCEEDED',
+  'AI_UNAVAILABLE',
+  'AI_TIMEOUT',
+  'AI_OUTPUT_INVALID',
+  'SAFETY_ESCALATION',
+  'FEATURE_DISABLED',
+  'PLAN_ALREADY_ACTIVE',
+  'PLAN_NOT_ADJUSTABLE',
 ]);
 
 /** i18n key (in the `errors` namespace) for any thrown value. */

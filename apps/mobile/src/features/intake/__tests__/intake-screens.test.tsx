@@ -25,6 +25,7 @@ const member = (patch: Partial<FamilyMember>): FamilyMember => ({
   activity_level: 'moderate',
   life_stage: 'adult',
   sort_order: 0,
+  special_modules: [],
   ...patch,
 });
 const USMAN = member({});

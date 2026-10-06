@@ -137,6 +137,19 @@ begin
   values (v_hid, 'user', 'Fixture meal', 'lunch', '[{"label":"Daal","role":"main"}]');
   insert into public.portions (household_id, meal_id, life_stage, grams, household_measure)
   select v_hid, m.id, 'adult', 300, '1 katori' from public.meals m where m.household_id = v_hid;
+  -- Sprint 3 plan rows (S3-02)
+  insert into public.meal_plans (household_id, status, start_date, end_date, created_by_user_id)
+  values (v_hid, 'draft', current_date, current_date + 6, p_owner);
+  insert into public.daily_meals (meal_plan_id, household_id, plan_date, meal_type, meal_id)
+  select mp.id, v_hid, current_date, 'lunch', m.id
+    from public.meal_plans mp, public.meals m where mp.household_id = v_hid and m.household_id = v_hid;
+  insert into public.daily_meal_servings (daily_meal_id, household_id, family_member_id, portion_id)
+  select dm.id, v_hid, fm.id, p.id
+    from public.daily_meals dm, public.family_members fm, public.portions p
+   where dm.household_id = v_hid and fm.household_id = v_hid and fm.name = 'Adult' and p.household_id = v_hid;
+  insert into public.plan_recommendations (household_id, meal_plan_id, recommendation_id)
+  select v_hid, mp.id, (select r.id from public.recommendations r order by r.id limit 1)
+    from public.meal_plans mp where mp.household_id = v_hid;
   insert into public.ai_usage (user_id, household_id, route_key, provider, model)
   values (p_owner, v_hid, 'chat.free', 'anthropic', 'claude-haiku-4-5-20251001');
   insert into public.analytics_events (user_id, household_id, event, occurred_at)
@@ -148,7 +161,8 @@ begin
                              'consents','audit_log','ai_usage','analytics_events',
                              'medical_conditions','allergies','medications','supplements','food_preferences',
                              'food_dislikes','nutrition_goals','pregnancy_profiles','sensory_profiles',
-                             'hydration_targets','ai_assessments','safety_events','recipes','meals','portions']) t
+                             'hydration_targets','ai_assessments','safety_events','recipes','meals','portions',
+                             'meal_plans','daily_meals','daily_meal_servings','plan_recommendations']) t
   on conflict do nothing;
   return v_hid;
 end $$;

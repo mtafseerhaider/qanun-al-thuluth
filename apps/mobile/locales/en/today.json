@@ -1,0 +1,44 @@
+{
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "greetingNamed": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}"
+  },
+  "offline": "You're offline. Showing what's saved on this phone.",
+  "offlineUpdated": "You're offline. Showing what was saved at {{time}}.",
+  "plan": {
+    "generating": "Your plan is being prepared",
+    "generatingBody": "Tap to see progress.",
+    "failedTitle": "Your plan didn't finish",
+    "failedBody": "Nothing is lost. Try again when you're ready.",
+    "tryAgain": "Try again"
+  },
+  "empty": {
+    "title": "No plan for this week",
+    "body": "Create a plan and today's meals will show here.",
+    "create": "Create a plan"
+  },
+  "nextMeal": "Next meal",
+  "allDone": "All of today's meals are logged. Well done.",
+  "todaysMeals": "Today's meals",
+  "summary": "{{logged}} of {{total}} logged",
+  "noMealsToday": "No meals planned for today.",
+  "quick": {
+    "title": "Quick actions",
+    "logMeal": "Log a meal",
+    "askThuluth": "Ask Thuluth",
+    "openPlan": "See the week"
+  },
+  "pendingSync_one": "{{count}} change saved on this phone, will sync",
+  "pendingSync_other": "{{count}} changes saved on this phone, will sync",
+  "tipTitle": "Tip of the day",
+  "feedback": {
+    "title": "Help us improve Thuluth",
+    "body": "You're using an early version. Tell us what works and what doesn't."
+  }
+}

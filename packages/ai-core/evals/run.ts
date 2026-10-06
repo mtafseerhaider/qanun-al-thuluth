@@ -1,6 +1,6 @@
 /**
  * Eval runner (S0-15, S2-11; 21 §9). Usage:
- *   pnpm --filter @thuluth/ai-core evals [--suite smoke|guardrails|child-restriction|fiqh|red-flags|urdu|all]
+ *   pnpm --filter @thuluth/ai-core evals [--suite smoke|guardrails|child-restriction|fiqh|red-flags|urdu|plan-adjust|all]
  *                                        [--case <id>] [--live]
  *
  * Without --live every model call goes to FakeProvider, so CI needs no keys. In fake mode the main
@@ -23,6 +23,8 @@ import {
   runGuardedTurn,
 } from '../src/guardrails/index.ts';
 import type { IntakeRedFlagInput } from '../src/guardrails/index.ts';
+import { adjustSafetyEscalation } from '../src/planning/index.ts';
+import type { PlanMember } from '../src/planning/index.ts';
 import { AnthropicProvider } from '../src/providers/anthropic.ts';
 import { FakeProvider } from '../src/providers/fake.ts';
 import { RouteResolver } from '../src/router/route-resolver.ts';
@@ -59,7 +61,16 @@ interface IntakeCase {
   expect: { hard_codes: string[]; escalation_reason: string | null };
 }
 
-const GUARDRAIL_SUITES = ['child-restriction', 'fiqh', 'red-flags', 'urdu'] as const;
+interface AdjustCase {
+  id: string;
+  locale: 'en' | 'ur';
+  family: 'usman' | 'adults';
+  scope?: string[];
+  prompt: string;
+  expect: { escalate: boolean; reason?: string; recommend?: string; member?: string };
+}
+
+const GUARDRAIL_SUITES = ['child-restriction', 'fiqh', 'red-flags', 'urdu', 'plan-adjust'] as const;
 
 function regex(source: string): RegExp {
   const insensitive = source.startsWith('(?i)');
@@ -276,6 +287,59 @@ function runIntakeRedFlags(): Result[] {
     });
 }
 
+/**
+ * S3-14 plan-adjust safety (06 §4.4): a change request that restricts a child's food or weight must
+ * return SAFETY_ESCALATION (other_clinical, see a paediatrician) before any model is called; adult
+ * and neutral changes must not. Deterministic: the screen runs before the plan.adjust route.
+ */
+function runPlanAdjust(): Result[] {
+  const person = (
+    id: string,
+    ageMonths: number,
+    lifeStage: PlanMember['lifeStage'],
+  ): PlanMember => ({
+    id,
+    name: id.charAt(0).toUpperCase() + id.slice(1),
+    ageMonths,
+    lifeStage,
+    allergies: [],
+    dislikes: [],
+    likes: [],
+    safeFoods: [],
+    modules: [],
+    medicationFlags: [],
+    goals: [],
+    energyTargetKcal: null,
+  });
+  const families: Record<AdjustCase['family'], PlanMember[]> = {
+    usman: [
+      person('usman', 456, 'adult'),
+      person('hina', 414, 'adult'),
+      person('ibrahim', 98, 'child'),
+      person('maryam', 52, 'child'),
+    ],
+    adults: [person('usman', 456, 'adult'), person('hina', 414, 'adult')],
+  };
+  return readJsonl<AdjustCase>('plan-adjust-safety')
+    .filter((c) => !onlyCase || c.id === onlyCase)
+    .map((c) => {
+      const esc = adjustSafetyEscalation(c.prompt, families[c.family], c.scope ?? null, c.locale);
+      const problems: string[] = [];
+      if (!!esc !== c.expect.escalate) problems.push(`escalate ${!!esc}`);
+      if (esc && c.expect.reason && esc.reason !== c.expect.reason)
+        problems.push(`reason ${esc.reason}`);
+      if (esc && c.expect.recommend && esc.recommend !== c.expect.recommend)
+        problems.push(`recommend ${esc.recommend}`);
+      if (esc && c.expect.member && esc.family_member_id !== c.expect.member)
+        problems.push(`member ${esc.family_member_id ?? 'null'}`);
+      if (esc && findChildRestrictionViolations(esc.message).length)
+        problems.push('message restricts');
+      if (esc && c.locale === 'ur' && !hasUrduScript(esc.message))
+        problems.push('message not Urdu');
+      return { id: c.id, problems };
+    });
+}
+
 /** Sanity check that the text red-flag rules see what the turn suite expects (precision report). */
 function redFlagPrecision(results: Result[]): string {
   const cases = readJsonl<TurnCase>('red-flags');
@@ -300,6 +364,8 @@ for (const suite of suites) {
   if (suite === 'smoke') results = await runSmoke();
   else if (suite === 'red-flags') {
     results = [...(await runTurnSuite('red-flags')), ...runIntakeRedFlags()];
+  } else if (suite === 'plan-adjust') {
+    results = runPlanAdjust();
   } else if ((GUARDRAIL_SUITES as readonly string[]).includes(suite)) {
     results = await runTurnSuite(suite);
   } else throw new Error(`Unknown suite ${suite}`);

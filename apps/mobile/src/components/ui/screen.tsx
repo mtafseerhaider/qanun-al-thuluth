@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets, type Edge } from 'react-native-safe-area-context';
 
 import { cn } from '@/theme/cn';
@@ -15,6 +15,9 @@ export interface ScreenProps extends BaseProps {
   edges?: readonly Edge[];
   headerRight?: ReactNode;
   contentClassName?: string;
+  /** Pull to refresh (scrolling screens only). */
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 /** Screen shell: safe area, surface background, keyboard avoidance and a header-role title (08 §4.13). */
@@ -26,6 +29,8 @@ export function Screen({
   headerRight,
   className,
   contentClassName,
+  refreshing = false,
+  onRefresh,
   testID,
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
@@ -64,6 +69,9 @@ export function Screen({
           className="flex-1"
           contentContainerClassName={cn('gap-6 px-4 py-6', contentClassName)}
           keyboardShouldPersistTaps="handled"
+          {...(onRefresh
+            ? { refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }
+            : {})}
         >
           {body}
         </ScrollView>

@@ -1,0 +1,115 @@
+{
+  "mealType": {
+    "suhoor": "Suhoor",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack",
+    "dinner": "Dinner",
+    "iftar": "Iftar"
+  },
+  "status": {
+    "planned": "Not logged yet",
+    "eaten": "Ate",
+    "partly_eaten": "Ate some",
+    "skipped": "Skipped",
+    "swapped": "Swapped"
+  },
+  "acceptance": {
+    "question": "How did {{name}} get on with it?",
+    "0_refused": "Not today",
+    "1_tolerated": "On the plate",
+    "2_touched": "Touched",
+    "3_tasted": "Tasted",
+    "4_ate_some": "Ate some",
+    "5_ate_well": "Ate well"
+  },
+  "adaptation": {
+    "autism": "Sensory-friendly version",
+    "picky": "Gentle version",
+    "allergy": "Allergy-safe version",
+    "pregnancy": "Pregnancy version"
+  },
+  "tags": {
+    "kid_friendly": "Kid-friendly",
+    "autism_friendly": "Sensory-friendly",
+    "sunnah_food": "Sunnah food",
+    "swapped": "Swapped"
+  },
+  "queued": "Saved, will sync",
+  "plateA11y": "Plate: vegetables and fruit {{veg}} percent, protein {{protein}} percent, grains and carbs {{carb}} percent",
+  "plate": {
+    "veg": "Vegetables and fruit",
+    "protein": "Protein",
+    "carb": "Grains and carbs"
+  },
+  "card": {
+    "a11y": "{{type}}: {{title}}. {{logged}} of {{total}} logged",
+    "cellA11y": "{{type}}: {{title}}",
+    "allLogged": "Everyone's logged",
+    "logged": "{{logged}} of {{total}} logged",
+    "everyoneAte": "Everyone ate",
+    "swap": "Swap"
+  },
+  "serving": {
+    "statusGroup": "How did {{name}} eat?",
+    "adaptedMeal": "Has: {{title}}",
+    "secondsWelcome": "Seconds welcome",
+    "statusA11y": "{{name}}: {{status}}"
+  },
+  "guidance": {
+    "adult": {
+      "title": "The Thuluth way",
+      "waterBefore": "Water {{min}} to {{max}} minutes before eating",
+      "sipsDuring": "Small sips only while eating",
+      "waterAfter": "Drink freely {{min}} to {{max}} minutes after",
+      "pace": "Take about {{minutes}} minutes; put the spoon down between bites",
+      "stopPoint": "Stop at about {{min}} to {{max}} percent full",
+      "checkQuestion": "Could I eat a little more? Then it's time to stop.",
+      "seconds": "This is a gentle guide, not a rule."
+    },
+    "child": {
+      "title": "Mealtime together",
+      "together": "Sit together at the table",
+      "bismillah": "Start with Bismillah",
+      "water": "Water is there when they want it",
+      "slow": "No rush: chew and chat",
+      "seconds": "Seconds are welcome when they're still hungry"
+    }
+  },
+  "detail": {
+    "plannedFor": "Planned for {{date}}",
+    "components": "In this meal",
+    "portions": "Who's eating"
+  },
+  "bulk": {
+    "done": "Marked as eaten"
+  },
+  "undo": "Undo",
+  "retry": "Try again",
+  "loading": "Loading meals…",
+  "viewerNotice": "You can view this plan. Someone with edit access logs meals.",
+  "disclaimer": "General guidance, not medical advice. Talk to your doctor about health conditions.",
+  "swap": {
+    "title": "Swap this meal",
+    "current": "Instead of {{title}}",
+    "offline": "You're offline. Swapping needs a connection.",
+    "catalogTitle": "Similar meals",
+    "empty": "No checked alternatives for this meal yet.",
+    "pickA11y": "Swap to {{title}}",
+    "reason": {
+      "allergy": "Allergy-friendly",
+      "budget": "Lower cost",
+      "autism": "Sensory-friendly",
+      "picky": "Gentler for picky eaters",
+      "season": "In season",
+      "preference": "Something different"
+    },
+    "aiTitle": "Ask for a new idea",
+    "upsellTitle": "Fresh ideas with Premium",
+    "upsellBody": "Premium suggests a new meal that fits everyone's needs. The similar meals above stay free.",
+    "aiPaused": "New ideas are paused for now. Please pick a similar meal.",
+    "askAi": "Suggest a different meal",
+    "useAi": "Use this meal",
+    "aiRequest": "Swap {{title}} for a different meal that suits the whole family."
+  }
+}

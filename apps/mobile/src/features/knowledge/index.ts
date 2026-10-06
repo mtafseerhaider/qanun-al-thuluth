@@ -12,5 +12,10 @@ export {
   SourceCard,
   SourceCitationChip,
 } from './components/knowledge-parts';
-export { useTraditionPreference } from './hooks/use-knowledge';
+export {
+  usePublicSources,
+  useRecommendationIdsForSources,
+  useTraditionPreference,
+  useVerifiedRecommendationIds,
+} from './hooks/use-knowledge';
 export type { EvidenceView, RecommendationView, SourceView } from './utils/knowledge-rules';

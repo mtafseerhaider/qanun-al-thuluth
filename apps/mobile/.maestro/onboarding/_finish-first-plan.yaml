@@ -1,0 +1,42 @@
+# Sprint 3 step 6 (S3-07): after "Create our first week" the first plan is generated (Realtime with
+# polling fallback), activated, and "See today" completes onboarding. AI generation can take a while;
+# the template fallback appears after 120 s and is used if offered.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+---
+- extendedWaitUntil:
+    visible:
+      id: 'first-plan.screen'
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: 'first-plan.generating|first-plan.ready|first-plan.failed'
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: 'first-plan.ready|first-plan.failed|first-plan.timeout'
+    timeout: 150000
+- runFlow:
+    when:
+      visible:
+        id: 'first-plan.timeout'
+    commands:
+      - tapOn:
+          id: 'first-plan.timeout-template'
+- runFlow:
+    when:
+      visible:
+        id: 'first-plan.failed'
+    commands:
+      - tapOn:
+          id: 'first-plan.template'
+- extendedWaitUntil:
+    visible:
+      id: 'first-plan.done'
+    timeout: 150000
+- takeScreenshot: first-plan-ready
+- tapOn:
+    id: 'first-plan.done'
+- extendedWaitUntil:
+    visible:
+      id: 'tab.today'
+    timeout: 15000

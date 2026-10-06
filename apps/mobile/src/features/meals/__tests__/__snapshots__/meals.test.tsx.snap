@@ -1,0 +1,210 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ThuluthGuidance (24 S3-10) adult variant carries water timing, pace and the stop point 1`] = `
+<RNCSafeAreaProvider
+  onInsetsChange={[Function]}
+  style={
+    [
+      {
+        "flex": 1,
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    className="rounded-lg gap-3 bg-surface-sunken p-3"
+    testID="guidance.adult"
+  >
+    <Text
+      className="font-ui-semibold text-overline uppercase text-ink-muted"
+      maxFontSizeMultiplier={1.4}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+    >
+      The Thuluth way
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.adult.line-0"
+    >
+      Water 20 to 30 minutes before eating
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.adult.line-1"
+    >
+      Small sips only while eating
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.adult.line-2"
+    >
+      Drink freely 30 to 60 minutes after
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.adult.line-3"
+    >
+      Take about 20 minutes; put the spoon down between bites
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.adult.line-4"
+    >
+      Stop at about 70 to 80 percent full
+    </Text>
+    <View
+      className="gap-1"
+    >
+      <Text
+        className="font-ui-semibold text-bodyStrong text-ink"
+        maxFontSizeMultiplier={1.6}
+        style={
+          {
+            "includeFontPadding": false,
+          }
+        }
+        testID="guidance.adult.check"
+      >
+        Could I eat a little more? Then it's time to stop.
+      </Text>
+      <Text
+        className="font-ui text-caption text-ink-muted"
+        maxFontSizeMultiplier={1.6}
+        style={
+          {
+            "includeFontPadding": false,
+          }
+        }
+      >
+        This is a gentle guide, not a rule.
+      </Text>
+    </View>
+  </View>
+</RNCSafeAreaProvider>
+`;
+
+exports[`ThuluthGuidance (24 S3-10) child variant never mentions restriction or numbers 1`] = `
+<RNCSafeAreaProvider
+  onInsetsChange={[Function]}
+  style={
+    [
+      {
+        "flex": 1,
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    className="rounded-lg gap-3 bg-surface-sunken p-3"
+    testID="guidance.child"
+  >
+    <Text
+      className="font-ui-semibold text-overline uppercase text-ink-muted"
+      maxFontSizeMultiplier={1.4}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+    >
+      Mealtime together
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.child.line-0"
+    >
+      Sit together at the table
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.child.line-1"
+    >
+      Start with Bismillah
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.child.line-2"
+    >
+      Water is there when they want it
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.child.line-3"
+    >
+      No rush: chew and chat
+    </Text>
+    <Text
+      className="font-ui text-caption text-ink"
+      maxFontSizeMultiplier={1.6}
+      style={
+        {
+          "includeFontPadding": false,
+        }
+      }
+      testID="guidance.child.line-4"
+    >
+      Seconds are welcome when they're still hungry
+    </Text>
+  </View>
+</RNCSafeAreaProvider>
+`;

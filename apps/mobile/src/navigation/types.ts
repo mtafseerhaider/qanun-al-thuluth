@@ -79,22 +79,30 @@ export type OnboardingStackParamList = {
   IntakeWizard: NavigatorScreenParams<IntakeStackParamList> | undefined;
   /** The screen runs `ai-intake-assess` itself (24 S2-15); ids are optional for a re-open. */
   AssessmentSummary: { assessmentIds?: Uuid[] } | undefined;
-  FirstPlanGeneration: { mealPlanId: Uuid };
+  /** Step 6 (24 S3-07): the screen starts generation itself; the id resumes a known plan. */
+  FirstPlanGeneration: { mealPlanId?: Uuid } | undefined;
 };
 
-export type TodayStackParamList = {
+/**
+ * Meal and recipe screens registered in both the Today and Plan stacks (Sprint 3), so the back
+ * button returns to the tab the user came from.
+ */
+export type MealStackParamList = {
+  MealDetail: { dailyMealId: Uuid };
+  RecipeDetail: { recipeId: Uuid; dailyMealId?: Uuid };
+};
+
+export type TodayStackParamList = MealStackParamList & {
   Dashboard: undefined;
   DailyMeals: { date?: IsoDate; familyMemberId?: Uuid };
-  MealDetail: { dailyMealId: Uuid };
   DailyReflection: { date?: IsoDate; familyMemberId?: Uuid };
   NotificationsCenter: undefined;
 };
 
-export type PlanStackParamList = {
+export type PlanStackParamList = MealStackParamList & {
   MealPlans: undefined;
   MealPlanDetail: { mealPlanId: Uuid; weekIndex?: number };
   Recipes: { mealType?: MealType; filter?: RecipeFilterPreset; pickForDailyMealId?: Uuid };
-  RecipeDetail: { recipeId: Uuid; dailyMealId?: Uuid };
   GroceryLists: undefined;
   GroceryListDetail: { groceryListId: Uuid };
 };
@@ -155,6 +163,8 @@ export type MoreStackParamList = {
   HelpCenter: { query?: string };
   HelpArticle: { slug: string };
   About: undefined;
+  /** Sprint 3 addition (24 S3-17): internal alpha feedback form. */
+  AlphaFeedback: undefined;
   /** Sprint 0 addition: hidden debug tools (development builds or `debug_menu` flag). */
   Debug: undefined;
 };
@@ -190,7 +200,7 @@ export type RootStackParamList = {
   GrowthAlertModal: { growthTrackingId: Uuid };
   InviteCaregiverModal: { householdId: Uuid };
   AcceptInvite: { token: string };
-  PlanGenerationProgress: { mealPlanId: Uuid };
+  PlanGenerationProgress: { mealPlanId: Uuid; pollAfterMs?: number | null };
   AdjustPlanModal: { mealPlanId: Uuid; dailyMealId?: Uuid };
   ShoppingMode: { groceryListId: Uuid };
   RamadanSetup: NavigatorScreenParams<RamadanSetupStackParamList>;

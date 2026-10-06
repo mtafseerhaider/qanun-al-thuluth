@@ -18,3 +18,30 @@ export async function requireUser(req: Request, verify: ClaimsVerifier): Promise
     throw new HttpError('UNAUTHENTICATED', 'Your session has expired. Sign in again.');
   return { userId: claims.sub, jwt, ...(claims.email ? { email: claims.email } : {}) };
 }
+
+/** Constant-time string comparison (length leaks only). */
+function safeEqual(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a);
+  const y = new TextEncoder().encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
+/** Reads the internal secrets (current and, during rotation, next: 19 §8.1). */
+export type InternalSecrets = () => string[];
+
+export const internalSecretsFromEnv: InternalSecrets = () =>
+  [Deno.env.get('INTERNAL_CRON_SECRET'), Deno.env.get('INTERNAL_CRON_SECRET_NEXT')].filter(
+    (s): s is string => !!s && s.length >= 16,
+  );
+
+/**
+ * Internal routes (workers, cron): the `x-internal-secret` header must match a configured secret.
+ * With no secret configured every call is refused.
+ */
+export function requireInternal(req: Request, secrets: InternalSecrets): void {
+  const given = req.headers.get('x-internal-secret') ?? '';
+  const ok = given.length > 0 && secrets().some((s) => safeEqual(given, s));
+  if (!ok) throw new HttpError('UNAUTHENTICATED', 'Not allowed');
+}

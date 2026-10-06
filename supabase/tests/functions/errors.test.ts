@@ -71,3 +71,27 @@ Deno.test('MODULE_NOT_APPLICABLE maps to VALIDATION_FAILED with rule module_not_
   });
   assertEquals(json.details, { goal_type: 'breastfeeding_support', rule: 'module_not_applicable' });
 });
+
+Deno.test(
+  'plan entitlement trigger errors map to PLAN_ALREADY_ACTIVE and PREMIUM_REQUIRED (S3-02)',
+  async () => {
+    const active = fromPostgrestError({
+      code: 'P0001',
+      message: 'PLAN_ALREADY_ACTIVE',
+      details: '{"resource": "meal_plans", "limit": 1, "current": 1}',
+    });
+    assertEquals(active.code, 'PLAN_ALREADY_ACTIVE');
+    assertEquals(active.details, { resource: 'meal_plans', limit: 1, current: 1 });
+    assertEquals(errorResponse(active, 'r').status, 409);
+    const premium = fromPostgrestError({
+      code: 'P0001',
+      message: 'PREMIUM_REQUIRED',
+      details: '{"reason": "multi_week_or_kind", "kind": "standard", "week_count": 4}',
+    });
+    assertEquals(premium.code, 'PREMIUM_REQUIRED');
+    assertEquals(premium.details.week_count, 4);
+    const res = errorResponse(premium, 'r');
+    assertEquals(res.status, 402);
+    assertEquals((await res.json()).error.details.reason, 'multi_week_or_kind');
+  },
+);

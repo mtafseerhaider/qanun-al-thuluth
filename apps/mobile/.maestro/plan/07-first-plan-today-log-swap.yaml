@@ -1,0 +1,92 @@
+# Sprint 3 (S3-07, S3-11, S3-12, S3-13): first plan -> Today -> swap a meal -> log a meal.
+# Runs the full onboarding flow (03, which now ends with the first plan) and continues on Today.
+# Needs the staging/local backend with the AI worker (or the template fallback) and at least one
+# verified catalog meal (seed with catalog.include_in_review on non-production). Uses testIDs only,
+# so it passes in en and ur.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 07 first plan, Today, swap and log
+tags:
+  - plan
+  - sprint-3
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+
+# T1 Today: header, the next meal and the tip of the day
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: 'today.next-meal.card'
+    timeout: 30000
+- assertVisible:
+    id: 'today.header'
+- takeScreenshot: 07-today
+
+# X7 Swap: a catalog alternative when one is verified; otherwise free accounts see the upsell
+- tapOn:
+    id: 'today.next-meal.card.swap'
+- extendedWaitUntil:
+    visible:
+      id: 'swap-meal.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'swap-meal.upsell'
+- assertNotVisible:
+    id: 'swap-meal.ask-ai'
+- takeScreenshot: 07-swap
+- runFlow:
+    when:
+      visible:
+        id: 'swap-meal.alternative-0'
+    commands:
+      - tapOn:
+          id: 'swap-meal.alternative-0'
+- runFlow:
+    when:
+      visible:
+        id: 'swap-meal.empty'
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: 'today.next-meal.card'
+    timeout: 15000
+
+# T3 Meal Detail: guidance, then log the first person's serving and everyone else's
+- tapOn:
+    id: 'today.next-meal.card.open'
+- extendedWaitUntil:
+    visible:
+      id: 'meal-detail.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'meal-detail.guidance'
+- scrollUntilVisible:
+    element:
+      id: 'meal-detail.servings.row-0.status.eaten'
+    direction: DOWN
+- tapOn:
+    id: 'meal-detail.servings.row-0.status.eaten'
+- assertVisible:
+    id: 'meal-detail.servings.row-0.status.eaten'
+    selected: true
+- scrollUntilVisible:
+    element:
+      id: 'meal-detail.everyone-ate'
+    direction: DOWN
+- tapOn:
+    id: 'meal-detail.everyone-ate'
+- assertVisible:
+    id: 'meal-detail.undo'
+- takeScreenshot: 07-logged
+- back
+
+# Back on Today the meal counts as logged
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'today.meals'

@@ -22,3 +22,11 @@ i18next resources for `@thuluth/mobile`, one JSON file per namespace (docs/07 §
 > new namespaces. Their Urdu strings are drafts: the medical safety copy (red flags, clinician card,
 > fasting with insulin) needs clinical review, and the grade and tradition labels (صحیح، حسن، موثق،
 > سنی ماخذ، شیعہ ماخذ) need the Islamic content reviewer (docs/13).
+
+> **Sprint 3 additions needing review.** `meals.json` (meal cards, logging, acceptance labels from
+> docs/02 §8.2, Thuluth guidance adult and child variants, swap sheet), `plan.json` (plan list, plan
+> detail, generation progress and tips), `today.json` (dashboard), `recipes.json` (recipe detail) and
+> `help.json` (alpha feedback form) are new namespaces; `navigation.json` and `settings.json` gained
+> keys. Their Urdu strings are drafts for a native reviewer. The guidance lines (water timing, the
+> 70 to 80 percent stop point, the children's "seconds welcome" framing) also need the content team,
+> and "Sunnah food" / "Bismillah" wording needs the Islamic content reviewer (docs/13).
