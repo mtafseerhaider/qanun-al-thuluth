@@ -298,11 +298,11 @@ secure_password_change = true
 
 [auth.email.template.magic_link]        # OTP code email for existing users ({{ .Token }}, en + ur)
 subject = "Your Thuluth code / ثلث کوڈ"
-content_path = "./templates/auth/magic-link.html"
+content_path = "./supabase/templates/auth/magic-link.html"
 
 [auth.email.template.confirmation]      # OTP code email on first sign-in (user created)
 subject = "Your Thuluth code / ثلث کوڈ"
-content_path = "./templates/auth/confirmation.html"
+content_path = "./supabase/templates/auth/confirmation.html"
 
 [auth.external.google]
 enabled = true

@@ -99,11 +99,11 @@ secure_password_change = true
 # only: on hosted projects paste the same subjects and bodies into Auth > Email Templates.
 [auth.email.template.magic_link]
 subject = "Your Thuluth code / ثلث کوڈ"
-content_path = "./templates/auth/magic-link.html"
+content_path = "./supabase/templates/auth/magic-link.html"
 
 [auth.email.template.confirmation]
 subject = "Your Thuluth code / ثلث کوڈ"
-content_path = "./templates/auth/confirmation.html"
+content_path = "./supabase/templates/auth/confirmation.html"
 
 # OAuth providers. Credentials come from supabase/.env (gitignored) or the shell:
 #   GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_SECRET, APPLE_OAUTH_SECRET
