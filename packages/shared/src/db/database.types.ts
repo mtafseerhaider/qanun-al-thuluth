@@ -185,6 +185,76 @@ export type Database = {
           },
         ];
       };
+      ai_memories: {
+        Row: {
+          confidence: number;
+          created_at: string;
+          deleted_at: string | null;
+          embedding: string;
+          expires_at: string | null;
+          fact: string;
+          family_member_id: string | null;
+          household_id: string;
+          id: string;
+          kind: string;
+          source_message_id: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          confidence?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          embedding: string;
+          expires_at?: string | null;
+          fact: string;
+          family_member_id?: string | null;
+          household_id: string;
+          id?: string;
+          kind?: string;
+          source_message_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          confidence?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          embedding?: string;
+          expires_at?: string | null;
+          fact?: string;
+          family_member_id?: string | null;
+          household_id?: string;
+          id?: string;
+          kind?: string;
+          source_message_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_memories_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'ai_memories_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ai_memories_source_message_id_fkey';
+            columns: ['source_message_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_messages';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ai_model_routes: {
         Row: {
           created_at: string;
@@ -693,6 +763,126 @@ export type Database = {
             columns: ['household_id'];
             isOneToOne: false;
             referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      chat_messages: {
+        Row: {
+          attachments: NonNullable<Json>;
+          client_message_id: string | null;
+          content: string;
+          created_at: string;
+          finish_reason: string | null;
+          household_id: string;
+          id: string;
+          model: string | null;
+          role: Database['public']['Enums']['chat_role'];
+          safety_flags: string[];
+          session_id: string;
+          tokens_in: number | null;
+          tokens_out: number | null;
+          tool_calls: NonNullable<Json>;
+          updated_at: string;
+        };
+        Insert: {
+          attachments?: NonNullable<Json>;
+          client_message_id?: string | null;
+          content?: string;
+          created_at?: string;
+          finish_reason?: string | null;
+          household_id: string;
+          id?: string;
+          model?: string | null;
+          role: Database['public']['Enums']['chat_role'];
+          safety_flags?: string[];
+          session_id: string;
+          tokens_in?: number | null;
+          tokens_out?: number | null;
+          tool_calls?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Update: {
+          attachments?: NonNullable<Json>;
+          client_message_id?: string | null;
+          content?: string;
+          created_at?: string;
+          finish_reason?: string | null;
+          household_id?: string;
+          id?: string;
+          model?: string | null;
+          role?: Database['public']['Enums']['chat_role'];
+          safety_flags?: string[];
+          session_id?: string;
+          tokens_in?: number | null;
+          tokens_out?: number | null;
+          tool_calls?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_messages_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'chat_messages_session_id_household_id_fkey';
+            columns: ['session_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_sessions';
+            referencedColumns: ['id', 'household_id'];
+          },
+        ];
+      };
+      chat_sessions: {
+        Row: {
+          context_snapshot: NonNullable<Json>;
+          created_at: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          last_message_at: string | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          context_snapshot?: NonNullable<Json>;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          last_message_at?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          context_snapshot?: NonNullable<Json>;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          last_message_at?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_sessions_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'chat_sessions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -1614,6 +1804,7 @@ export type Database = {
           created_at: string;
           currency: string;
           deleted_at: string | null;
+          downgrade_kept_at: string | null;
           family_size: number;
           hijri_offset_days: number;
           id: string;
@@ -1631,6 +1822,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           deleted_at?: string | null;
+          downgrade_kept_at?: string | null;
           family_size?: number;
           hijri_offset_days?: number;
           id?: string;
@@ -1648,6 +1840,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           deleted_at?: string | null;
+          downgrade_kept_at?: string | null;
           family_size?: number;
           hijri_offset_days?: number;
           id?: string;
@@ -2204,6 +2397,92 @@ export type Database = {
             columns: ['meal_id'];
             isOneToOne: false;
             referencedRelation: 'meals';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      meal_logs: {
+        Row: {
+          created_at: string;
+          daily_meal_serving_id: string | null;
+          deleted_at: string | null;
+          description: string;
+          eaten_at: string;
+          estimated_nutrition: NonNullable<Json>;
+          family_member_id: string;
+          fullness_after: number | null;
+          fullness_before: number | null;
+          household_id: string;
+          id: string;
+          logged_by_user_id: string | null;
+          meal_type: Database['public']['Enums']['meal_type'];
+          photo_path: string | null;
+          source: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          daily_meal_serving_id?: string | null;
+          deleted_at?: string | null;
+          description?: string;
+          eaten_at?: string;
+          estimated_nutrition?: NonNullable<Json>;
+          family_member_id: string;
+          fullness_after?: number | null;
+          fullness_before?: number | null;
+          household_id: string;
+          id?: string;
+          logged_by_user_id?: string | null;
+          meal_type: Database['public']['Enums']['meal_type'];
+          photo_path?: string | null;
+          source?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          daily_meal_serving_id?: string | null;
+          deleted_at?: string | null;
+          description?: string;
+          eaten_at?: string;
+          estimated_nutrition?: NonNullable<Json>;
+          family_member_id?: string;
+          fullness_after?: number | null;
+          fullness_before?: number | null;
+          household_id?: string;
+          id?: string;
+          logged_by_user_id?: string | null;
+          meal_type?: Database['public']['Enums']['meal_type'];
+          photo_path?: string | null;
+          source?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'meal_logs_daily_meal_serving_id_fkey';
+            columns: ['daily_meal_serving_id'];
+            isOneToOne: false;
+            referencedRelation: 'daily_meal_servings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meal_logs_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'meal_logs_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meal_logs_logged_by_user_id_fkey';
+            columns: ['logged_by_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -2807,6 +3086,13 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: 'plan_recommendations_chat_message_id_fkey';
+            columns: ['chat_message_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_messages';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'plan_recommendations_family_member_id_household_id_fkey';
             columns: ['family_member_id', 'household_id'];
             isOneToOne: false;
@@ -2905,6 +3191,54 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      prayer_times_cache: {
+        Row: {
+          city: string;
+          country_code: string;
+          created_at: string;
+          fetched_at: string;
+          hijri: NonNullable<Json>;
+          id: string;
+          method: number;
+          month: number;
+          school: number;
+          source: string;
+          timings: NonNullable<Json>;
+          updated_at: string;
+          year: number;
+        };
+        Insert: {
+          city: string;
+          country_code: string;
+          created_at?: string;
+          fetched_at?: string;
+          hijri?: NonNullable<Json>;
+          id?: string;
+          method: number;
+          month: number;
+          school?: number;
+          source?: string;
+          timings: NonNullable<Json>;
+          updated_at?: string;
+          year: number;
+        };
+        Update: {
+          city?: string;
+          country_code?: string;
+          created_at?: string;
+          fetched_at?: string;
+          hijri?: NonNullable<Json>;
+          id?: string;
+          method?: number;
+          month?: number;
+          school?: number;
+          source?: string;
+          timings?: NonNullable<Json>;
+          updated_at?: string;
+          year?: number;
+        };
+        Relationships: [];
       };
       pregnancy_profiles: {
         Row: {
@@ -3065,6 +3399,139 @@ export type Database = {
           },
         ];
       };
+      promo_campaigns: {
+        Row: {
+          allowed_countries: string[] | null;
+          created_at: string;
+          created_by: string | null;
+          ends_at: string;
+          grant_days: number;
+          id: string;
+          max_redemptions: number;
+          name: string;
+          org_kind: string;
+          redeemed_count: number;
+          starts_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          allowed_countries?: string[] | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at: string;
+          grant_days: number;
+          id?: string;
+          max_redemptions: number;
+          name: string;
+          org_kind: string;
+          redeemed_count?: number;
+          starts_at: string;
+          updated_at?: string;
+        };
+        Update: {
+          allowed_countries?: string[] | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string;
+          grant_days?: number;
+          id?: string;
+          max_redemptions?: number;
+          name?: string;
+          org_kind?: string;
+          redeemed_count?: number;
+          starts_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'promo_campaigns_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      promo_codes: {
+        Row: {
+          campaign_id: string;
+          code_hash: string;
+          created_at: string;
+          id: string;
+          redeemed_at: string | null;
+          single_use: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          campaign_id: string;
+          code_hash: string;
+          created_at?: string;
+          id?: string;
+          redeemed_at?: string | null;
+          single_use?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          campaign_id?: string;
+          code_hash?: string;
+          created_at?: string;
+          id?: string;
+          redeemed_at?: string | null;
+          single_use?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'promo_codes_campaign_id_fkey';
+            columns: ['campaign_id'];
+            isOneToOne: false;
+            referencedRelation: 'promo_campaigns';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      promo_redemptions: {
+        Row: {
+          created_at: string;
+          granted_until: string;
+          id: string;
+          promo_code_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          granted_until: string;
+          id?: string;
+          promo_code_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          granted_until?: string;
+          id?: string;
+          promo_code_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'promo_redemptions_promo_code_id_fkey';
+            columns: ['promo_code_id'];
+            isOneToOne: false;
+            referencedRelation: 'promo_codes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'promo_redemptions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       prompt_templates: {
         Row: {
           body: string;
@@ -3169,6 +3636,75 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      ramadan_plans: {
+        Row: {
+          calc_params: NonNullable<Json>;
+          child_participation: NonNullable<Json>;
+          city_prayer_times_source: string;
+          created_at: string;
+          deleted_at: string | null;
+          end_date: string;
+          hijri_year: number;
+          household_id: string;
+          id: string;
+          meal_plan_id: string | null;
+          prayer_times: NonNullable<Json>;
+          pregnancy_adjustments: NonNullable<Json>;
+          start_date: string;
+          suhoor_time_strategy: string;
+          updated_at: string;
+        };
+        Insert: {
+          calc_params?: NonNullable<Json>;
+          child_participation?: NonNullable<Json>;
+          city_prayer_times_source?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          end_date: string;
+          hijri_year: number;
+          household_id: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          prayer_times?: NonNullable<Json>;
+          pregnancy_adjustments?: NonNullable<Json>;
+          start_date: string;
+          suhoor_time_strategy?: string;
+          updated_at?: string;
+        };
+        Update: {
+          calc_params?: NonNullable<Json>;
+          child_participation?: NonNullable<Json>;
+          city_prayer_times_source?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          end_date?: string;
+          hijri_year?: number;
+          household_id?: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          prayer_times?: NonNullable<Json>;
+          pregnancy_adjustments?: NonNullable<Json>;
+          start_date?: string;
+          suhoor_time_strategy?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ramadan_plans_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ramadan_plans_meal_plan_id_household_id_fkey';
+            columns: ['meal_plan_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'meal_plans';
+            referencedColumns: ['id', 'household_id'];
+          },
+        ];
       };
       rate_limit_buckets: {
         Row: {
@@ -3497,6 +4033,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      revenuecat_events: {
+        Row: {
+          app_user_id: string;
+          created_at: string;
+          environment: string;
+          error: string | null;
+          event_id: string;
+          event_timestamp: string;
+          payload: NonNullable<Json>;
+          processed_at: string | null;
+          received_at: string;
+          type: string;
+          updated_at: string;
+        };
+        Insert: {
+          app_user_id: string;
+          created_at?: string;
+          environment: string;
+          error?: string | null;
+          event_id: string;
+          event_timestamp: string;
+          payload: NonNullable<Json>;
+          processed_at?: string | null;
+          received_at?: string;
+          type: string;
+          updated_at?: string;
+        };
+        Update: {
+          app_user_id?: string;
+          created_at?: string;
+          environment?: string;
+          error?: string | null;
+          event_id?: string;
+          event_timestamp?: string;
+          payload?: NonNullable<Json>;
+          processed_at?: string | null;
+          received_at?: string;
+          type?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       safety_events: {
         Row: {
           category: string;
@@ -3547,6 +4125,13 @@ export type Database = {
           user_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'safety_events_chat_message_id_fkey';
+            columns: ['chat_message_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_messages';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'safety_events_family_member_id_household_id_fkey';
             columns: ['family_member_id', 'household_id'];
@@ -4006,14 +4591,21 @@ export type Database = {
       };
       subscriptions: {
         Row: {
+          country_code: string | null;
           created_at: string;
           current_period_end: string | null;
+          entitlement: string;
+          environment: string;
+          grace_period_expires_at: string | null;
           id: string;
           last_event_at: string | null;
           last_event_id: string | null;
+          original_transaction_id: string | null;
+          period_type: string | null;
           product_id: string;
           raw_event: NonNullable<Json>;
           rc_app_user_id: string;
+          refunded_at: string | null;
           status: Database['public']['Enums']['subscription_status'];
           store: string;
           tier: Database['public']['Enums']['subscription_tier'];
@@ -4022,14 +4614,21 @@ export type Database = {
           will_renew: boolean;
         };
         Insert: {
+          country_code?: string | null;
           created_at?: string;
           current_period_end?: string | null;
+          entitlement?: string;
+          environment?: string;
+          grace_period_expires_at?: string | null;
           id?: string;
           last_event_at?: string | null;
           last_event_id?: string | null;
+          original_transaction_id?: string | null;
+          period_type?: string | null;
           product_id: string;
           raw_event?: NonNullable<Json>;
           rc_app_user_id: string;
+          refunded_at?: string | null;
           status: Database['public']['Enums']['subscription_status'];
           store: string;
           tier?: Database['public']['Enums']['subscription_tier'];
@@ -4038,14 +4637,21 @@ export type Database = {
           will_renew?: boolean;
         };
         Update: {
+          country_code?: string | null;
           created_at?: string;
           current_period_end?: string | null;
+          entitlement?: string;
+          environment?: string;
+          grace_period_expires_at?: string | null;
           id?: string;
           last_event_at?: string | null;
           last_event_id?: string | null;
+          original_transaction_id?: string | null;
+          period_type?: string | null;
           product_id?: string;
           raw_event?: NonNullable<Json>;
           rc_app_user_id?: string;
+          refunded_at?: string | null;
           status?: Database['public']['Enums']['subscription_status'];
           store?: string;
           tier?: Database['public']['Enums']['subscription_tier'];
@@ -4117,6 +4723,7 @@ export type Database = {
       users: {
         Row: {
           age_attested_at: string | null;
+          ai_memory_enabled: boolean;
           analytics_opt_out: boolean;
           avatar_path: string | null;
           country_code: string | null;
@@ -4137,6 +4744,7 @@ export type Database = {
         };
         Insert: {
           age_attested_at?: string | null;
+          ai_memory_enabled?: boolean;
           analytics_opt_out?: boolean;
           avatar_path?: string | null;
           country_code?: string | null;
@@ -4157,6 +4765,7 @@ export type Database = {
         };
         Update: {
           age_attested_at?: string | null;
+          ai_memory_enabled?: boolean;
           analytics_opt_out?: boolean;
           avatar_path?: string | null;
           country_code?: string | null;
@@ -4482,12 +5091,21 @@ export type Database = {
         };
       };
       age_in_months: { Args: { p_dob: string; p_on?: string }; Returns: number };
+      ai_quota_check: {
+        Args: { p_route_key: string; p_user_id: string };
+        Returns: {
+          allowed: boolean;
+          degrade_to: string;
+          remaining: number;
+        }[];
+      };
       can_author_plans: { Args: { p_household_id: string }; Returns: boolean };
       can_edit_household: { Args: { p_household_id: string }; Returns: boolean };
       catalog_review_statuses: {
         Args: Record<PropertyKey, never>;
         Returns: Database['public']['Enums']['verification_status'][];
       };
+      clear_ai_memories: { Args: { p_household_id: string }; Returns: number };
       compute_bmi: {
         Args: { p_height_cm: number; p_weight_kg: number };
         Returns: number;
@@ -4504,6 +5122,7 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      get_my_entitlements: { Args: { p_household?: string }; Returns: Json };
       has_active_consent: {
         Args: { p_household?: string; p_kind: string; p_user: string };
         Returns: boolean;
@@ -4521,6 +5140,10 @@ export type Database = {
         Args: { p_household_id: string };
         Returns: boolean;
       };
+      household_is_read_only: {
+        Args: { p_household_id: string };
+        Returns: boolean;
+      };
       household_role_of: {
         Args: { p_household_id: string };
         Returns: Database['public']['Enums']['household_role'];
@@ -4535,9 +5158,31 @@ export type Database = {
         Returns: boolean;
       };
       is_minor: { Args: { p_dob: string; p_on?: string }; Returns: boolean };
+      keep_household_on_downgrade: {
+        Args: { p_household_id: string };
+        Returns: undefined;
+      };
       life_stage_for_dob: {
         Args: { p_dob: string; p_on?: string };
         Returns: Database['public']['Enums']['life_stage'];
+      };
+      match_ai_memories: {
+        Args: {
+          p_family_member_id?: string;
+          p_household_id: string;
+          p_limit?: number;
+          p_query_embedding: string;
+        };
+        Returns: {
+          confidence: number;
+          created_at: string;
+          fact: string;
+          family_member_id: string;
+          id: string;
+          kind: string;
+          score: number;
+          similarity: number;
+        }[];
       };
       match_knowledge: {
         Args: {
@@ -4564,6 +5209,11 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: string[];
       };
+      path_household_id: { Args: { p_name: string }; Returns: string };
+      path_segment_uuid: {
+        Args: { p_index: number; p_name: string };
+        Returns: string;
+      };
       plan_generation_ack: {
         Args: { p_archive?: boolean; p_msg_id: number };
         Returns: boolean;
@@ -4586,6 +5236,7 @@ export type Database = {
           vt: string;
         }[];
       };
+      premium_for: { Args: { p_household?: string }; Returns: boolean };
       recommendation_completeness: {
         Args: Record<PropertyKey, never>;
         Returns: {

@@ -65,8 +65,13 @@ select tests.clear_authentication();
 -- ---- audit_log ------------------------------------------------------------------------------------
 select ok((select count(*) from public.audit_log where household_id = :'hid' and entity = 'family_members') >= 3,
   'family_members inserts are audited');
-select is((select diff from public.audit_log where household_id = :'hid' and entity = 'family_members' and action = 'update' order by at limit 1),
-  '{"special_modules":"changed"}'::jsonb, 'family_members audit is keys-only (no health values)');
+-- every update row in one transaction shares `at`, so assert over all of them rather than picking one
+select ok(exists (select 1 from public.audit_log where household_id = :'hid' and entity = 'family_members' and action = 'update'
+                    and diff = '{"special_modules":"changed"}'::jsonb)
+          and not exists (select 1 from public.audit_log a, jsonb_each_text(a.diff) d
+                           where a.household_id = :'hid' and a.entity = 'family_members' and a.action = 'update'
+                             and d.value <> 'changed'),
+  'family_members audit is keys-only (no health values)');
 select ok(exists (select 1 from public.audit_log where entity = 'household_invitations' and household_id = :'hid'
                   and not (diff -> 'new' ? 'token_hash')),
   'invitation audit rows redact token_hash');

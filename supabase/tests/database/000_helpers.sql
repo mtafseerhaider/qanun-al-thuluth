@@ -176,6 +176,18 @@ begin
   values (p_owner, v_hid, 'chat.free', 'anthropic', 'claude-haiku-4-5-20251001');
   insert into public.analytics_events (user_id, household_id, event, occurred_at)
   values (p_owner, v_hid, 'household.created', now());
+  -- Sprint 5 chat, memory, meal log and Ramadan rows (S5-02)
+  insert into public.chat_sessions (household_id, user_id, title) values (v_hid, p_owner, 'Fixture chat');
+  insert into public.chat_messages (session_id, household_id, role, content)
+  select s.id, v_hid, 'user', 'Fixture question' from public.chat_sessions s where s.household_id = v_hid;
+  insert into public.ai_memories (household_id, fact, embedding, source_message_id, kind)
+  select v_hid, 'Family prefers desi breakfast on weekends',
+         array_fill(0.01::real, array[1536])::extensions.vector, m.id, 'preference'
+    from public.chat_messages m where m.household_id = v_hid;
+  insert into public.meal_logs (household_id, family_member_id, meal_type, description)
+  select v_hid, fm.id, 'lunch', 'Daal chawal' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.ramadan_plans (household_id, hijri_year, start_date, end_date)
+  values (v_hid, 1448, date '2027-02-08', date '2027-03-09');
   -- audit_log rows are written by the audit triggers above
   perform set_config('app.bypass_entitlements', 'off', true);
   insert into tests.rls_fixture_coverage (table_name)
@@ -186,7 +198,8 @@ begin
                              'hydration_targets','ai_assessments','safety_events','recipes','meals','portions',
                              'meal_plans','daily_meals','daily_meal_servings','plan_recommendations',
                              'grocery_lists','shopping_items','budget_entries','pantry_items','hydration_logs',
-                             'fasting_logs','weight_tracking','nutrition_journal','notifications','alpha_feedback']) t
+                             'fasting_logs','weight_tracking','nutrition_journal','notifications','alpha_feedback',
+                             'chat_sessions','chat_messages','ai_memories','meal_logs','ramadan_plans']) t
   on conflict do nothing;
   return v_hid;
 end $$;

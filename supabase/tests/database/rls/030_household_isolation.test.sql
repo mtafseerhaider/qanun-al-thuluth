@@ -4,7 +4,7 @@
 -- and an outsider with no household must read, update and delete zero rows of household A.
 -- A statement the role has no privilege for at all (42501) counts as zero rows.
 begin;
-select plan(446);
+select plan(506);
 
 select tests.seed_household(tests.create_user('iso-ownerA@test.thuluth.app'), 'Household A') as hid_a \gset
 select tests.create_user('iso-ownerB@test.thuluth.app') as owner_b \gset
@@ -65,7 +65,7 @@ begin
 end $$;
 grant execute on function tests.count_or_zero(text), tests.assert_isolation(uuid, uuid, text) to authenticated;
 
--- 37 tables x 3 operations x 4 actors = 444
+-- 42 tables x 3 operations x 4 actors = 504
 select tests.assert_isolation(:'hid_a', :'owner_b', 'owner of B');
 select tests.assert_isolation(:'hid_a', :'care_b', 'caregiver of B');
 select tests.assert_isolation(:'hid_a', :'viewer_b', 'viewer of B');
