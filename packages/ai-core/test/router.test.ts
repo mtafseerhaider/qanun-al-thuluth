@@ -4,9 +4,10 @@ import { costUsdMicros, toUsageRow } from '../src/metering/usage.ts';
 import { chatRouteForTier, checkDailyChatCap } from '../src/metering/caps.ts';
 import { FakeProvider } from '../src/providers/fake.ts';
 import { CircuitBreaker, runWithFallback } from '../src/router/fallback.ts';
-import { normalizeParams, RouteResolver } from '../src/router/route-resolver.ts';
+import { isUnpriced, normalizeParams, RouteResolver } from '../src/router/route-resolver.ts';
 import type { AiModelRouteRow } from '../src/router/route-resolver.ts';
 import { AIError, textOf } from '../src/types.ts';
+import type { ModelRoute, RouteKey } from '../src/types.ts';
 import { params, request } from './helpers.ts';
 
 const rows: AiModelRouteRow[] = [
@@ -57,6 +58,45 @@ describe('RouteResolver', () => {
     t = 61_000;
     await resolver.resolve('chat.default');
     expect(loads).toBe(2);
+  });
+
+  it('reports an unpriced route once per route and still returns it', async () => {
+    const reported: string[] = [];
+    let t = 0;
+    const priced: AiModelRouteRow = {
+      ...rows[1]!,
+      params: { priceInPerMTokUsd: 2, priceOutPerMTokUsd: 10 },
+    };
+    const resolver = new RouteResolver(async () => [priced, rows[0]!], {
+      now: () => t,
+      onUnpriced: (r) => reported.push(`${r.routeKey}:${r.model}`),
+    });
+    const routes = await resolver.resolve('chat.default');
+    expect(routes.map((r) => r.model)).toEqual(['claude-sonnet-5-5', 'gemini-pro']);
+    t = 61_000;
+    await resolver.resolve('chat.default');
+    expect(reported).toEqual(['chat.default:gemini-pro']);
+  });
+
+  it('isUnpriced follows how each route is metered', () => {
+    const route = (routeKey: RouteKey, p: Record<string, unknown>): ModelRoute => ({
+      routeKey,
+      provider: 'openai',
+      model: 'm',
+      priority: 1,
+      enabled: true,
+      params: normalizeParams(p),
+    });
+    expect(isUnpriced(route('chat.default', {}))).toBe(true);
+    expect(isUnpriced(route('chat.default', { priceInPerMTokUsd: 1 }))).toBe(true);
+    expect(isUnpriced(route('chat.default', { priceInPerMTokUsd: 1, priceOutPerMTokUsd: 5 }))).toBe(
+      false,
+    );
+    expect(isUnpriced(route('embed.knowledge', { priceInPerMTokUsd: 0.13 }))).toBe(false);
+    expect(
+      isUnpriced(route('speech.transcribe', { priceInPerMTokUsd: 1, priceOutPerMTokUsd: 1 })),
+    ).toBe(true);
+    expect(isUnpriced(route('speech.transcribe', { pricePerMinuteUsd: 0.006 }))).toBe(false);
   });
 
   it('normalizes snake_case params', () => {

@@ -70,6 +70,8 @@ on conflict (rc_app_user_id, product_id, store) do update
 
 -- Local-only flag overrides
 update public.feature_flags set enabled = true where key in ('debug_menu', 'allow_sandbox_premium');
+-- debug_menu is seeded with percent 0 (testers by user_ids only); locally everyone gets it.
+update public.feature_flags set rules = '{}' where key = 'debug_menu';
 
 -- Environment marker for the internal-alpha review gate (public.catalog_review_statuses()): the flag
 -- catalog.include_in_review only counts in 'local', 'development', 'staging' or 'test'; unset fails closed.

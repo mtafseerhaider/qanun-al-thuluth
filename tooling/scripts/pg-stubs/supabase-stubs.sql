@@ -6,7 +6,8 @@
 -- are unavailable. Never applied to a real Supabase project.
 --
 -- Mirrors, as closely as is useful for migrations and pgTAP:
---   * roles anon, authenticated, service_role (bypassrls), authenticator, supabase_admin
+--   * roles anon, authenticated, service_role (bypassrls), authenticator, supabase_admin,
+--     supabase_auth_admin (the role GoTrue writes auth.users as and runs Auth hooks as)
 --   * schemas extensions, auth (+ auth.users, auth.identities), vault (empty shell)
 --   * auth.uid(), auth.role(), auth.jwt(), auth.email() reading request.jwt.claim(s)
 --   * Supabase default privileges on schema public (anon/authenticated/service_role get
@@ -30,6 +31,9 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'supabase_admin') then
     create role supabase_admin login superuser;
   end if;
+  if not exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
+    create role supabase_auth_admin login noinherit;
+  end if;
 end $$;
 
 grant anon, authenticated, service_role to authenticator;
@@ -41,6 +45,7 @@ grant usage on schema extensions to public, anon, authenticated, service_role;
 
 create schema if not exists auth;
 grant usage on schema auth to anon, authenticated, service_role;
+grant all on schema auth to supabase_auth_admin;
 
 create schema if not exists vault;   -- empty shell; Supabase Vault is not emulated
 
@@ -138,7 +143,7 @@ as $$
 $$;
 
 grant execute on function auth.jwt(), auth.uid(), auth.role(), auth.email() to anon, authenticated, service_role;
-grant all on auth.users, auth.identities to service_role;
+grant all on auth.users, auth.identities to service_role, supabase_auth_admin;
 
 -- storage (subset of the Supabase Storage schema that migrations, seeds and tests touch) -------
 -- Lets the plain-mode suite exercise the bucket policies (10 section 6.4). Real projects get the

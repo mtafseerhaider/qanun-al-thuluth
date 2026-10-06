@@ -236,16 +236,20 @@ const lazyClassifier = new FakeProvider({
 });
 
 function classifyDeps() {
-  const resolver = new RouteResolver(async (routeKey) => [
-    {
-      route_key: routeKey,
-      provider: 'anthropic',
-      model: 'claude-haiku-4-5-20251001',
-      params: { timeoutMs: 6000, maxOutputTokens: 200, temperature: 0 },
-      priority: 1,
-      enabled: true,
-    },
-  ]);
+  const resolver = new RouteResolver(
+    async (routeKey) => [
+      {
+        route_key: routeKey,
+        provider: 'anthropic',
+        model: 'claude-haiku-4-5-20251001',
+        params: { timeoutMs: 6000, maxOutputTokens: 200, temperature: 0 },
+        priority: 1,
+        enabled: true,
+      },
+    ],
+    // Evals do not meter cost; unpriced routes are expected here.
+    { onUnpriced: () => {} },
+  );
   return {
     fallback: {
       resolver,
@@ -509,16 +513,20 @@ function turnDeps(
               }
             : script(req, step++),
       });
-  const resolver = new RouteResolver(async (routeKey) => [
-    {
-      route_key: routeKey,
-      provider: 'anthropic',
-      model: routeKey === 'classify.safety' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-5-5',
-      params: { timeoutMs: 60_000, maxOutputTokens: 800, temperature: 0 },
-      priority: 1,
-      enabled: true,
-    },
-  ]);
+  const resolver = new RouteResolver(
+    async (routeKey) => [
+      {
+        route_key: routeKey,
+        provider: 'anthropic',
+        model: routeKey === 'classify.safety' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-5-5',
+        params: { timeoutMs: 60_000, maxOutputTokens: 800, temperature: 0 },
+        priority: 1,
+        enabled: true,
+      },
+    ],
+    // Evals do not meter cost; unpriced routes are expected here.
+    { onUnpriced: () => {} },
+  );
   return {
     fallback: { resolver, providers: { anthropic: main }, sleep: async () => {} },
     writeUsage: async () => {},

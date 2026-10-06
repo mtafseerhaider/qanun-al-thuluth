@@ -304,6 +304,7 @@ Findings and residual risks: `docs/security/s7-security-review.md`. Schema-wide 
 | File | 05 ref | Contents | Deferred from this slot |
 |---|---|---|---|
 | `20261006160000_due_reassessments.sql` | addition (FR-AI-11, S6-15 follow-up) | `due_reassessments(p_before, p_limit, p_household_ids default null)`: the latest `intake`/`periodic` assessment of each live member (member and household not soft-deleted) created at or before `p_before`, oldest first, at most `p_limit` (1 to 1000, else `VALIDATION_FAILED`). Security invoker, `search_path ''`, `service_role` only (listed in `005_security_invariants` invariant 6). `ai-reassess` calls it instead of paging every assessment. pgTAP: `tests/database/functions/160_due_reassessments.test.sql` | none |
+| `20261006160200_auth_signup_guard.sql` | addition (11 §3.1.1 store reviewer) | `public.hook_before_user_created(event jsonb)` before-user-created Auth hook (email OTP, Google, Apple only; execute for `supabase_auth_admin` only; registered in `config.toml`, enable by hand on hosted projects); `private.guard_password_auth_user` trigger on `auth.users`: GoTrue may set a password only on `reviewer@thuluth.app` (42501 `PASSWORD_SIGNIN_DISABLED`) | none |
 
 Seeds:
 

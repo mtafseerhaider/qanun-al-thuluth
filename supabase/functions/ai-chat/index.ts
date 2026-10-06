@@ -1,6 +1,7 @@
 import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
+import { maintenanceProbe, withMaintenance } from '../_shared/maintenance.ts';
 import { supabasePlatformStore } from '../_shared/platform.ts';
 import { createChatHandler } from './handler.ts';
 import { supabaseChatStore } from './store.ts';
@@ -17,16 +18,19 @@ function background(run: () => Promise<unknown>): void {
 }
 
 Deno.serve(
-  createChatHandler({
-    verify: verifyWithSupabase,
-    platform: supabasePlatformStore(admin),
-    entitlements: supabaseEntitlementStore(admin),
-    store: supabaseChatStore(admin),
-    fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
-    writeUsage: async (row) => {
-      const { error } = await admin.from('ai_usage').insert(row);
-      if (error) throw error;
-    },
-    kick: background,
-  }),
+  withMaintenance(
+    createChatHandler({
+      verify: verifyWithSupabase,
+      platform: supabasePlatformStore(admin),
+      entitlements: supabaseEntitlementStore(admin),
+      store: supabaseChatStore(admin),
+      fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
+      writeUsage: async (row) => {
+        const { error } = await admin.from('ai_usage').insert(row);
+        if (error) throw error;
+      },
+      kick: background,
+    }),
+    maintenanceProbe(admin),
+  ),
 );

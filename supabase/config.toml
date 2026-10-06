@@ -53,11 +53,21 @@ enable_signup = true
 enable_anonymous_sign_ins = false         # never on (S1-15): every session is a real, attested user
 minimum_password_length = 12            # passwords are disabled for users; this guards admin accounts
 
-# Abuse controls (S1-15, 01 FR-AUTH-09, 11 section 9). GoTrue limits below are per IP per hour
-# (email_sent is project-wide); the per-email OTP limits live in the auth-otp edge function on top
+# Abuse controls (S1-15, 01 FR-AUTH-09, 11 section 9). GoTrue limits below are per IP per hour,
+# except email_sent; the per-email OTP limits live in the auth-otp edge function on top
 # of public.consume_rate_limit. Staging and production set the same values in the dashboard.
+#
+# email_sent is PROJECT-WIDE: one hourly budget for every sign-in and sign-up code sent to every
+# user together, so the CLI default of 30 would stop all sign-ins after 30 codes in an hour. Hosted
+# projects send through custom SMTP (Postmark), which is required before Supabase lets this limit be
+# raised (Auth > Rate Limits); without custom SMTP the built-in mailer stays at a few emails per hour
+# whatever is set here. 1000/hour covers launch peaks with headroom (Postmark itself allows far more).
+# Abuse by one client is held back by sign_in_sign_ups (per IP), the per-email limits above, OTP
+# max_frequency (60 s per address) and hCaptcha on staging/prod; the shared budget is only a ceiling
+# on total mail volume. Raise it again before any campaign that could bring more than ~1000
+# sign-ins an hour.
 [auth.rate_limit]
-email_sent = 30                          # per hour, project-wide on the local stack
+email_sent = 1000                        # per hour, project-wide (custom SMTP required on hosted)
 token_refresh = 150
 sign_in_sign_ups = 30
 token_verifications = 30
@@ -82,11 +92,18 @@ otp_expiry = 600
 max_frequency = "60s"
 secure_password_change = true
 
-# OTP email template (en/ur variants by raw_user_meta_data.locale, 10 section 5). Enable once
-# supabase/templates/auth/otp.html exists (S1-04); the CLI refuses to start with a missing file.
-# [auth.email.template.magic_link]
-# subject = "Your Thuluth sign-in code"
-# content_path = "./templates/auth/otp.html"
+# Sign-in code emails (S1-04, 10 section 5). The app verifies a 6-digit code, so both templates
+# show {{ .Token }} (English and Urdu in one email) and no link. magic_link is sent to existing
+# users by signInWithOtp; confirmation is sent on the first sign-in, which creates the user while
+# enable_confirmations is on. These blocks apply to the local stack and `supabase config push`
+# only: on hosted projects paste the same subjects and bodies into Auth > Email Templates.
+[auth.email.template.magic_link]
+subject = "Your Thuluth code / ثلث کوڈ"
+content_path = "./templates/auth/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Your Thuluth code / ثلث کوڈ"
+content_path = "./templates/auth/confirmation.html"
 
 # OAuth providers. Credentials come from supabase/.env (gitignored) or the shell:
 #   GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_SECRET, APPLE_OAUTH_SECRET
@@ -101,6 +118,14 @@ skip_nonce_check = true                  # native Google Sign-In on iOS issues I
 enabled = true
 client_id = "app.thuluth.mobile"
 secret = "env(APPLE_OAUTH_SECRET)"
+
+# Store reviewer guard (11 section 3.1.1): admits only email OTP, Google and Apple sign-ups; the
+# password rule is the auth.users trigger in the same migration (20261006160200_auth_signup_guard.sql).
+# Hosted projects: enable it in Auth > Hooks > Before User Created (Postgres function
+# public.hook_before_user_created); this block covers only the local stack and `supabase config push`.
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/hook_before_user_created"
 
 [auth.mfa]
 max_enrolled_factors = 10
