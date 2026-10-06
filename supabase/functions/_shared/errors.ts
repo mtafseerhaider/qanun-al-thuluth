@@ -41,6 +41,12 @@ export function fromPostgrestError(err: { code?: string; message?: string }): Ht
   const message = err.message ?? 'Database error';
   if (message.startsWith('LIMIT_REACHED:'))
     return new HttpError('LIMIT_REACHED', message.slice(14).trim());
+  // Under-18 guard trigger (S2-03): 'CHILD_RULE:weight_loss' | 'CHILD_RULE:weight_gain' | 'CHILD_RULE:kcal_target'.
+  if (message.startsWith('CHILD_RULE:')) {
+    return new HttpError('VALIDATION_FAILED', 'This goal is not available for members under 18.', {
+      rule: message.slice(11).trim(),
+    });
+  }
   if (err.code === '42501') return new HttpError('FORBIDDEN', 'Not allowed');
   if (err.code === '23505') return new HttpError('CONFLICT', 'Already exists');
   return new HttpError('INTERNAL', 'Unexpected database error');
