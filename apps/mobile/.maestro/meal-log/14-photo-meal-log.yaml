@@ -1,0 +1,51 @@
+# Sprint 5 (S5-08): photo meal log for a premium adult.
+# Picks a plate photo from the library, analyses it, checks the result screen and saves. The device
+# gallery must hold a plate photo as its most recent image (CI seeds it with `adb push` / simctl). Needs a premium test account (RevenueCat sandbox or
+# a seeded `subscriptions` row) and `ai.vision.enabled` on. Children never see numbers (Jest).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 14 photo meal log
+tags:
+  - meal-log
+  - premium
+  - sprint-5
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.chat'
+- tapOn:
+    id: 'chat.composer.photo'
+- extendedWaitUntil:
+    visible:
+      id: 'meal-photo.screen'
+    timeout: 10000
+- tapOn:
+    id: 'meal-photo.library'
+# First image in the system picker grid.
+- tapOn:
+    point: '20%,25%'
+- extendedWaitUntil:
+    visible:
+      id: 'meal-photo.preview'
+    timeout: 15000
+- tapOn:
+    id: 'meal-photo.analyze'
+- extendedWaitUntil:
+    visible:
+      id: 'meal-analysis.items'
+    timeout: 60000
+- takeScreenshot: 14-meal-analysis
+- tapOn:
+    id: 'meal-analysis.item-0.include'
+- tapOn:
+    id: 'meal-analysis.item-0.include'
+- scrollUntilVisible:
+    element:
+      id: 'meal-analysis.save'
+    direction: DOWN
+- tapOn:
+    id: 'meal-analysis.save'
+- takeScreenshot: 14-meal-saved

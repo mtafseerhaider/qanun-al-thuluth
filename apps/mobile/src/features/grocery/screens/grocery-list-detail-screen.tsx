@@ -18,6 +18,7 @@ import {
   useBudgetProfile,
 } from '@/features/budget';
 import { QueuedBadge, useHouseholdClock, useHouseholdPremium } from '@/features/meals';
+import { UpsellCard } from '@/features/subscription';
 import { track } from '@/lib/analytics/track';
 import type { PlanScreenProps } from '@/navigation/types';
 import { selectCanEdit, useActiveHouseholdStore } from '@/stores/use-active-household-store';
@@ -384,10 +385,12 @@ export function GroceryListDetailScreen({ route }: PlanScreenProps<'GroceryListD
           </Card>
         ) : null
       ) : (
-        <Card variant="filled" testID="grocery-detail.upsell">
-          <Text variant="bodyStrong">{t('grocery:subs.upsellTitle')}</Text>
-          <Text tone="muted">{t('grocery:subs.upsellBody')}</Text>
-        </Card>
+        <UpsellCard
+          trigger="grocery_optimize"
+          title={t('grocery:subs.upsellTitle')}
+          body={t('grocery:subs.upsellBody')}
+          testID="grocery-detail.upsell"
+        />
       )}
     </Screen>
   );

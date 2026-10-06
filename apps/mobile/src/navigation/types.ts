@@ -160,6 +160,8 @@ export type MoreStackParamList = {
   SettingsPrivacy: undefined;
   SettingsHousehold: { householdId: Uuid };
   Subscription: undefined;
+  /** Sprint 5 addition (24 S5-09): AI memory list, delete and the memory switch. */
+  SettingsMemory: undefined;
   HelpCenter: { query?: string };
   HelpArticle: { slug: string };
   About: undefined;
@@ -180,14 +182,6 @@ export type MainTabParamList = {
   MoreTab: NavigatorScreenParams<MoreStackParamList>;
 };
 
-export type RamadanSetupStackParamList = {
-  RamadanSetupDates: undefined;
-  RamadanSetupCity: undefined;
-  RamadanSetupMembers: undefined;
-  RamadanSetupMeals: undefined;
-  RamadanSetupReview: undefined;
-};
-
 export type RootStackParamList = {
   Boot: undefined;
   Auth: NavigatorScreenParams<AuthStackParamList>;
@@ -197,7 +191,8 @@ export type RootStackParamList = {
   PaywallModal: { trigger: PaywallTrigger };
   LogMealModal: { familyMemberId?: Uuid; mealType?: MealType; date?: IsoDate };
   MealPhotoCapture: { familyMemberId?: Uuid; returnTo: 'chat' | 'meal_log'; sessionId?: Uuid };
-  MealAnalysisResult: { mealLogId: Uuid; sessionId?: Uuid };
+  /** Sprint 5: keyed by the analysis held on the device until the user saves (24 S5-08). */
+  MealAnalysisResult: { analysisId: Uuid; sessionId?: Uuid };
   AddFamilyMemberModal: { householdId: Uuid; source: 'family' | 'intake' };
   AddGrowthMeasurementModal: { familyMemberId: Uuid };
   GrowthAlertModal: { growthTrackingId: Uuid };
@@ -206,7 +201,8 @@ export type RootStackParamList = {
   PlanGenerationProgress: { mealPlanId: Uuid; pollAfterMs?: number | null };
   AdjustPlanModal: { mealPlanId: Uuid; dailyMealId?: Uuid };
   ShoppingMode: { groceryListId: Uuid };
-  RamadanSetup: NavigatorScreenParams<RamadanSetupStackParamList>;
+  /** Sprint 5 (24 S5-11): one modal with in-screen steps (dates, members, review). */
+  RamadanSetup: { hijriYear?: number } | undefined;
   // Sheets (formSheet)
   LogHydrationSheet: { familyMemberId?: Uuid };
   /** Sprint 4 addition (24 S4-09, FR-HYD-05): dehydration symptom check and red-flag sheet. */

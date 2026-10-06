@@ -1,0 +1,162 @@
+{
+  "badge": "Premium",
+  "close": "Close",
+  "closeA11y": "Close Premium",
+  "seePremium": "See Premium",
+  "restore": "Restore purchases",
+  "included": "Included with Premium",
+  "sharedByHousehold": "Shared with you by your household's owner",
+  "trialActive": "Free trial active",
+  "renews": "Renews on {{date}}",
+  "endsOn": "Ends on {{date}}",
+  "manageIos": "Manage in the App Store",
+  "manageAndroid": "Manage in Google Play",
+  "tier": {
+    "label": "Your plan",
+    "premium": "Premium",
+    "free": "Free"
+  },
+  "status": {
+    "shared": "Premium through your household",
+    "free": "Free plan",
+    "active": "Active",
+    "in_grace": "Payment issue. Premium continues while the store retries.",
+    "in_billing_retry": "Payment issue. Please update your payment method in the store.",
+    "cancelled": "Cancelled. Premium stays on until {{date}}.",
+    "expired": "Expired. Your data is kept and read-only.",
+    "paused": "Paused"
+  },
+  "compare": {
+    "feature": "Feature",
+    "free": "Free",
+    "premium": "Premium",
+    "rowA11y": "{{feature}}: Free, {{free}}. Premium, {{premium}}.",
+    "rows": {
+      "households": {
+        "label": "Households",
+        "free": "1",
+        "premium": "Unlimited"
+      },
+      "members": {
+        "label": "Family members per household",
+        "free": "6",
+        "premium": "20"
+      },
+      "plans": {
+        "label": "Meal plans",
+        "free": "1 weekly plan",
+        "premium": "Unlimited, multi-week, AI adjustments"
+      },
+      "chat": {
+        "label": "AI chat",
+        "free": "20 messages a day, text",
+        "premium": "Voice, photo meal analysis, memory"
+      },
+      "grocery": {
+        "label": "Grocery lists",
+        "free": "Basic list",
+        "premium": "Budget optimisation and substitutions"
+      },
+      "tracking": {
+        "label": "Water, fasting and meal tracking",
+        "free": "Yes",
+        "premium": "Yes"
+      },
+      "growth": {
+        "label": "Growth tracking",
+        "free": "Latest value and safety alerts",
+        "premium": "Charts, trends and reports"
+      },
+      "autism": {
+        "label": "Autism support",
+        "free": "Safe-food list",
+        "premium": "Sensory profile and exposure ladders"
+      },
+      "picky": {
+        "label": "Picky eating support",
+        "free": "Guide and exposure log",
+        "premium": "Coaching plans and progress"
+      },
+      "ramadan": {
+        "label": "Ramadan planner",
+        "free": "Suhoor and iftar tips",
+        "premium": "Full family Ramadan plan"
+      },
+      "exports": {
+        "label": "PDF exports",
+        "free": "None",
+        "premium": "All exports"
+      }
+    }
+  },
+  "cta": {
+    "trial": "Start free trial",
+    "start": "Continue"
+  },
+  "fine": {
+    "privacy": "Privacy policy",
+    "renewal": "Subscriptions renew automatically until you cancel in your store settings. Cancel at least 24 hours before renewal to avoid a charge.",
+    "safety": "Safety alerts, allergy checks and emergency guidance stay free for everyone.",
+    "terms": "Terms of use"
+  },
+  "paywall": {
+    "benefitLine": "✓ {{benefit}}",
+    "familyShared": "One subscription covers your whole household, including caregivers.",
+    "headline": {
+      "photo": "Log meals from a photo",
+      "voice": "Ask by voice",
+      "chat_quota": "Keep the conversation going",
+      "ramadan_plan": "Plan Ramadan for the whole family",
+      "grocery_optimize": "Make your grocery budget go further",
+      "plan_adjust": "Adjust your plan with AI",
+      "default": "Thuluth Premium"
+    }
+  },
+  "benefits": {
+    "planning": "Unlimited AI meal plans and adjustments",
+    "chat": "More AI chat, voice, photo analysis and memory",
+    "growth": "Growth charts, trends and reports",
+    "programs": "Autism and picky eating programmes",
+    "ramadan": "A full family Ramadan plan",
+    "grocery": "Budget-optimised grocery lists with substitutions",
+    "exports": "PDF exports to share with your doctor"
+  },
+  "plans": {
+    "annual": "Annual",
+    "monthly": "Monthly",
+    "annualA11y": "Annual plan, {{price}} a year, about {{perMonth}} a month",
+    "monthlyA11y": "Monthly plan, {{price}} a month",
+    "perMonth": "About {{price}} a month",
+    "saving": "Save {{percent}}%",
+    "trial_one": "{{count}} day free",
+    "trial_other": "{{count}} days free"
+  },
+  "store": {
+    "error": "Plans could not load.",
+    "loading": "Loading plans…",
+    "offline": "You are offline. Connect to subscribe.",
+    "retry": "Try again",
+    "unavailable": "Purchases are not available in this build."
+  },
+  "messages": {
+    "pending": "Your purchase is pending approval. Premium starts once it is approved.",
+    "restored": "Purchases restored.",
+    "nothingToRestore": "No purchases to restore on this account.",
+    "failed": "The purchase did not go through. You have not been charged.",
+    "welcome": "Welcome to Premium."
+  },
+  "downgrade": {
+    "billing_issue": {
+      "title": "Payment issue",
+      "body": "Premium continues for now. Please update your payment method in the store."
+    },
+    "ends_soon": {
+      "title": "Premium is ending",
+      "body": "Your subscription is cancelled and ends at the end of this period."
+    },
+    "expired_read_only": {
+      "title": "Premium has ended",
+      "body": "Nothing was deleted. Premium areas are read-only; logging still works."
+    }
+  }
+}

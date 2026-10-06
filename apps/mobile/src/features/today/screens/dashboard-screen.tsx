@@ -31,6 +31,7 @@ import {
 } from '@/features/meals';
 import { PushPrePrompt } from '@/features/notifications';
 import { useActivePlan, useGeneratePlan, useMealPlans } from '@/features/plan';
+import { RamadanTodayCard } from '@/features/ramadan';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { useProfile } from '@/hooks/use-profile';
 import { track } from '@/lib/analytics/track';
@@ -263,6 +264,12 @@ export function DashboardScreen() {
         </>
       ) : null}
 
+      <RamadanTodayCard
+        householdId={householdId}
+        onOpen={() =>
+          navigation.navigate('MoreTab', { screen: 'RamadanPlanner', params: {}, initial: false })
+        }
+      />
       <TodayFastingLine
         householdId={householdId}
         today={clock.today}

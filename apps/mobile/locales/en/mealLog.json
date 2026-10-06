@@ -1,0 +1,63 @@
+{
+  "capture": {
+    "title": "Log a meal from a photo",
+    "frameHint": "Take the photo from above with the whole plate in view.",
+    "disabled": "Photo analysis is paused right now. You can still log meals by hand.",
+    "offline": "You are offline. Photo analysis needs a connection.",
+    "viewer": "Viewers cannot log meals.",
+    "previewA11y": "Photo of the meal",
+    "camera": "Take photo",
+    "retake": "Retake",
+    "library": "Choose from library",
+    "cameraDenied": "Camera access is off. Turn it on in Settings, or choose a photo from your library.",
+    "openSettings": "Open Settings",
+    "who": "Who ate this?",
+    "mealType": "Meal",
+    "note": "Note (optional)",
+    "noteHint": "For example: half a portion, extra raita",
+    "analyze": "Analyse photo",
+    "analyzing": "Looking at your plate…"
+  },
+  "upsell": {
+    "title": "Photo meal logging is a Premium feature",
+    "body": "Snap a plate and Thuluth suggests the foods and portions for you to check."
+  },
+  "mealTypes": {
+    "suhoor": "Suhoor",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack",
+    "dinner": "Dinner",
+    "iftar": "Iftar"
+  },
+  "result": {
+    "missing": "This analysis is no longer available. Please take the photo again.",
+    "close": "Close",
+    "title": "Check your meal",
+    "subtitle": "Correct anything that is wrong before saving.",
+    "lowConfidence": "We are not sure about some foods. Please check them.",
+    "unnamed": "Food",
+    "grams": "About {{grams}} g",
+    "sure": "Looks right",
+    "notSure": "Not sure",
+    "foodLabel": "Food",
+    "gramsLabel": "Amount",
+    "gramsUnit": "g",
+    "addFood": "Add a food",
+    "point": "• {{text}}",
+    "plateCompare": "How it compares with the Thuluth plate",
+    "nutritionTitle": "Estimated nutrition",
+    "kcal": "{{value}} kcal",
+    "protein": "Protein {{value}} g",
+    "carbs": "Carbs {{value}} g",
+    "fat": "Fat {{value}} g",
+    "fiber": "Fibre {{value}} g",
+    "estimateNote": "Estimates from a photo can be off. Use them as a guide.",
+    "childNote": "For children we show the foods, not numbers. Offer, don't count.",
+    "fullnessBefore": "How hungry before?",
+    "fullnessHint": "1 is very hungry, 5 is very full",
+    "fullnessAfter": "How full after?",
+    "save": "Save meal",
+    "disclaimer": "Thuluth gives general guidance, not medical advice."
+  }
+}

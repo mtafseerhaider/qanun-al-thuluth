@@ -5,6 +5,27 @@ import { z } from 'zod';
  * privacy rules in 18 §14 apply (enum values only, no free text, no health values, no child ids).
  * TODO: move to packages/shared/src/analytics/events.ts once the catalog migration (18 §10) lands.
  */
+/** `PaywallTrigger` (navigation/types, 08 §5.17) as an analytics enum. */
+const PAYWALL_TRIGGER = z.enum([
+  'chat_quota',
+  'voice',
+  'photo',
+  'growth_chart',
+  'exposure_ladder',
+  'ramadan_plan',
+  'export',
+  'settings',
+  'onboarding',
+  'plan_multi_week',
+  'plan_adjust',
+  'grocery_optimize',
+  'sensory_profile',
+  'picky_coaching',
+  'insights',
+  'household_limit',
+  'member_limit',
+]);
+
 export const EventSchemas = {
   app_opened: z.object({ cold_start: z.boolean() }).strict(),
   screen_viewed: z
@@ -267,6 +288,94 @@ export const EventSchemas = {
       minor: z.boolean(),
     })
     .strict(),
+
+  // Sprint 5: chat (02 §7.7), photo meal log (§7.7.3 to §7.7.4), Ramadan (§7.12.8), paywall (§7.13.3)
+  chat_session_opened: z.object({ is_new: z.boolean() }).strict(),
+  chat_session_deleted: z.object({}).strict(),
+  chat_session_renamed: z.object({}).strict(),
+  chat_message_sent: z
+    .object({
+      has_attachment: z.boolean(),
+      input: z.enum(['text', 'voice']),
+      member_scoped: z.boolean(),
+    })
+    .strict(),
+  chat_stream_completed: z
+    .object({
+      latency_first_token_ms: z.number().int().min(0).max(600_000),
+      duration_ms: z.number().int().min(0).max(600_000),
+    })
+    .strict(),
+  chat_stopped: z.object({}).strict(),
+  chat_follow_up_tapped: z.object({}).strict(),
+  chat_feedback: z
+    .object({
+      value: z.enum(['up', 'down']),
+      reason: z.enum(['inaccurate', 'unsafe', 'not_helpful', 'too_long', 'other']).optional(),
+    })
+    .strict(),
+  chat_citation_opened: z
+    .object({ kind: z.enum(['islamic_source', 'scientific_evidence', 'recommendation']) })
+    .strict(),
+  chat_proposal_resolved: z
+    .object({
+      kind: z.enum(['hydration', 'meal_log', 'fast', 'plan_adjust']),
+      action: z.enum(['confirmed', 'dismissed', 'failed']),
+    })
+    .strict(),
+  chat_safety_shown: z.object({ action: z.enum(['notice', 'escalate']) }).strict(),
+  voice_transcribed: z
+    .object({
+      ok: z.boolean(),
+      duration_bucket: z.enum(['lt10s', '10_30s', '30_60s', '60_120s']),
+    })
+    .strict(),
+  meal_photo_captured: z.object({ source: z.enum(['camera', 'library']) }).strict(),
+  meal_photo_analyzed: z
+    .object({ confidence_bucket: z.enum(['low', 'medium', 'high']), minor: z.boolean() })
+    .strict(),
+  meal_analysis_edited: z.object({ edits: z.number().int().min(0).max(50) }).strict(),
+  meal_log_saved: z
+    .object({
+      source: z.enum(['manual', 'photo_ai', 'chat']),
+      has_photo: z.boolean(),
+      members_count: z.number().int().min(1).max(20),
+    })
+    .strict(),
+  memory_deleted: z.object({ all: z.boolean() }).strict(),
+  memory_toggled: z.object({ enabled: z.boolean() }).strict(),
+  ramadan_setup_started: z.object({}).strict(),
+  ramadan_setup_completed: z
+    .object({
+      members_fasting: z.number().int().min(0).max(20),
+      practice_fasts: z.number().int().min(0).max(20),
+    })
+    .strict(),
+  ramadan_plan_viewed: z.object({ day: z.number().int().min(0).max(30) }).strict(),
+  ramadan_tips_viewed: z.object({ premium: z.boolean() }).strict(),
+  paywall_shown: z.object({ trigger: PAYWALL_TRIGGER, has_offering: z.boolean() }).strict(),
+  paywall_plan_selected: z.object({ period: z.enum(['annual', 'monthly']) }).strict(),
+  purchase_started: z.object({ period: z.enum(['annual', 'monthly']) }).strict(),
+  purchase_completed: z
+    .object({
+      period: z.enum(['annual', 'monthly']),
+      trigger: PAYWALL_TRIGGER,
+      pending: z.boolean(),
+    })
+    .strict(),
+  purchase_failed: z
+    .object({
+      code: z
+        .string()
+        .regex(/^[A-Z0-9_]+$/)
+        .max(48),
+    })
+    .strict(),
+  purchase_restored: z.object({ had_entitlement: z.boolean() }).strict(),
+  paywall_closed: z
+    .object({ trigger: PAYWALL_TRIGGER, seconds_open: z.number().int().min(0).max(86_400) })
+    .strict(),
+  upsell_tapped: z.object({ trigger: PAYWALL_TRIGGER }).strict(),
 } as const;
 
 export type EventName = keyof typeof EventSchemas;

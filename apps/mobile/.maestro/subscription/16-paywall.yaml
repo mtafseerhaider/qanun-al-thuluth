@@ -1,0 +1,50 @@
+# Sprint 5 (S5-13): paywall from a contextual upsell, for a free account.
+# Chat -> photo opens the paywall for a free user (Q-09), with the photo headline and the comparison
+# table. The same upsell sits on the photo screen itself (`meal-photo.upsell`).
+# Store purchases need a RevenueCat key and sandbox tester; without a key the paywall shows its
+# "store unavailable" state, which this flow accepts. Restore is always available.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 16 paywall
+tags:
+  - subscription
+  - sprint-5
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.chat'
+- tapOn:
+    id: 'chat.composer.photo'
+- extendedWaitUntil:
+    visible:
+      id: 'paywall.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'paywall.headline'
+- scrollUntilVisible:
+    element:
+      id: 'paywall.compare'
+    direction: DOWN
+- takeScreenshot: 16-paywall
+- runFlow:
+    when:
+      visible:
+        id: 'paywall.plans'
+    commands:
+      - tapOn:
+          id: 'paywall.plan.annual'
+      - assertVisible:
+          id: 'paywall.buy'
+- scrollUntilVisible:
+    element:
+      id: 'paywall.restore'
+    direction: DOWN
+- assertVisible:
+    id: 'paywall.restore'
+- tapOn:
+    id: 'paywall.close'
+- assertNotVisible:
+    id: 'paywall.screen'

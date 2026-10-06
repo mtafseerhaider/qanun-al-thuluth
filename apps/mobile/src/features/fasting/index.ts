@@ -10,3 +10,14 @@ export {
   useFastingToday,
 } from './hooks/use-fasting';
 export { fastProgress, householdFastingTimes } from './utils/prayer';
+export { useFastingMembers, useFastingSafety } from './hooks/use-fasting';
+export {
+  fastingEligibility,
+  NO_SAFETY,
+  ramadanDates,
+  type FastingEligibility,
+  type FastingMember,
+  type MemberSafety,
+  type SafetyReason,
+} from './utils/fasting-rules';
+export type { DayFastingTimes } from './utils/prayer';

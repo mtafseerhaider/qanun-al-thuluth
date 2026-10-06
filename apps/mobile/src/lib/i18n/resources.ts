@@ -20,6 +20,10 @@ import enGrocery from '@locales/en/grocery.json';
 import enBudget from '@locales/en/budget.json';
 import enNotifications from '@locales/en/notifications.json';
 import enTracking from '@locales/en/tracking.json';
+import enChat from '@locales/en/chat.json';
+import enSubscription from '@locales/en/subscription.json';
+import enMealLog from '@locales/en/mealLog.json';
+import enRamadan from '@locales/en/ramadan.json';
 import urAuth from '@locales/ur/auth.json';
 import urCommon from '@locales/ur/common.json';
 import urDebug from '@locales/ur/debug.json';
@@ -42,6 +46,10 @@ import urGrocery from '@locales/ur/grocery.json';
 import urBudget from '@locales/ur/budget.json';
 import urNotifications from '@locales/ur/notifications.json';
 import urTracking from '@locales/ur/tracking.json';
+import urChat from '@locales/ur/chat.json';
+import urSubscription from '@locales/ur/subscription.json';
+import urMealLog from '@locales/ur/mealLog.json';
+import urRamadan from '@locales/ur/ramadan.json';
 export const NAMESPACES = [
   'common',
   'auth',
@@ -65,6 +73,10 @@ export const NAMESPACES = [
   'budget',
   'notifications',
   'tracking',
+  'chat',
+  'subscription',
+  'mealLog',
+  'ramadan',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -92,6 +104,10 @@ export const resources = {
     budget: enBudget,
     notifications: enNotifications,
     tracking: enTracking,
+    chat: enChat,
+    subscription: enSubscription,
+    mealLog: enMealLog,
+    ramadan: enRamadan,
   },
   ur: {
     common: urCommon,
@@ -116,5 +132,9 @@ export const resources = {
     budget: urBudget,
     notifications: urNotifications,
     tracking: urTracking,
+    chat: urChat,
+    subscription: urSubscription,
+    mealLog: urMealLog,
+    ramadan: urRamadan,
   },
 } as const;

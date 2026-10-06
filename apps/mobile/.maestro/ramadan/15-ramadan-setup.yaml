@@ -1,0 +1,63 @@
+# Sprint 5 (S5-11): Ramadan setup for a premium household.
+# More -> Ramadan planner -> Set up: confirm the dates, check member participation (under-7 members
+# are fixed to "not fasting"), choose a suhoor timing and create the plan. Needs the
+# `ramadan_planner` flag on for the test environment, a household city, and a premium account.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 15 ramadan setup
+tags:
+  - ramadan
+  - premium
+  - sprint-5
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- tapOn:
+    id: 'settings-more-home.ramadan-button'
+- extendedWaitUntil:
+    visible:
+      id: 'ramadan.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'ramadan.tips'
+- tapOn:
+    id: 'ramadan.setup'
+- extendedWaitUntil:
+    visible:
+      id: 'ramadan-setup.dates'
+    timeout: 10000
+- assertVisible:
+    id: 'ramadan-setup.start-date'
+- assertVisible:
+    id: 'ramadan-setup.city'
+- tapOn:
+    id: 'ramadan-setup.next'
+- extendedWaitUntil:
+    visible:
+      id: 'ramadan-setup.members'
+    timeout: 5000
+- takeScreenshot: 15-ramadan-members
+- tapOn:
+    id: 'ramadan-setup.next'
+- extendedWaitUntil:
+    visible:
+      id: 'ramadan-setup.review'
+    timeout: 5000
+- tapOn:
+    id: 'ramadan-setup.suhoor'
+    optional: true
+- scrollUntilVisible:
+    element:
+      id: 'ramadan-setup.create'
+    direction: DOWN
+- tapOn:
+    id: 'ramadan-setup.create'
+- extendedWaitUntil:
+    visible:
+      id: 'plan-progress.screen'
+    timeout: 30000
+- takeScreenshot: 15-ramadan-generating

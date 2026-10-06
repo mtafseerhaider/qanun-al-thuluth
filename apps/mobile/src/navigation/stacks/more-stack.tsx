@@ -2,12 +2,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { BudgetDashboardScreen, BudgetSettingsScreen } from '@/features/budget';
+import { MemoryManagementScreen } from '@/features/chat';
 import { DebugScreen, useDebugMenuEnabled } from '@/features/debug';
 import { FastingTrackerScreen } from '@/features/fasting';
 import { AlphaFeedbackScreen } from '@/features/help';
 import { HydrationTrackerScreen } from '@/features/hydration';
 import { SettingsNotificationsScreen } from '@/features/notifications';
+import { RamadanPlannerScreen } from '@/features/ramadan';
 import { MoreHomeScreen, SettingsProfileScreen, SettingsScreen } from '@/features/settings';
+import { SubscriptionScreen } from '@/features/subscription';
 import { WeightLogScreen } from '@/features/tracking';
 
 import type { MoreStackParamList } from '../types';
@@ -64,6 +67,21 @@ export function MoreStack() {
         name="SettingsNotifications"
         component={SettingsNotificationsScreen}
         options={{ title: t('screens.settingsNotifications') }}
+      />
+      <Stack.Screen
+        name="RamadanPlanner"
+        component={RamadanPlannerScreen}
+        options={{ title: t('screens.ramadanPlanner') }}
+      />
+      <Stack.Screen
+        name="Subscription"
+        component={SubscriptionScreen}
+        options={{ title: t('screens.subscription') }}
+      />
+      <Stack.Screen
+        name="SettingsMemory"
+        component={MemoryManagementScreen}
+        options={{ title: t('screens.settingsMemory') }}
       />
       {debugEnabled ? (
         <Stack.Screen

@@ -48,7 +48,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
               GroceryListDetail: 'grocery/:groceryListId',
             },
           },
-          ChatTab: { screens: { ChatThread: 'chat/:sessionId?' } },
+          ChatTab: { screens: { ChatSessions: 'chats', ChatThread: 'chat/:sessionId?' } },
           FamilyTab: { screens: { FamilyManagement: 'family' } },
           MoreTab: {
             screens: {
@@ -61,6 +61,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
               FastingTracker: { path: 'fasting', alias: ['ramadan'] },
               BudgetDashboard: 'budget',
               SettingsNotifications: 'settings/notifications',
+              // Sprint 5: Ramadan planner, Premium and AI memory.
+              RamadanPlanner: 'ramadan-planner',
+              Subscription: 'premium',
+              SettingsMemory: 'settings/memory',
             },
           },
         },
