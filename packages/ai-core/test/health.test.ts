@@ -7,6 +7,10 @@ import {
   acceptanceIndex,
   acceptanceSummary,
   applyExposurePairs,
+  DEFAULT_FAMILIAR_LABEL,
+  exposurePairNote,
+  withExposureNote,
+  withoutExposureNote,
   chainDistance,
   chainLadderSteps,
   chooseExposurePair,
@@ -293,6 +297,47 @@ describe('weekly exposure pair (S6-05)', () => {
   const cat = catalog();
   const plan = () =>
     planDeterministic(req, cat, buildCandidateSets(req, cat)).draft.meals.map((m) => ({ ...m }));
+
+  it('writes the learning-plate note in Urdu for an Urdu plan, without pressure', () => {
+    const meals = plan();
+    const pairs = applyExposurePairs(
+      [{ member: ibrahim, exposures: [] }],
+      cat,
+      req,
+      meals,
+      TODAY,
+      'ur',
+    );
+    expect(pairs.length).toBeGreaterThan(0);
+    const notes = meals.map((m) => m.notes ?? '').filter((n) => n.includes('سیکھنے کی پلیٹ'));
+    expect(notes.length).toBeGreaterThan(0);
+    for (const n of notes) {
+      expect(n).not.toContain('Learning plate');
+      expect(n.match(/Ibrahim کے لیے سیکھنے کی پلیٹ/gu)).toHaveLength(1);
+      expect(findFeedingPressure(n)).toEqual([]);
+      expect(findChildRestrictionViolations(n)).toEqual([]);
+    }
+    // The stored default familiar label is English; the Urdu note says it in Urdu.
+    const fallback = exposurePairNote(
+      'Hina',
+      { newFood: 'Guava', familiarLabel: DEFAULT_FAMILIAR_LABEL },
+      'ur',
+    );
+    expect(fallback).not.toContain(DEFAULT_FAMILIAR_LABEL);
+  });
+
+  it('adds a note once and removes it in either locale', () => {
+    const pair = { newFood: 'Guava', familiarLabel: 'Roti' };
+    const en = exposurePairNote('Hina', pair, 'en');
+    const ur = exposurePairNote('Hina', pair, 'ur');
+    expect(withExposureNote(withExposureNote('Serve warm.', en), en)).toBe(`Serve warm. ${en}`);
+    expect(withoutExposureNote(`Serve warm. ${en}`, 'Hina', pair)).toBe('Serve warm.');
+    expect(withoutExposureNote(`${ur} Serve warm.`, 'Hina', pair)).toBe('Serve warm.');
+    expect(withoutExposureNote(en, 'Hina', pair)).toBeNull();
+    // Another member's note stays.
+    const other = exposurePairNote('Ibrahim', pair, 'en');
+    expect(withoutExposureNote(`${other} ${en}`, 'Hina', pair)).toBe(other);
+  });
 
   it('adds one new food a week beside a safe food, on at most 4 distinct days', () => {
     const meals = plan();

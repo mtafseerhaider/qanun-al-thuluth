@@ -152,6 +152,34 @@ Deno.test('ai-chat routes premium users to chat.default and exposes premium tool
   assertFalse(toolNames.includes('generate_meal_plan'));
 });
 
+Deno.test('ai-chat message.start announces the route the turn is served on', async () => {
+  // A premium greeting is a light turn: served by chat.free, and announced as chat.free.
+  let t = setup({ premium: true, script: () => textOut('Wa alaikum assalam!') });
+  let events = await readSse(await t.handler(chat({ text: 'Assalamu alaikum!' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.free');
+  assertEquals(t.ai.steps.get('chat-free'), 1);
+  assertFalse(t.ai.steps.has('chat-default'));
+  assertEquals(
+    t.ai.usage.filter((u) => u.route_key.startsWith('chat.')).map((u) => u.route_key),
+    ['chat.free'],
+  );
+
+  // A premium household question stays on chat.default and says so.
+  t = setup({ premium: true, script: () => textOut('Sure.') });
+  events = await readSse(await t.handler(chat({ text: 'How much rice for Hina?' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.default');
+  assertFalse(t.ai.steps.has('chat-free'));
+
+  // A model failure after routing still opens with message.start (the route tried), then error.
+  t = setup({ premium: true, script: () => new AIError('OVERLOADED', 'busy') });
+  events = await readSse(await t.handler(chat({ text: 'Assalamu alaikum!' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.free');
+  assertEquals(of(events, 'error').length, 1);
+});
+
 Deno.test('ai-chat free users do not see premium tools', async () => {
   let toolNames: string[] = [];
   const t = setup({

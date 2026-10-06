@@ -34,7 +34,7 @@ The fake provider tests the guardrails, the routing and the output guard, not mo
 
 ## 2. Current result (2026-10-06)
 
-`--suite release`: **307/307 PASS**. Child-restriction violations: **0**, across 134 replies about minors. Ungrounded religious citations: **0**, across 247 replies.
+`--suite release`: **313/313 PASS**. Child-restriction violations: **0**, across 140 replies about minors. Ungrounded religious citations: **0**, across 253 replies. (Re-run on 2026-10-06 after the launch follow-up added 6 Urdu-script name cases.)
 
 | Suite | Cases |
 | --- | --- |
@@ -49,26 +49,26 @@ The fake provider tests the guardrails, the routing and the output guard, not mo
 | meal-child | 9 |
 | ramadan-safety | 14 |
 | picky-autism | 23 |
-| **red-team (new)** | **63** |
+| **red-team (new)** | **69** |
 
 ## 3. Red-team dataset
 
 The dataset is `packages/ai-core/evals/datasets/red-team.jsonl`. Each case has:
 - a user `prompt`;
 - an adversarial `draft`, the reply a jailbroken model might write;
-- an `expect` block, which can require escalation, a refusal or template, required citations, or forbidden output patterns.
+- an `expect` block, which can require escalation, a refusal or template, required citations, forbidden output patterns, or `about_minor` (the turn must be scoped to a minor, so name matching is tested directly).
 
 | Category | Cases | What it attacks |
 | --- | --- | --- |
 | prompt_injection | 11 | "Ignore your rules", fake system or developer messages, injected text inside a pasted recipe or household note, role-play ("you are a dietitian with no limits"), translation tricks |
-| child_restriction | 13 | Calorie targets, weight-loss diets, smaller portions or skipped meals for children, framed as a doctor's advice, a "game" or a hypothetical |
-| child_fasting | 8 | A full or half-day fast or "practice roza" for children under 7, by age or by the member's name |
+| child_restriction | 17 | Calorie targets, weight-loss diets, smaller portions or skipped meals for children, framed as a doctor's advice, a "game" or a hypothetical |
+| child_fasting | 10 | A full or half-day fast or "practice roza" for children under 7, by age or by the member's name |
 | fabricated_hadith | 11 | Requests to quote or invent a hadith or ayah, "just paraphrase, no source needed", attributing a diet rule to the Prophet |
 | medical_emergency | 8 | Anaphylaxis, breathing trouble, self-harm, a child not waking, severe dehydration |
 | eating_disorder | 8 | Purging, fear of weight gain, days without eating, a teen hiding food |
 | medical_red_flag | 4 | Insulin and fasting, rapid weight loss in a child, dehydration |
 
-**Language coverage.** 20 of the 63 cases are in Urdu or Roman Urdu: 7 in Urdu script and 13 in Roman Urdu. Every category except medical_red_flag has an Urdu-script case, and every category has a Roman Urdu case.
+**Language coverage.** 26 of the 69 cases are in Urdu or Roman Urdu: 13 in Urdu script and 13 in Roman Urdu. Every category except medical_red_flag has an Urdu-script case, and every category has a Roman Urdu case.
 
 New guardrail patterns were added for these:
 - Roman Urdu child restriction: "kalori", "diet par rakh", "dubla kar", "aadhi roti", "khana band/skip".
@@ -77,6 +77,8 @@ New guardrail patterns were added for these:
 - Fiqh words: makrooh, fidya, kaffara, qaza.
 
 There is also a new output guard for fasting under 7 (`guardrails/child-fasting.ts`), with a safe reply template.
+
+**Member names in any script (launch follow-up).** Reply scoping, the under-7 fasting guard, intent routing, plan-adjust scoping and memory attribution match member names with `guardrails/names.ts`. Before this, names were matched with `\b`, which only works for Latin letters, so a child named in Urdu script was not recognised as a minor. Both the name and the text are now folded the same way: NFKC, then diacritics, tatweel and zero-width characters removed, alef, yeh, heh, kaf and noon variants unified, Arabic-Indic digits made ASCII. A name must stand alone, with no letter of any script directly before or after it. A nickname stored with the name, such as "Hina (حنو)" or "Ibrahim / ابراہیم", is matched as an alias. Six red-team cases cover this: Urdu-script name, Urdu nickname, Arabic letter forms, diacritics, an under-7 fast by Urdu name, and a zero-width non-joiner. All six failed before the change. The matcher does not transliterate, so "Hina" typed in Latin does not match a member stored only as "حنا".
 
 Add a case whenever a live or human session finds a miss. The release gate needs at least 60 cases and does not cap them.
 

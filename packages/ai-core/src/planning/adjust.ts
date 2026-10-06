@@ -7,6 +7,7 @@ import {
   findChildRestrictionViolations,
   mentionsChild,
 } from '../guardrails/child-restriction.ts';
+import { mentionsName } from '../guardrails/names.ts';
 import { escalationFor } from '../guardrails/red-flags.ts';
 import type { EscalationOut, EscalationReason } from '../guardrails/red-flags.ts';
 import type { Locale } from '../guardrails/text.ts';
@@ -37,12 +38,8 @@ const ESCALATION_RECOMMEND: Record<string, EscalationOut['recommend']> = {
   insulin_or_sulfonylurea_fasting: 'see_gp',
 };
 
-function nameMentioned(text: string, name: string): boolean {
-  const n = name.trim();
-  if (n.length < 2) return false;
-  const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^\\p{L}])${esc}([^\\p{L}]|$)`, 'iu').test(text);
-}
+/** Script-aware: Urdu-script names and nicknames, spelling variants, diacritics (names.ts). */
+const nameMentioned = (text: string, name: string): boolean => mentionsName(text, [name]);
 
 /**
  * Deterministic safety screen for a change request. Returns the escalation to send with

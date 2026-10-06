@@ -102,7 +102,7 @@ The per-user daily ceilings hold. ai-chat enforces them before each turn, and a 
 
 ## 4. Known gaps
 
-- The `message.start` stream event announces `model_route` before intent routing runs, so a light turn may say `chat.default` but be served by `chat.free`. `ai_usage` records the real route. Fixing this needs either a later `message.start` or a contract field. No contract change was made.
+- ~~The `message.start` stream event announces `model_route` before intent routing runs.~~ Fixed in the launch follow-up, with no contract change. `runChatTurn` now emits an internal `route` event once safety classification and intent routing have decided. ai-chat sends `message.start` on that event, so a light turn announces `chat.free`. A turn that fails before routing announces the tier's route ahead of its `error` event. The reply is still released only after the output validators, so the first `message.delta` arrives at the same time as before. Only `message.start` itself moves later, by the context build plus the classifier, usually a few hundred milliseconds. Replays of a stored reply still announce the tier's route, because the route is not stored on `chat_messages`.
 - These numbers are a simulation. Before trusting them, verify live:
   - cache hits (`cache_read_tokens`) on Haiku and Sonnet;
   - thinking-block replay inside tool loops on Sonnet 5.5;

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type { Classified } from '../guardrails/classify.ts';
 import { mentionsChild } from '../guardrails/child-restriction.ts';
+import { mentionsName } from '../guardrails/names.ts';
 import { chatMetered, extractJson } from '../router/metered.ts';
 import type { MeteredDeps } from '../router/metered.ts';
 import { textOf } from '../types.ts';
@@ -105,11 +106,7 @@ export function intentRules(input: IntentInput): IntentDecision & { ambiguous: b
     return { intent: 'light', reason: 'smalltalk', source: 'rules', ambiguous: false };
   }
   if (input.hasHistory) return full('follow_up');
-  for (const n of input.memberNames ?? []) {
-    if (n && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'iu').test(text)) {
-      return full('member_named');
-    }
-  }
+  if (mentionsName(text, input.memberNames)) return full('member_named');
   for (const [reason, re] of FULL_SIGNALS) if (re.test(text)) return full(reason);
   const words = text.split(/\s+/u).filter(Boolean).length;
   if (words <= MAX_LIGHT_WORDS && GENERAL_QUESTION.test(text)) {

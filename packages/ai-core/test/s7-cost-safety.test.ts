@@ -11,7 +11,7 @@ import {
   trimHistory,
   TURN_BUDGETS,
 } from '../src/agent/index.ts';
-import type { TurnArgs } from '../src/agent/index.ts';
+import type { TurnArgs, TurnEvent } from '../src/agent/index.ts';
 import {
   classifyInputRules,
   detectChildWeightRequest,
@@ -267,7 +267,13 @@ describe('S7-02 turn: light routing, speculation, classifier skip', () => {
       speculativeFirstStep: true,
       ...over,
     };
-    return { provider, usage, run: () => runChatTurn(args, () => {}) };
+    const events: TurnEvent[] = [];
+    return {
+      provider,
+      usage,
+      events,
+      run: () => runChatTurn(args, (e) => void events.push(e)),
+    };
   }
   const ok = '{"safety":"ok","categories":[],"fiqh_question":false,"child_weight_request":false}';
 
@@ -284,6 +290,39 @@ describe('S7-02 turn: light routing, speculation, classifier skip', () => {
     expect(call.req.tools).toEqual([]);
     expect(call.req.maxOutputTokens).toBe(TURN_BUDGETS.premium.lightMaxOutputTokens);
     expect(t.usage.map((u) => u.route_key)).toEqual(['chat.free']);
+    // The route is announced before anything else and names the route actually used.
+    expect(t.events[0]).toEqual({ type: 'route', routeKey: 'chat.free', intent: 'light' });
+  });
+
+  it('announces the full route when the classifier upgrades a light turn', async () => {
+    const t = turn('Why should we chew slowly?', (req) =>
+      req.route === 'classify.safety'
+        ? {
+            content: [
+              {
+                type: 'text',
+                text: '{"safety":"ok","categories":[],"fiqh_question":true,"child_weight_request":false}',
+              },
+            ],
+          }
+        : { content: [{ type: 'text', text: 'Chewing slowly helps digestion.' }] },
+    );
+    const out = await t.run();
+    expect(out.routeKey).toBe('chat.default');
+    expect(t.events.filter((e) => e.type === 'route')).toEqual([
+      { type: 'route', routeKey: 'chat.default', intent: 'full' },
+    ]);
+    expect(t.events[0]?.type).toBe('route');
+  });
+
+  it('announces the route before an emergency template', async () => {
+    const t = turn('My son is not breathing after eating peanuts', () => ({
+      content: [{ type: 'text', text: ok }],
+    }));
+    const out = await t.run();
+    expect(out.finishReason).toBe('escalated');
+    expect(t.events[0]).toMatchObject({ type: 'route' });
+    expect(t.events.filter((e) => e.type === 'route')).toHaveLength(1);
   });
 
   it('uses the speculative first step when the classifier agrees', async () => {

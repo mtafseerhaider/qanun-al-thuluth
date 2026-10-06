@@ -8,6 +8,7 @@ import {
 import type { Classified, ClassifyDeps } from '../guardrails/classify.ts';
 import { DISCLAIMER_TEXT, hasDisclaimer } from '../guardrails/disclaimer.ts';
 import { guardOutput, instructionFor } from '../guardrails/guard.ts';
+import { nameMatcher } from '../guardrails/names.ts';
 import { findUngroundedNumbers } from '../guardrails/numeric-grounding.ts';
 import { escalationFor } from '../guardrails/red-flags.ts';
 import type {
@@ -71,7 +72,13 @@ export type TurnEvent =
       escalation?: EscalationOut | undefined;
       noticeKey?: string | undefined;
     }
-  | { type: 'follow_up'; suggestions: string[] };
+  | { type: 'follow_up'; suggestions: string[] }
+  /**
+   * The route the turn will be served on, emitted once, after safety classification and intent
+   * routing and before any other event. ai-chat sends `message.start` on it so the announced
+   * `model_route` is the one actually used (a light turn reports `chat.free`).
+   */
+  | { type: 'route'; routeKey: RouteKey; intent: IntentDecision['intent'] | null };
 
 export type FinishReason = 'complete' | 'escalated' | 'length' | 'cancelled';
 
@@ -459,8 +466,8 @@ export async function runChatTurn(
   const classifyDeps: ClassifyDeps = { ...args.deps, metadata: args.metadata };
   const contacts = contactsFor(args.countryCode, args.emergencyContacts);
 
-  const minorMentioned = (s: string) =>
-    (args.minorNames ?? []).some((n) => n && new RegExp(`\\b${escapeRe(n)}\\b`, 'iu').test(s));
+  // Script-aware: Urdu-script names and nicknames, spelling variants, diacritics (names.ts).
+  const minorMentioned = nameMatcher(args.minorNames);
   const aboutMinorOf = (c: Classified) =>
     !!args.focusIsMinor ||
     c.child_weight_request ||
@@ -541,6 +548,7 @@ export async function runChatTurn(
   }
   const plan = spec?.plan ?? planFor(args, classification, intent, locale);
   const aboutMinorInput = aboutMinorOf(classification);
+  await emit({ type: 'route', routeKey: plan.routeKey, intent: intent?.intent ?? null });
 
   const base = {
     classification,
@@ -933,8 +941,4 @@ export async function runChatTurn(
     followUps: suggestions,
     bypassedModel: false,
   };
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

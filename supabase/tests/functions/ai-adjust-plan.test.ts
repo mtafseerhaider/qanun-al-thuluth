@@ -12,6 +12,7 @@ import {
   HINA,
   IBRAHIM,
   kicker,
+  MARYAM,
   memoryStore,
   NOW,
   OWNER,
@@ -144,7 +145,11 @@ let keyN = 0;
 const key = () => `adjust-key-${String(++keyN).padStart(4, '0')}`;
 
 /** Generates and activates a plan through the real generate path; returns its id. */
-async function activePlan(ctx: ReturnType<typeof setup>, weeks = 1): Promise<string> {
+async function activePlan(
+  ctx: ReturnType<typeof setup>,
+  weeks = 1,
+  locale: 'en' | 'ur' = 'en',
+): Promise<string> {
   const premium = ctx.state.premium;
   ctx.state.premium = true;
   const res = await ctx.generate(
@@ -153,6 +158,7 @@ async function activePlan(ctx: ReturnType<typeof setup>, weeks = 1): Promise<str
       headers: {
         authorization: 'Bearer owner',
         'content-type': 'application/json',
+        'accept-language': locale,
         'idempotency-key': key(),
       },
       body: JSON.stringify({ household_id: HH, start_date: START, week_count: weeks }),
@@ -549,3 +555,175 @@ Deno.test(
     assertEquals(await budgetDelta(book, { ...input, payloads: [doubled] }), -base);
   },
 );
+
+// ---- weekly learning-plate pair through an adjustment (S7 follow-up) -----------------------------
+
+type PairJson = {
+  family_member_id: string;
+  week: number;
+  new_ingredient_id: string;
+  new_food: string;
+  slots: Array<{ plan_date: string; meal_type: string }>;
+};
+
+const pairsOf = (ctx: ReturnType<typeof setup>, planId: string): PairJson[] =>
+  ((ctx.state.plans.get(planId)?.generation_meta ?? {}) as { exposure_pairs?: PairJson[] })
+    .exposure_pairs ?? [];
+
+const SPINACH_IN_PROGRESS = [
+  {
+    family_member_id: IBRAHIM,
+    exposures: [
+      {
+        ingredientId: 'i-spinach',
+        exposedOn: '2026-10-01',
+        stage: 'touch' as const,
+        acceptance: '2_touched' as const,
+      },
+    ],
+    ladder_targets: [],
+    sensory: null,
+  },
+];
+
+/** The rows of a plan that carry Ibrahim's learning-plate note (either locale). */
+const learningRows = (ctx: ReturnType<typeof setup>, planId: string) =>
+  (ctx.state.meals.get(planId) ?? []).filter((m) =>
+    /Learning plate for Ibrahim|Ibrahim کے لیے سیکھنے کی پلیٹ/u.test(m.notes ?? ''),
+  );
+
+Deno.test(
+  'swapping the meal that carries the learning plate moves the pair to another slot that week',
+  async () => {
+    let target: { plan_date: string; meal_type: string } | null = null;
+    const ctx = setup({
+      premium: true,
+      feeding: SPINACH_IN_PROGRESS,
+      edits: (p) => ({
+        slots: p.slots(
+          (l) =>
+            !!target && l.includes(` ${target.plan_date} `) && l.includes(` ${target.meal_type}:`),
+        ),
+      }),
+    });
+    const id = await activePlan(ctx);
+    const parentPair = pairsOf(ctx, id).find((p) => p.family_member_id === IBRAHIM && p.week === 1);
+    assertExists(parentPair);
+    assert(parentPair.slots.length >= 1);
+    target = parentPair.slots[0]!;
+    assertEquals(learningRows(ctx, id).length, parentPair.slots.length);
+
+    const res = await ctx.handler(
+      post({ meal_plan_id: id, change_request: 'Swap that meal please', scope: week1 }),
+    );
+    assertEquals(res.status, 200);
+    const body = (await res.json()) as Completed;
+    assertExists(body.meal_plan_id);
+    // The carrying meal was swapped.
+    assert(
+      body.diff.some(
+        (d) =>
+          d.plan_date === target!.plan_date &&
+          d.meal_type === target!.meal_type &&
+          d.before.meal_id !== d.after.meal_id,
+      ),
+    );
+
+    const childPair = pairsOf(ctx, body.meal_plan_id).find(
+      (p) => p.family_member_id === IBRAHIM && p.week === 1,
+    );
+    assertExists(childPair, 'the pair is kept in the new version');
+    assertEquals(childPair.new_ingredient_id, parentPair.new_ingredient_id);
+    assertEquals(childPair.slots.length, parentPair.slots.length, 'no exposure lost');
+    assert(
+      !childPair.slots.some(
+        (s) => s.plan_date === target!.plan_date && s.meal_type === target!.meal_type,
+      ),
+      'moved off the swapped slot',
+    );
+    assertEquals(new Set(childPair.slots.map((s) => s.plan_date)).size, childPair.slots.length);
+    for (const s of childPair.slots)
+      assert(s.plan_date >= '2026-10-12' && s.plan_date <= '2026-10-18');
+
+    // Notes follow the slots: one learning-plate note per pair slot, none on the swapped meal.
+    const rows = learningRows(ctx, body.meal_plan_id);
+    assertEquals(
+      rows.map((r) => `${r.plan_date}:${r.meal_type}`).sort(),
+      childPair.slots.map((s) => `${s.plan_date}:${s.meal_type}`).sort(),
+    );
+    for (const r of rows) {
+      assertEquals(r.notes!.match(/Learning plate for Ibrahim/g)?.length, 1);
+      assert(r.servings.some((x) => x.family_member_id === IBRAHIM));
+    }
+    // The parent version is untouched.
+    assertEquals(
+      pairsOf(ctx, id).find((p) => p.family_member_id === IBRAHIM && p.week === 1),
+      parentPair,
+    );
+    assertEquals(learningRows(ctx, id).length, parentPair.slots.length);
+  },
+);
+
+Deno.test(
+  'a change that avoids the learning-plate food drops that pair and its notes',
+  async () => {
+    // Maryam's week-1 pair offers banana (a food the family eats that week); the family drops it.
+    const ctx = setup({
+      premium: true,
+      feeding: SPINACH_IN_PROGRESS,
+      edits: (p) => ({ avoid_ingredients: [p.ingredient('Banana')].filter(Boolean) }),
+    });
+    const id = await activePlan(ctx);
+    const banana = pairsOf(ctx, id).find((p) => p.family_member_id === MARYAM && p.week === 1);
+    assertEquals(banana?.new_ingredient_id, 'i-banana');
+    const notes = (planId: string) =>
+      (ctx.state.meals.get(planId) ?? []).filter((m) =>
+        /Learning plate for Maryam/.test(m.notes ?? ''),
+      );
+    assertEquals(notes(id).length, banana!.slots.length);
+    const res = await ctx.handler(
+      post({ meal_plan_id: id, change_request: 'No banana this week', scope: week1 }),
+    );
+    assertEquals(res.status, 200);
+    const body = (await res.json()) as Completed;
+    assertExists(body.meal_plan_id);
+    assert(body.diff.length > 0);
+    const childPairs = pairsOf(ctx, body.meal_plan_id);
+    assert(!childPairs.some((p) => p.new_ingredient_id === 'i-banana'));
+    assertEquals(notes(body.meal_plan_id).length, 0);
+    // Ibrahim's pair is not affected by the change.
+    assert(
+      childPairs.some((p) => p.family_member_id === IBRAHIM && p.new_ingredient_id === 'i-spinach'),
+    );
+  },
+);
+
+Deno.test('learning-plate notes follow the plan locale (Urdu) through an adjustment', async () => {
+  let target: { plan_date: string; meal_type: string } | null = null;
+  const ctx = setup({
+    premium: true,
+    feeding: SPINACH_IN_PROGRESS,
+    edits: (p) => ({
+      slots: p.slots(
+        (l) =>
+          !!target && l.includes(` ${target.plan_date} `) && l.includes(` ${target.meal_type}:`),
+      ),
+    }),
+  });
+  const id = await activePlan(ctx, 1, 'ur');
+  const parentRows = learningRows(ctx, id);
+  assert(parentRows.length > 0);
+  for (const r of parentRows) {
+    assert(r.notes!.includes('Ibrahim کے لیے سیکھنے کی پلیٹ'), r.notes!);
+    assert(!r.notes!.includes('Learning plate'));
+  }
+  target = pairsOf(ctx, id).find((p) => p.family_member_id === IBRAHIM && p.week === 1)!.slots[0]!;
+  const res = await ctx.handler(
+    post({ meal_plan_id: id, change_request: 'یہ کھانا بدل دیں', scope: week1 }),
+  );
+  assertEquals(res.status, 200);
+  const body = (await res.json()) as Completed;
+  const rows = learningRows(ctx, body.meal_plan_id!);
+  assertEquals(rows.length, parentRows.length);
+  for (const r of rows) assert(!r.notes!.includes('Learning plate'), r.notes!);
+});

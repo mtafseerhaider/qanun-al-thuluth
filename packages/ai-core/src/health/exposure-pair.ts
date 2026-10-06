@@ -1,3 +1,4 @@
+import type { Locale } from '../guardrails/text.ts';
 import { isServed, needsSafeFood } from '../planning/rules.ts';
 import type {
   Catalog,
@@ -210,16 +211,56 @@ export function chooseExposurePair(
     newIngredientId: newIng.id,
     newFood: newIng.name,
     familiarIngredientId: familiar?.id ?? null,
-    familiarLabel: familiar?.label ?? 'a food they already enjoy',
+    familiarLabel: familiar?.label ?? DEFAULT_FAMILIAR_LABEL,
     source: chosen.source,
     lifecycle: life(newIng.id).status,
     slotRefs: slotRefs.sort(),
   };
 }
 
-/** The serving note for a learning plate. Calm, Division of Responsibility, no pressure. */
-export function exposurePairNote(memberName: string, pair: ExposurePair): string {
+/** The familiar side when the member has no safe food or like on record (stored in the pair). */
+export const DEFAULT_FAMILIAR_LABEL = 'a food they already enjoy';
+
+/**
+ * The serving note for a learning plate, in the plan's locale (the requester's `generation_meta`
+ * locale, like the plan rationale). Calm, Division of Responsibility, no pressure (15 §4.5).
+ * The food name comes from the catalog (English) and the familiar label as the parent wrote it.
+ * Urdu is a draft PENDING URDU NATIVE REVIEW (S4-19 / S7-05 process).
+ */
+export function exposurePairNote(
+  memberName: string,
+  pair: Pick<ExposurePair, 'newFood' | 'familiarLabel'>,
+  locale: Locale = 'en',
+): string {
+  if (locale === 'ur') {
+    const familiar =
+      pair.familiarLabel === DEFAULT_FAMILIAR_LABEL
+        ? 'کسی ایسی چیز جو اسے پہلے سے پسند ہے'
+        : pair.familiarLabel;
+    return `${memberName} کے لیے سیکھنے کی پلیٹ: ${familiar} کے ساتھ ${pair.newFood.toLowerCase()} کا ایک چھوٹا سا ٹکڑا رکھیں۔ سکون سے پیش کریں؛ دیکھنا، چھونا یا سونگھنا بھی شمار ہوتا ہے، اور اسے چھوڑ دینا بالکل ٹھیک ہے۔`;
+  }
   return `Learning plate for ${memberName}: a small piece of ${pair.newFood.toLowerCase()} beside ${pair.familiarLabel.toLowerCase()}. Offer it calmly; looking, touching or smelling all count, and leaving it is fine.`;
+}
+
+/** Adds a learning-plate note to a meal's notes (once). */
+export function withExposureNote(notes: string | null, note: string): string {
+  if (!notes) return note;
+  return notes.includes(note) ? notes : `${notes} ${note}`;
+}
+
+/** Removes a pair's learning-plate note, in either locale, from a meal's notes. */
+export function withoutExposureNote(
+  notes: string | null,
+  memberName: string,
+  pair: Pick<ExposurePair, 'newFood' | 'familiarLabel'>,
+): string | null {
+  if (!notes) return notes;
+  let out = notes;
+  for (const locale of ['en', 'ur'] as const) {
+    out = out.split(exposurePairNote(memberName, pair, locale)).join(' ');
+  }
+  out = out.replace(/\s+/gu, ' ').trim();
+  return out || null;
 }
 
 /**
@@ -232,6 +273,7 @@ export function applyExposurePairs(
   req: PlanRequest,
   meals: PlannedMeal[],
   today: string,
+  locale: Locale = 'en',
 ): ExposurePair[] {
   const pairs: ExposurePair[] = [];
   const weeks = [...new Set(meals.map((pm) => pm.slot.week))].sort((a, b) => a - b);
@@ -241,10 +283,10 @@ export function applyExposurePairs(
       const pair = chooseExposurePair(input, catalog, req, weekMeals, today);
       if (!pair) continue;
       pairs.push(pair);
-      const note = exposurePairNote(input.member.name, pair);
+      const note = exposurePairNote(input.member.name, pair, locale);
       for (const pm of weekMeals) {
         if (!pair.slotRefs.includes(pm.slot.ref)) continue;
-        pm.notes = pm.notes ? `${pm.notes} ${note}` : note;
+        pm.notes = withExposureNote(pm.notes, note);
       }
     }
   }

@@ -4,6 +4,7 @@ import {
   adjustUserText,
   AIError,
   applyExposurePairs,
+  exposurePairNote,
   budgetTierFor,
   buildCandidateSets,
   buildSlots,
@@ -41,6 +42,8 @@ import {
   templateChoices,
   templateRationale,
   textOf,
+  withExposureNote,
+  withoutExposureNote,
 } from '@thuluth/ai-core';
 import type {
   AiUsageInsert,
@@ -478,6 +481,7 @@ export async function addExposurePairs(
   deps: PipelineDeps,
   ctx: Pick<PlanContext, 'members' | 'catalog' | 'req' | 'today' | 'household'>,
   meals: PlannedMeal[],
+  locale: Locale = 'en',
 ): Promise<ExposurePair[]> {
   const targets = ctx.members.filter(
     (m) => isServed(m) && (m.modules.includes('picky_eater') || m.modules.includes('autism')),
@@ -500,6 +504,7 @@ export async function addExposurePairs(
     ctx.req,
     meals,
     ctx.today,
+    locale,
   );
 }
 
@@ -517,6 +522,128 @@ export function exposurePairJson(p: ExposurePair, meals: readonly PlannedMeal[])
       .filter((pm) => p.slotRefs.includes(pm.slot.ref))
       .map((pm) => ({ plan_date: pm.slot.date, meal_type: pm.slot.mealType })),
   };
+}
+
+/** `generation_meta.exposure_pairs[]` as stored (the shape `exposurePairJson` writes). */
+export type ExposurePairJson = ReturnType<typeof exposurePairJson>;
+
+/** A row of the new plan version, as `computeAdjustment` builds it. */
+type AdjustRow = Parameters<typeof weekPayloads>[1][number];
+
+function parseExposurePairs(raw: unknown): ExposurePairJson[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw.flatMap((p): ExposurePairJson[] => {
+    if (!p || typeof p !== 'object') return [];
+    const r = p as Partial<ExposurePairJson>;
+    if (typeof r.family_member_id !== 'string' || typeof r.new_food !== 'string') return [];
+    return [
+      {
+        family_member_id: r.family_member_id,
+        week: typeof r.week === 'number' ? r.week : 1,
+        new_ingredient_id: typeof r.new_ingredient_id === 'string' ? r.new_ingredient_id : '',
+        new_food: r.new_food,
+        familiar_ingredient_id:
+          typeof r.familiar_ingredient_id === 'string' ? r.familiar_ingredient_id : null,
+        familiar_label: typeof r.familiar_label === 'string' ? r.familiar_label : '',
+        source: (r.source ?? 'new') as ExposurePair['source'],
+        status: (r.status ?? 'introduced') as ExposurePair['lifecycle'],
+        slots: Array.isArray(r.slots)
+          ? r.slots.filter(
+              (x): x is { plan_date: string; meal_type: PlanMealType } =>
+                !!x && typeof x.plan_date === 'string' && typeof x.meal_type === 'string',
+            )
+          : [],
+      },
+    ];
+  });
+}
+
+/**
+ * Keeps the weekly learning-plate pairs (S6-05) through a plan adjustment. A swapped meal is
+ * rebuilt from the engine without the pair's serving note, so for every pair slot whose meal
+ * changed the pair moves to another eligible slot in the same plan week: the member is served
+ * there, it is today or later, on a day the pair does not use yet, and not the swapped slot
+ * itself. Meals with the new food come first, then lunch and dinner, then the earliest date (the
+ * order `chooseExposurePair` uses). A pair whose new food the change now avoids is dropped and its
+ * notes removed. Rows are updated in place (notes only); returns the pairs for `generation_meta`.
+ */
+export function carryExposurePairs(args: {
+  pairs: readonly ExposurePairJson[];
+  rows: AdjustRow[];
+  /** `${plan_date}:${meal_type}` of main rows whose meal was swapped in this adjustment. */
+  swapped: ReadonlySet<string>;
+  /** Plan week of each date. */
+  weekOf: ReadonlyMap<string, number>;
+  members: readonly PlanMember[];
+  catalog: Catalog;
+  avoided: ReadonlySet<string>;
+  today: string;
+  locale: Locale;
+}): ExposurePairJson[] {
+  const key = (date: string, type: string) => `${date}:${type}`;
+  const main = new Map(
+    args.rows.filter((r) => r.slot === 1).map((r) => [key(r.plan_date, r.meal_type), r]),
+  );
+  const order = (t: string) => (t === 'lunch' || t === 'dinner' ? 0 : 1);
+  const out: ExposurePairJson[] = [];
+  for (const pair of args.pairs) {
+    const member = args.members.find((m) => m.id === pair.family_member_id);
+    if (!member) {
+      out.push(pair);
+      continue;
+    }
+    const lite = { newFood: pair.new_food, familiarLabel: pair.familiar_label };
+    const strip = (k: string) => {
+      const r = main.get(k);
+      if (r) r.notes = withoutExposureNote(r.notes, member.name, lite);
+    };
+    if (pair.new_ingredient_id && args.avoided.has(pair.new_ingredient_id)) {
+      // The family asked to leave this food out: no learning plate with it either.
+      for (const s of pair.slots) strip(key(s.plan_date, s.meal_type));
+      continue;
+    }
+    const lost = pair.slots.filter((s) => args.swapped.has(key(s.plan_date, s.meal_type)));
+    if (!lost.length) {
+      out.push(pair);
+      continue;
+    }
+    const kept = pair.slots.filter((s) => !args.swapped.has(key(s.plan_date, s.meal_type)));
+    for (const s of lost) strip(key(s.plan_date, s.meal_type));
+    const lostKeys = new Set(lost.map((s) => key(s.plan_date, s.meal_type)));
+    const days = new Set(kept.map((s) => s.plan_date));
+    const note = exposurePairNote(member.name, lite, args.locale);
+    const candidates = [...main.values()]
+      .filter(
+        (r) =>
+          args.weekOf.get(r.plan_date) === pair.week &&
+          r.plan_date >= args.today &&
+          !lostKeys.has(key(r.plan_date, r.meal_type)) &&
+          r.servings.some((x) => x.family_member_id === member.id),
+      )
+      .sort((a, b) => {
+        const has = (r: AdjustRow) =>
+          args.catalog.meals.get(r.meal_id)?.ingredientIds.includes(pair.new_ingredient_id) ? 0 : 1;
+        return (
+          has(a) - has(b) ||
+          order(a.meal_type) - order(b.meal_type) ||
+          a.plan_date.localeCompare(b.plan_date) ||
+          a.meal_type.localeCompare(b.meal_type)
+        );
+      });
+    const added: ExposurePairJson['slots'] = [];
+    while (added.length < lost.length) {
+      const r = candidates.find((c) => !days.has(c.plan_date));
+      if (!r) break;
+      days.add(r.plan_date);
+      r.notes = withExposureNote(r.notes, note);
+      added.push({ plan_date: r.plan_date, meal_type: r.meal_type });
+    }
+    const slots = [...kept, ...added].sort(
+      (a, b) => a.plan_date.localeCompare(b.plan_date) || a.meal_type.localeCompare(b.meal_type),
+    );
+    if (slots.length) out.push({ ...pair, slots });
+  }
+  return out;
 }
 
 // ---- writes --------------------------------------------------------------------------------------
@@ -925,6 +1052,7 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
           deps,
           ctx,
           weeks.flatMap((w) => w.draft.meals),
+          meta.locale,
         )
       : [];
   const rows = weeks.flatMap((w) => plannedRows(w.draft.meals));
@@ -989,6 +1117,8 @@ export interface AdjustResult {
   diff: PlanDiffItem[];
   rationale: string;
   payloads: PlanWeekPayload[];
+  /** The parent's weekly exposure pairs carried into the new version (absent: parent had none). */
+  exposurePairs?: ExposurePairJson[] | undefined;
 }
 
 /** The child-rule escalation for a model-detected restriction on a minor (06 §4.4). */
@@ -1309,6 +1439,7 @@ export async function computeAdjustment(
   const planned = new Map(evaluated.draft.meals.map((pm) => [pm.slot.ref, pm]));
   const rows: Parameters<typeof weekPayloads>[1] = [];
   const touched = new Set<string>();
+  const swapped = new Set<string>();
   for (const s of inScope) {
     const pm = planned.get(s.ref);
     const before = rowBySlot.get(s.ref);
@@ -1317,6 +1448,7 @@ export async function computeAdjustment(
     const changed = pm.mealId !== before.meal_id;
     if (!changed && !extra) continue;
     touched.add(before.id);
+    if (changed) swapped.add(`${before.plan_date}:${before.meal_type}`);
     const row = changed
       ? {
           ...plannedRows([pm])[0]!,
@@ -1362,6 +1494,23 @@ export async function computeAdjustment(
       servings: r.servings,
     });
   }
+  // Weekly learning-plate pairs (S6-05) survive a swap of the meal that carried them.
+  const parentPairs = parseExposurePairs(
+    (parent.generation_meta as Record<string, unknown> | null)?.exposure_pairs,
+  );
+  const exposurePairs = parentPairs
+    ? carryExposurePairs({
+        pairs: parentPairs,
+        rows,
+        swapped,
+        weekOf: new Map(slots.map((s) => [s.date, s.week])),
+        members: ctx.members,
+        catalog: ctx.catalog,
+        avoided,
+        today: ctx.today,
+        locale: parentMeta.locale ?? locale,
+      })
+    : undefined;
   const summary = edits.summary;
   const hasMinor = ctx.members.some(isMinor);
   const rationale = rationaleProblems(summary, hasMinor).length
@@ -1370,7 +1519,13 @@ export async function computeAdjustment(
   diff.sort(
     (a, b) => a.plan_date.localeCompare(b.plan_date) || a.meal_type.localeCompare(b.meal_type),
   );
-  return { diff, rationale, payloads: weekPayloads(parent.start_date, rows), ctx };
+  return {
+    diff,
+    rationale,
+    payloads: weekPayloads(parent.start_date, rows),
+    ...(exposurePairs ? { exposurePairs } : {}),
+    ctx,
+  };
 }
 
 /** Writes a computed adjustment into a `generating` plan row and moves it to `draft`. */
@@ -1385,6 +1540,14 @@ export async function persistAdjustment(
     status: 'draft',
     rationale: result.rationale,
     generation_progress: progress('done', plan, { completed_weeks: plan.week_count }),
+    ...(result.exposurePairs
+      ? {
+          generation_meta: {
+            ...plan.generation_meta,
+            exposure_pairs: result.exposurePairs,
+          } as unknown as Record<string, unknown>,
+        }
+      : {}),
   });
   await deps.store.audit({
     actor,
