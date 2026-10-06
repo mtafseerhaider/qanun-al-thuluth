@@ -123,7 +123,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     ['expo-build-properties', { android: { minSdkVersion: 26 } }],
     'expo-localization',
-    'expo-secure-store',
+    // Biometrics are not used (the app lock is a later feature), so no Face ID purpose string:
+    // `false` removes NSFaceIDUsageDescription instead of adding the plugin's generic default.
+    ['expo-secure-store', { faceIDPermission: false }],
     // S7-09: purpose strings Apple reviews (5.1.1) for meal photos and voice questions. expo-audio
     // also adds RECORD_AUDIO on Android; image-picker must not block it. Urdu copies live in
     // locales/ur/native.json.

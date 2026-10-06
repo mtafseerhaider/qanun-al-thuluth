@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { flushPendingNotification } from '@/features/notifications';
+import { useSensoryCalmSuggestion } from '@/features/settings';
 import { markStartup } from '@/lib/perf/startup';
 import { registerNavigationContainer, Sentry } from '@/lib/sentry/init';
 import { linking } from '@/navigation/linking';
@@ -55,6 +56,7 @@ function Navigation() {
   const [ready, setReady] = useState(false);
   usePendingInviteNavigation(ready);
   usePendingNotificationNavigation(ready);
+  useSensoryCalmSuggestion(ready);
   return (
     <NavigationContainer
       ref={navigationRef}

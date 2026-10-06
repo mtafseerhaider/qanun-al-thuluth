@@ -181,7 +181,7 @@ export const colors = {
     'ink-muted': '#A9B0AC',
     'ink-subtle': '#969D99',
     line: '#333A37',
-    'line-strong': '#6C7470',
+    'line-strong': '#767E7A',
     primary: '#8FB3A8',
     'primary-pressed': '#A6C4BB',
     'on-primary': '#12201B',

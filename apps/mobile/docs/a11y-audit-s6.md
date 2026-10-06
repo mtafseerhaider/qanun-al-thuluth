@@ -1,6 +1,6 @@
-# Accessibility audit: Sprint 6 (S6-17) and pass 2 (S7-04)
+# Accessibility audit: Sprint 6 (S6-17), pass 2 (S7-04) and launch follow-up
 
-Pass 2 (Sprint 7, WCAG 2.2 AA) is at the end of this file. The Sprint 6 pass follows unchanged,
+Pass 2 (Sprint 7, WCAG 2.2 AA) and the launch follow-up are at the end of this file. The Sprint 6 pass follows unchanged,
 except that the known gaps now link to their status in pass 2.
 
 ## Pass 1: Sprint 6
@@ -73,13 +73,13 @@ no VoiceOver or TalkBack run: that is the device checklist at the end.
 | 1. Countdown and export status not announced | **Fixed.** `useAnnounceOnChange` (`src/hooks/use-announce.ts`) announces when deletion is scheduled, starts or is cancelled (`DeletionCountdownCard`). The exports screen announces each row that turns ready or failed while it is open ("Meal plan: Ready"). The first value is not announced; it is read with the screen. |
 | 2. Ladder step move labels | Code unchanged (labels name the step and direction). Still needs the device check below. |
 | 3. Growth chart points not focusable | Unchanged by design: the table view is the alternative. Design to confirm. |
-| 4. First-then board contrast | Checked: its borders are `line-strong` (3.12:1 or more on `surface-raised` in all four themes) and `primary`; text is `ink`. Passes 1.4.11 and 1.4.3. Pictograms still need design review. |
+| 4. First-then board contrast | Checked: its borders are `line-strong` (3.54:1 or more on `surface-raised` in all four themes since the launch follow-up; was 3.12:1) and `primary`; text is `ink`. Passes 1.4.11 and 1.4.3. Pictograms still need design review. |
 
 ### What pass 2 checked and changed
 
 | Check (WCAG 2.2) | Result |
 | --- | --- |
-| Text contrast 1.4.3 and non-text contrast 1.4.11, all four themes (light, dark, calmLight, calmDark) | Computed from `@thuluth/config/tokens`: `ink`, `ink-muted`, `ink-subtle`, `primary`, `danger`, `success`, `warning` and `info` on `surface`, `surface-raised` and `surface-sunken` are all 4.5:1 or more; `on-*` pairs and `ink` on every `*-soft` fill pass; `focus` is 5:1 or more. One borderline value: in calmDark, `line-strong` on `surface-sunken` is 2.77:1. The input border is drawn on that fill, but the same border against the screen around it is 3.12:1 or more, so the input boundary still passes. Raise `line-strong` in calmDark at the next token change (Design; tokens are in packages/config). |
+| Text contrast 1.4.3 and non-text contrast 1.4.11, all four themes (light, dark, calmLight, calmDark) | Computed from `@thuluth/config/tokens`: `ink`, `ink-muted`, `ink-subtle`, `primary`, `danger`, `success`, `warning` and `info` on `surface`, `surface-raised` and `surface-sunken` are all 4.5:1 or more; `on-*` pairs and `ink` on every `*-soft` fill pass; `focus` is 4.67:1 or more (calmLight; 5.3:1 or more in the other themes). One borderline value: in calmDark, `line-strong` on `surface-sunken` was 2.77:1. **Fixed in the launch follow-up** (see below). |
 | Resize text 1.4.4 (200 percent) | **Fixed.** Text under 18 pt was capped at 1.6x (body, label, caption) or 1.4x (overline) by the type scale, so a user at 200 percent got 160 percent at most. `Text` now lets every style under 18 pt reach 2x (`fontScaleCap`). Headings, titles and display text keep their caps (they are already large text). This differs from 03 §5's `maxMultiplier` values: Design should update 03 and the tokens. Containers with text have no fixed heights. The fixed-height views found are bars and charts without text (`h-2`, `h-3`, `h-12`, `h-24`). |
 | Target size 2.5.8 (24 px minimum; 01 §9.3 asks for 44 pt) | Buttons are 48 pt, or 36 pt with a 6 pt hit slop (48 pt). **Fixed:** the budget entry delete "×" (was glyph-sized, now 44 x 44 pt plus slop), the grocery item "Edit" link (now 44 pt high), the Today budget line (now 44 pt high), and the citation, follow-up and source chips (36 pt, now with a 4 pt slop, 44 pt). |
 | Name, role, value 4.1.2 | **Fixed:** the chat sessions "Rename" and "Delete" buttons now name the chat ("Delete chat: Iron for Zayd"); the budget delete button names the category, amount and date; loading states are announced as a labelled busy progress element (`LoadingRow`) instead of an unlabeled spinner or silent gap. |
@@ -87,7 +87,7 @@ no VoiceOver or TalkBack run: that is the device checklist at the end.
 | Focus order and focus not obscured 2.4.3, 2.4.11 | Lists keep reading order: header, filters and messages come before rows in `ListScreen`, and the footer after. The tab bar and native headers sit outside the scroll views, so focused content is not covered. The chat composer is outside the message list. |
 | Animation 2.3.3 and reduced motion (01 §9.3) | **Fixed.** There was no reduced-motion handling. `useReducedMotion` follows the OS setting and Sensory-calm mode. Under reduced motion, every stack and modal transition becomes a crossfade (`src/navigation/motion.ts`) and chat auto-scroll jumps instead of animating. No other animation exists. |
 | Screen readers in Urdu (RTL) | **Fixed:** `Text` now sets `accessibilityLanguage="ur"` when the UI is in Urdu, so VoiceOver picks an Urdu voice even when the phone's language is English (Arabic scripture already set `ar`). Layout mirroring and reading order come from `I18nManager`; lint bans physical left/right classes. |
-| Autism-friendly mode (01 §9.3, 03 §6) | **Fixed: there was no way to turn it on.** `sensoryCalm` and the calm palettes existed, but no screen set them. A Sensory-calm switch is now in More > Accessibility and on the autism hub (02 §7.10 asks for it to be offered there). It switches to the calm palette and forces reduced motion. Checked: the app plays no sounds and has no haptics; layouts do not change between modes; the autism screens have no timers or animation. Not done: the one-time suggestion sheet when the autism module is first enabled (02 §7.10), and the `sensory_calm_toggled` analytics event (not in the shared event catalog yet; backend). |
+| Autism-friendly mode (01 §9.3, 03 §6) | **Fixed: there was no way to turn it on.** `sensoryCalm` and the calm palettes existed, but no screen set them. A Sensory-calm switch is now in More > Accessibility and on the autism hub (02 §7.10 asks for it to be offered there). It switches to the calm palette and forces reduced motion. Checked: the app plays no sounds and has no haptics; layouts do not change between modes; the autism screens have no timers or animation. The one-time suggestion sheet (02 §7.10) and the `sensory_calm_toggled` event were added in the launch follow-up (see below). |
 | Accessible authentication 3.3.8 | Unchanged from S6: the OTP field supports paste and one-time-code autofill. |
 
 ### Tests added
@@ -110,3 +110,53 @@ change but not on mount, and crossfade transitions in Sensory-calm mode.
 - Reduced motion on (iOS and Android settings) and Sensory-calm on: transitions crossfade, no
   movement elsewhere.
 - Switch Access (Android) and Full Keyboard Access (iOS) on the sign-in and Today screens.
+
+## Launch follow-up
+
+### Non-text contrast (1.4.11): calmDark `line-strong`
+
+`line-strong` (input, checkbox, chip and card borders) in calmDark was `#6C7470`: 2.77:1 on
+`surface-sunken`, the fill inside inputs. It is now `#767E7A` (`packages/config/tokens/tokens.js`),
+the smallest step of the same grey that clears 3:1 on every surface with about the margin the
+other themes have. It stays quieter than `ink-subtle` (`#969D99`), so the calm palette keeps its
+low-contrast feel for decoration (`line` is unchanged).
+
+`line-strong` against each surface, all four themes (WCAG 2.2 contrast ratio):
+
+| Theme | `line-strong` | `surface` | `surface-raised` | `surface-sunken` |
+| --- | --- | --- | --- | --- |
+| light | `#7F8781` | 3.48 | 3.69 | 3.19 |
+| dark | `#6E7A74` | 4.13 | 3.72 | 3.26 |
+| calmLight | `#80867F` | 3.36 | 3.54 | 3.10 |
+| calmDark (was `#6C7470`: 3.47, 3.12, 2.77) | `#767E7A` | 4.00 | 3.60 | 3.19 |
+
+Rechecked in all four themes at the same time: the text tokens (`ink`, `ink-muted`, `ink-subtle`,
+`primary`, `danger`, `success`, `warning`, `info`) are 4.54:1 or more on every surface, and `focus`
+is 4.67:1 or more. `src/theme/__tests__/contrast.test.ts` now computes these from the tokens, so a
+token change that drops below 3:1 (borders, focus) or 4.5:1 (text) fails CI.
+
+Design: docs/03-design-system.md §2 and its token listing still show `#6C7470` for calmDark
+`line-strong`; update them to `#767E7A` (outside the mobile lane).
+
+### One-time Sensory-calm suggestion (02 §7.10)
+
+When the autism module is on for any member of the active household (turned on in intake on
+this device, or by another caregiver), a form sheet offers Sensory-calm mode once: a heading,
+two sentences, where to change it later, "Turn on Sensory-calm" and "Not now". It has no icon,
+illustration or timer, opens with the stack's motion (a crossfade under reduced motion), and
+swiping it away counts as "Not now". It is marked as shown when it opens, on this device
+(`sensoryCalmSuggested` in the preferences store, kept on sign-out like the other device
+preferences), and it is skipped silently if Sensory-calm is already on. Saving the modules step in
+intake now refreshes the cached family members, so the sheet (and the Family module links) appear
+straight away instead of after the next refetch. The settings switch, the autism hub switch and the
+sheet emit `sensory_calm_toggled { enabled }` when the value changes. Urdu strings are drafts.
+
+Tests: `src/features/settings/__tests__/sensory-calm-suggestion.test.tsx` (when it shows, that it
+shows once, skip when calm is already on, turn on and Not now, analytics, en and ur copy).
+
+### Device checks added
+
+- VoiceOver and TalkBack, English and Urdu: the suggestion sheet (heading read first, both buttons
+  reachable, swipe to dismiss).
+- calmDark: input and checkbox borders on a sunken fill are visible on a low-brightness screen.
+

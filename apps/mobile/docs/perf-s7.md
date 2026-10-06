@@ -21,6 +21,27 @@ Measured with `npx expo export` (production, minified) on 2026-10-06, before and
 
 The "after" bundle includes FlashList (+80 KB minified), which was added in this pass.
 
+### Launch follow-up: Sentry replay and web feedback stubbed
+
+Measured the same way (`npx expo export`, production, Android unless noted) on 2026-10-06, right
+before and after the stub, on the same tree (which already had the Sensory-calm suggestion sheet,
+about 5 KB). Sizes of the stubbed packages come from the minified bundle's source map.
+
+| Metric | Before stub | After stub | Change |
+| --- | --- | --- | --- |
+| Android Hermes bytecode (`.hbc`, plain export as above) | 8,041,629 B | 7,730,952 B | -310,677 B (-3.9%) |
+| iOS Hermes bytecode (plain export) | not re-measured | 7,729,732 B | about -303 KB against S7's 8,033,060 B |
+| Android minified JS (`--no-bytecode`) | 5,433,720 B | 5,248,269 B | -185,451 B (-3.4%) |
+| Android `.hbc` exported with `--source-maps` | 6,589,952 B | 6,332,104 B | -257,848 B |
+| `@sentry-internal/replay` + `replay-canvas` + `feedback` (minified) | 185,468 B | 0 (stub under 1 KB) | |
+
+Note on the measurement: a plain `expo export` embeds Hermes debug info in the `.hbc`. Exporting
+with `--source-maps` moves it to the `.map`, and the bytecode is then about 1.4 MB smaller
+(6.33 MB instead of 7.73 MB). The numbers in this file use the plain export so they compare with
+S7. Which of the two matches what ships (the APK/IPA bundle and EAS Update) still has to be read
+from a store build's size report; if it is the stripped one, the bundle is near the 6 MB budget
+already (see the on-device checklist).
+
 How the module counts were taken: a static import graph from `index.ts` over `apps/mobile/src` and
 `packages/shared` (type-only imports excluded; JSON locale files counted as modules but not as
 source size). "Before the first render" means everything reachable through eager imports. After
@@ -55,6 +76,19 @@ each (43 before, 39 after) and their size is in the bundle numbers above.
    `metro/revenuecat-browser-mode-stub.js` on iOS and Android; every call through the stub throws
    a clear error. This was the largest single item in the bundle and was also evaluated at
    startup.
+
+4. **Sentry session replay and web feedback removed from native bundles (launch follow-up).**
+   `@sentry/react-native` imports `@sentry/browser`, which re-exports `@sentry-internal/replay`,
+   `@sentry-internal/replay-canvas` and `@sentry-internal/feedback` (185 KB minified together).
+   The app enables neither: `lib/sentry/init.ts` adds only the navigation integration, and nothing
+   imports a replay or feedback API. The stub list moved to `metro/native-stubs.js` (shared by
+   `metro.config.js` and a test); these three resolve to `metro/sentry-browser-extras-stub.js` on
+   iOS and Android, whose integrations throw if anyone enables them. React Native's own feedback
+   widget (`@sentry/react-native` `dist/js/feedback`, used by `Sentry.wrap`) is untouched, and so
+   is react-native-reanimated (NativeWind depends on it). The test reads the built files of
+   `@sentry/browser`, `@sentry/react`, `@sentry/react-native` and `react-native-purchases` and
+   fails if a stub misses a name they import, so an SDK upgrade cannot silently break it. Check
+   on a device that Sentry still reports a test error from a production build.
 
 ### Startup timing marks
 
@@ -106,7 +140,7 @@ react-native-worklets 88 KB, FlashList 80 KB, app code about 800 KB.
 | Option | Saves (JS, approx.) | Cost and risk |
 | --- | --- | --- |
 | Drop reanimated and worklets: the app has no animations, and NativeWind only `require`s reanimated for `animate-*` / `transition-*` classes, which the app does not use | 800 KB | Native dependency removal, so a new native build. NativeWind lists reanimated as a peer; needs a check that `nativewind/babel` works without the worklets plugin |
-| Sentry: drop session replay and the feedback widget from the bundle (they are not enabled) | 180 KB | Needs a Metro stub like the RevenueCat one, or a Sentry option to exclude them; check every Sentry upgrade |
+| ~~Sentry: drop session replay and the feedback widget from the bundle~~ **Done (launch follow-up):** see "What changed", item 4 | 185 KB | A Sentry upgrade that imports a new name from those packages is caught by `src/lib/__tests__/native-stubs.test.ts` |
 | Locale JSON loaded per language (only `en` or `ur` in memory) | about 200 KB of evaluation | i18n change; low risk |
 
 Hermes bytecode is larger than minified JS for the same code, so 6 MB of bytecode means about
@@ -128,9 +162,10 @@ enabled through the `debug_menu` flag.
 | 60 fps on lists of 100 items | Seed 100 notifications and 100 chat sessions; scroll with the Perf Monitor on; FlashList `useBenchmark` can be wired into a debug build | |
 | Optimistic log visible under 100 ms | Tap "Everyone ate" and log water; screen recording at 60 fps, count frames | |
 | PostgREST read p95 under 400 ms from Pakistan | Sentry HTTP spans on a Pakistani mobile network | |
-| JS bundle under 6 MB; install size under 60 MB | `npx expo export`; Play Console and App Store Connect size reports | 8.0 MB (see above) |
+| JS bundle under 6 MB; install size under 60 MB | `npx expo export`; Play Console and App Store Connect size reports | 7.73 MB plain export, 6.33 MB with debug info split out (see above) |
 | Memory under 300 MB during chat with images | Android Studio profiler: chat, attach 3 photos, scroll the thread | |
 
 Also check on a device: no crash or blank screen when a screen is opened for the first time
 (the lazy `getComponent` path), deep links into a lazy screen (invite, notification tap) on a cold
-start, and that RevenueCat purchases still work in a store build (the browser engine is stubbed).
+start, that RevenueCat purchases still work in a store build (the browser engine is stubbed), and that
+Sentry still receives errors and navigation spans (replay and web feedback are stubbed).

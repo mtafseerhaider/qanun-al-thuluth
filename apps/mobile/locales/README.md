@@ -55,3 +55,8 @@ i18next resources for `@thuluth/mobile`, one JSON file per namespace (docs/07 §
 > clinical review of the growth alert copy, the "see a doctor" wording and the emergency numbers in
 > the `emergency-help` article; content-team review of the DoR scripts, ladder stage criteria and
 > first-then activities; Islamic content review of the Ramadan and fasting help articles (docs/13).
+
+> **Launch follow-up additions needing review.** `settings.json` gained `sensoryCalmSuggestion`
+> (the one-time Sensory-calm suggestion sheet, 02 §7.10) and `navigation.json` gained
+> `screens.sensoryCalmSuggestion`. The Urdu strings are drafts for a native reviewer; keep the
+> wording neurodiversity-affirming (no "problem" or "fixing" language).

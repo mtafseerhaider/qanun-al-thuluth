@@ -80,6 +80,7 @@ export const ROUTES = {
   ContactSupport: 'ContactSupport',
   About: 'About',
   ReportSourceSheet: 'ReportSourceSheet',
+  SensoryCalmSuggestionSheet: 'SensoryCalmSuggestionSheet',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

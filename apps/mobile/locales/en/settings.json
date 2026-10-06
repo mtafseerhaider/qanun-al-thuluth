@@ -72,5 +72,12 @@
     "title": "Accessibility",
     "sensoryCalm": "Sensory-calm mode",
     "sensoryCalmHint": "Softer colours, no motion and no sounds. Layouts stay the same. Applies to this device."
+  },
+  "sensoryCalmSuggestion": {
+    "title": "Try Sensory-calm mode?",
+    "body": "Some people find bright colours and movement tiring. Sensory-calm mode uses softer colours and turns off motion and sounds on this device. Layouts stay the same.",
+    "where": "You can change this any time in More > Accessibility or on Autism support.",
+    "turnOn": "Turn on Sensory-calm",
+    "notNow": "Not now"
   }
 }

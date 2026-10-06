@@ -18,6 +18,11 @@ export interface PreferencesState {
   units: 'metric' | 'imperial';
   traditionPreference: 'shared' | 'sunni' | 'shia';
   sensoryCalm: boolean;
+  /**
+   * True once the one-time Sensory-calm suggestion (02 §7.10) was shown on this device, or skipped
+   * because Sensory-calm was already on. Never reset, so the sheet is not shown again.
+   */
+  sensoryCalmSuggested: boolean;
   haptics: boolean;
   biometricLock: { enabled: boolean; timeout: 'immediate' | '1m' | '5m' };
   showArabicWithTranslation: boolean;
@@ -32,6 +37,7 @@ export interface PreferencesActions {
   /** Store-only update. Use `changeLocale()` from lib/i18n to also switch i18next and RTL. */
   setLocale(locale: AppLocale): void;
   setSensoryCalm(on: boolean): void;
+  markSensoryCalmSuggested(): void;
   setHaptics(on: boolean): void;
   setUnits(units: PreferencesState['units']): void;
   setTraditionPreference(tradition: PreferencesState['traditionPreference']): void;
@@ -47,6 +53,7 @@ export const initialPreferences: PreferencesState = {
   units: 'metric',
   traditionPreference: 'shared',
   sensoryCalm: false,
+  sensoryCalmSuggested: false,
   haptics: true,
   biometricLock: { enabled: false, timeout: '1m' },
   showArabicWithTranslation: true,
@@ -70,6 +77,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
         setTheme: (theme) => set({ theme }),
         setLocale: (locale) => set({ locale, localeChosen: true }),
         setSensoryCalm: (sensoryCalm) => set({ sensoryCalm }),
+        markSensoryCalmSuggested: () => set({ sensoryCalmSuggested: true }),
         setHaptics: (haptics) => set({ haptics }),
         setUnits: (units) => set({ units }),
         setTraditionPreference: (traditionPreference) => set({ traditionPreference }),
@@ -97,6 +105,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
           units,
           traditionPreference,
           sensoryCalm,
+          sensoryCalmSuggested,
           haptics,
           biometricLock,
           showArabicWithTranslation,
@@ -110,6 +119,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
           units,
           traditionPreference,
           sensoryCalm,
+          sensoryCalmSuggested,
           haptics,
           biometricLock,
           showArabicWithTranslation,

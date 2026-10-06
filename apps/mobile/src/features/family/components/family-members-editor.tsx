@@ -6,6 +6,7 @@ import { FREE_LIMITS } from '@shared';
 
 import { Button } from '@/components/ui/button';
 import { InlineMessage } from '@/components/ui/inline-message';
+import { ErrorRetry, LoadingRow } from '@/components/ui/query-states';
 import { Text } from '@/components/ui/text';
 import { errorKeyFor } from '@/lib/supabase/error-mapping';
 import { useSessionStore } from '@/stores/use-session-store';
@@ -53,8 +54,17 @@ export function FamilyMembersEditor({
       <Text variant="caption" tone="muted" testID={`${testID}.count`}>
         {t('family:list.count', { count: list.length, max: FREE_LIMITS.membersPerHousehold })}
       </Text>
+      {members.isLoading ? (
+        <LoadingRow label={t('common:loading')} testID={`${testID}.loading`} />
+      ) : null}
       {members.isError ? (
-        <InlineMessage tone="danger" message={t(`errors:${errorKeyFor(members.error)}`)} />
+        <ErrorRetry
+          message={t(`errors:${errorKeyFor(members.error)}`)}
+          retryLabel={t('common:retry')}
+          onRetry={() => void members.refetch()}
+          retrying={members.isFetching}
+          testID={`${testID}.error`}
+        />
       ) : null}
       {list.length === 0 && !members.isLoading && editing === null ? (
         <Text tone="muted" testID={`${testID}.empty`}>
