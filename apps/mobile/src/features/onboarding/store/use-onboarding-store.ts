@@ -5,8 +5,9 @@ import { appJsonStorage } from '@/lib/storage/zustand-storage';
 import { resetters } from '@/stores/create-store';
 
 /**
- * Resumable onboarding (09 §5.3, FR-ONB-01). Sprint 1 covers steps 1 to 4 of 24 (welcome,
- * philosophy, household, members) with the consent step before any health data. The server flag
+ * Resumable onboarding (09 §5.3, FR-ONB-01). Steps 1 to 4 (welcome, philosophy, household, members)
+ * with the consent step before any health data, then step 5 intake and the assessment summary
+ * (Sprint 2). The intake wizard keeps its own per-member position in the intake draft store. The server flag
  * `users.onboarding_completed_at` is the source of truth for "done"; this store only resumes the flow
  * at the last incomplete step after the app is killed or reloaded for an RTL switch.
  */
@@ -16,6 +17,8 @@ export const ONBOARDING_STEPS = [
   'consents',
   'household',
   'members',
+  'intake',
+  'assessment',
 ] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number] | 'done';
 
@@ -76,7 +79,7 @@ export function nextStep(
 }
 
 export function previousStep(step: OnboardingStep): OnboardingStep | null {
-  if (step === 'done') return 'members';
+  if (step === 'done') return 'assessment';
   const i = ONBOARDING_STEPS.indexOf(step);
   return i > 0 ? (ONBOARDING_STEPS[i - 1] ?? null) : null;
 }

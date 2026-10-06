@@ -76,8 +76,9 @@ export type OnboardingStackParamList = {
   OnboardingHousehold: undefined;
   OnboardingMembers: undefined;
   OnboardingNotifications: undefined;
-  IntakeWizard: NavigatorScreenParams<IntakeStackParamList>;
-  AssessmentSummary: { assessmentIds: Uuid[] };
+  IntakeWizard: NavigatorScreenParams<IntakeStackParamList> | undefined;
+  /** The screen runs `ai-intake-assess` itself (24 S2-15); ids are optional for a re-open. */
+  AssessmentSummary: { assessmentIds?: Uuid[] } | undefined;
   FirstPlanGeneration: { mealPlanId: Uuid };
 };
 

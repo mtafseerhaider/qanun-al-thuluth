@@ -48,7 +48,9 @@ describe('useOnboardingStore', () => {
     s.complete('consents');
     expect(useOnboardingStore.getState().currentStep).toBe('members');
     expect(nextStep('philosophy', { skipHousehold: true })).toBe('consents');
-    expect(nextStep('members')).toBe('done');
+    expect(nextStep('members')).toBe('intake');
+    expect(nextStep('intake')).toBe('assessment');
+    expect(nextStep('assessment')).toBe('done');
   });
 
   it('persists only serialisable progress under a versioned key', () => {
@@ -102,7 +104,7 @@ describe('useOnboardingStore', () => {
 describe('migrateOnboarding', () => {
   it('drops unknown steps and resumes at welcome', () => {
     expect(
-      migrateOnboarding({ currentStep: 'intake', completedSteps: ['welcome', 'bogus'] }, 0),
+      migrateOnboarding({ currentStep: 'plan', completedSteps: ['welcome', 'bogus'] }, 0),
     ).toMatchObject({ currentStep: 'welcome', completedSteps: ['welcome'] });
     expect(migrateOnboarding(undefined, 0)).toEqual(initialOnboarding);
   });
@@ -113,4 +115,5 @@ it('numbers steps and walks back', () => {
   expect(stepNumber('members')).toBe(5);
   expect(previousStep('household')).toBe('consents');
   expect(previousStep('welcome')).toBeNull();
+  expect(previousStep('done')).toBe('assessment');
 });

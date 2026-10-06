@@ -1,4 +1,4 @@
-/** Query key factory (09 §3). Sprint 1 subset; later sprints extend it in place. */
+/** Query key factory (09 §3). Sprint 2 subset; later sprints extend it in place. */
 type Id = string;
 
 export const qk = {
@@ -17,7 +17,17 @@ export const qk = {
       invitations: () => [...base, 'invitations'] as const,
       familyMembers: () => [...base, 'family-members'] as const,
       budgetProfile: () => [...base, 'budget-profile'] as const,
+      assessment: () => [...base, 'assessment'] as const,
     };
+  },
+  catalog: {
+    allergens: () => ['catalog', 'allergens'] as const,
+  },
+  knowledge: {
+    recommendation: (id: Id, locale: string) =>
+      ['knowledge', 'recommendation', id, locale] as const,
+    source: (id: Id) => ['knowledge', 'source', id] as const,
+    evidence: (id: Id) => ['knowledge', 'evidence', id] as const,
   },
   debug: {
     aiSmoke: () => ['debug', 'ai-smoke'] as const,

@@ -1,0 +1,67 @@
+# Subflow: add one family member with body details from the members editor.
+# Inputs (env): NAME, DAY, MONTH, YEAR, SEX (male|female), HEIGHT (cm), WEIGHT (kg),
+# ACTIVITY (adults only: sedentary|light|moderate|active|very_active).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: add fixture family member (subflow)
+---
+- scrollUntilVisible:
+    element:
+      id: 'family-members.add'
+    direction: DOWN
+- tapOn:
+    id: 'family-members.add'
+- tapOn:
+    id: 'family-members.form.name'
+- inputText: ${NAME}
+- tapOn:
+    id: 'family-members.form.dob-day'
+- inputText: ${DAY}
+- tapOn:
+    id: 'family-members.form.dob-month'
+- inputText: ${MONTH}
+- tapOn:
+    id: 'family-members.form.dob-year'
+- inputText: ${YEAR}
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: 'consent.child-data.checkbox'
+    commands:
+      - tapOn:
+          id: 'consent.child-data.checkbox'
+      - tapOn:
+          id: 'consent.child-data.confirm'
+- scrollUntilVisible:
+    element:
+      id: 'family-members.form.sex.${SEX}'
+    direction: DOWN
+- tapOn:
+    id: 'family-members.form.sex.${SEX}'
+- tapOn:
+    id: 'family-members.form.height'
+- inputText: ${HEIGHT}
+- tapOn:
+    id: 'family-members.form.weight'
+- inputText: ${WEIGHT}
+- hideKeyboard
+- runFlow:
+    when:
+      true: ${ACTIVITY != null && ACTIVITY != ''}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: 'family-members.form.activity.${ACTIVITY}'
+          direction: DOWN
+      - tapOn:
+          id: 'family-members.form.activity.${ACTIVITY}'
+- scrollUntilVisible:
+    element:
+      id: 'family-members.form.save'
+    direction: DOWN
+- tapOn:
+    id: 'family-members.form.save'
+- extendedWaitUntil:
+    notVisible:
+      id: 'family-members.form'
+    timeout: 10000

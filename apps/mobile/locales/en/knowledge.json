@@ -1,0 +1,62 @@
+{
+  "card": {
+    "whatToDo": "What to do",
+    "fromTradition": "From the tradition",
+    "research": "What research says",
+    "seeSources": "See sources"
+  },
+  "caution": "Some research suggests caution here; check with your doctor if this applies to you.",
+  "footer": "Guidance from the tradition and current research. Not a cure or medical advice.",
+  "gradeWithGrader": "{{grade}}, graded by {{grader}}",
+  "grades": {
+    "sahih": "Sahih (authentic)",
+    "hasan": "Hasan (good)",
+    "daif": "Da'if (weak)",
+    "mawdu": "Mawdu' (fabricated)",
+    "sahih_shia": "Sahih (authentic)",
+    "muwaththaq": "Muwaththaq (reliable)",
+    "hasan_shia": "Hasan (good)",
+    "daif_shia": "Da'if (weak)",
+    "ungraded": "Not graded"
+  },
+  "science": {
+    "high": "Strong evidence",
+    "moderate": "Moderate evidence",
+    "low": "Limited evidence",
+    "very_low": "Very limited evidence",
+    "expert_opinion": "Expert opinion"
+  },
+  "tradition": {
+    "quran": "Qur'an",
+    "shared": "Shared source",
+    "sunni": "Sunni source",
+    "shia": "Shia source"
+  },
+  "openSourceHint": "Opens the full source",
+  "translatedBy": "Translation: {{translator}}",
+  "contextOnly": "Shared for context, not as a ruling.",
+  "verifiedBy": "Checked by {{name}} on {{date}}",
+  "studyTypes": {
+    "systematic_review": "Systematic review",
+    "meta_analysis": "Meta-analysis",
+    "rct": "Randomised controlled trial",
+    "cohort": "Cohort study",
+    "case_control": "Case-control study",
+    "cross_sectional": "Cross-sectional study",
+    "guideline": "Clinical guideline",
+    "narrative_review": "Narrative review",
+    "expert_opinion": "Expert opinion"
+  },
+  "openStudy": "Open the study",
+  "empty": {
+    "title": "Sources are being reviewed",
+    "body": "Our scholars and nutrition reviewers are still checking the sources for this guidance. They'll appear here once verified."
+  },
+  "loading": "Loading sources…",
+  "retry": "Try again",
+  "noSourceForTradition": "No verified source from your tradition yet for this guidance.",
+  "withdrawn": "This source has been withdrawn for review.",
+  "scholarNotice": "For religious rulings, please ask a qualified scholar you trust.",
+  "guidanceNotCure": "Sources are shared as guidance, not as a cure or medical claim.",
+  "close": "Close"
+}

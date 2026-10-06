@@ -14,7 +14,7 @@ import { useOnboardingStore } from '../store/use-onboarding-store';
 /**
  * Step 4 Add members (02 §7.3.2, 24 S1-11): everyone the family cooks for, with derived life stage,
  * "This is me" linking (`linked_user_id`), edit and remove, child-data consent before the first minor
- * and upgrade copy on `LIMIT_REACHED`. Finishing sets `users.onboarding_completed_at`.
+ * and upgrade copy on `LIMIT_REACHED`. Continue leads to the step 5 intake (Sprint 2).
  */
 export function OnboardingMembersScreen() {
   const { t } = useTranslation(['onboarding', 'errors']);
@@ -36,7 +36,7 @@ export function OnboardingMembersScreen() {
       total={flow.totalSteps}
       title={t('onboarding:members.title')}
       subtitle={t('onboarding:members.body')}
-      primaryLabel={t('onboarding:members.finish')}
+      primaryLabel={t('onboarding:common.continue')}
       onPrimary={() => flow.goNext({ memberCount: count })}
       primaryDisabled={needsMember}
       primaryLoading={flow.finishing}

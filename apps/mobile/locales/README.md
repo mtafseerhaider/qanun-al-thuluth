@@ -16,3 +16,9 @@ i18next resources for `@thuluth/mobile`, one JSON file per namespace (docs/07 §
 > draft translation of the English text in docs/00 §2 and must be checked by the Islamic content
 > reviewer before release (docs/13). Plural keys use i18next `_one` / `_other` suffixes in both
 > languages so the trees stay identical.
+
+> **Sprint 2 additions needing review.** `intake.json` (health intake, modules, goals, assessment
+> results) and `knowledge.json` (recommendation cards, source detail sheet, hadith grade labels) are
+> new namespaces. Their Urdu strings are drafts: the medical safety copy (red flags, clinician card,
+> fasting with insulin) needs clinical review, and the grade and tradition labels (صحیح، حسن، موثق،
+> سنی ماخذ، شیعہ ماخذ) need the Islamic content reviewer (docs/13).

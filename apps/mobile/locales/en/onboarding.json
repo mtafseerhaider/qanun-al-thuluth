@@ -130,7 +130,6 @@
   "members": {
     "title": "Who's in your family?",
     "body": "Add everyone you cook for, including yourself. You can add more later.",
-    "finish": "Finish setup",
     "noHousehold": "We couldn't find your household. Go back and create it first.",
     "needOne": "Add at least one family member to continue."
   }

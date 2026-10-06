@@ -37,7 +37,17 @@ export const EventSchemas = {
   auth_signed_in: z.object({ method: z.enum(['email', 'google', 'apple', 'restore']) }).strict(),
   auth_signed_out: z.object({ forced: z.boolean() }).strict(),
   onboarding_step_completed: z
-    .object({ step: z.enum(['welcome', 'philosophy', 'consents', 'household', 'members']) })
+    .object({
+      step: z.enum([
+        'welcome',
+        'philosophy',
+        'consents',
+        'household',
+        'members',
+        'intake',
+        'assessment',
+      ]),
+    })
     .strict(),
   onboarding_completed: z.object({ members: z.number().int().min(0).max(50) }).strict(),
   consent_updated: z
@@ -58,6 +68,41 @@ export const EventSchemas = {
   invite_accepted: z.object({ role: z.enum(['owner', 'caregiver', 'viewer', 'coach']) }).strict(),
   invite_revoked: z.object({}).strict(),
   household_member_removed: z.object({ self: z.boolean() }).strict(),
+  // Sprint 2: intake (02 §7.3), assessment (02 §7.4.1), knowledge (02 §7.7.5). Enums and counts only.
+  intake_step_completed: z
+    .object({
+      step: z.enum([
+        'household',
+        'health',
+        'allergies',
+        'food',
+        'lifestyle',
+        'modules',
+        'pregnancy',
+        'sensory',
+        'picky',
+        'adhd',
+        'goals',
+      ]),
+    })
+    .strict(),
+  intake_completed: z
+    .object({
+      members: z.number().int().min(0).max(50),
+      modules: z.array(z.enum(['pregnancy', 'breastfeeding', 'autism', 'adhd', 'picky_eater'])),
+      has_red_flags: z.boolean(),
+    })
+    .strict(),
+  ai_assessment_requested: z.object({}).strict(),
+  assessment_viewed: z.object({ members: z.number().int().min(0).max(50) }).strict(),
+  source_detail_viewed: z
+    .object({
+      kind: z.enum(['recommendation', 'islamic_source', 'evidence']),
+      tradition: z.enum(['shared', 'sunni', 'shia']),
+      has_science: z.boolean(),
+    })
+    .strict(),
+  evidence_link_opened: z.object({}).strict(),
   setting_changed: z
     .object({ key: z.enum(['display_name', 'locale', 'units', 'tradition', 'theme']) })
     .strict(),

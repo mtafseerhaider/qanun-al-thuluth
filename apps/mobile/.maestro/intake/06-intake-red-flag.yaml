@@ -1,0 +1,187 @@
+# S2-17: red-flag fixture. An adult with type 2 diabetes on insulin who intends to fast is warned on
+# the health step, flagged on review, and the assessment shows a clinician card instead of a fasting
+# plan (01 §7.6). Needs the local stack with ai-intake-assess. testIDs only.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 06 intake red flag (insulin and fasting)
+tags:
+  - intake
+  - sprint-2
+---
+- runFlow:
+    file: ../onboarding/_signup-to-members.yaml
+    env:
+      DISPLAY_NAME: 'Tariq'
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-members.screen'
+    timeout: 15000
+- runFlow:
+    file: _add-fixture-member.yaml
+    env:
+      {
+        NAME: 'Tariq',
+        DAY: '5',
+        MONTH: '11',
+        YEAR: '1970',
+        SEX: 'male',
+        HEIGHT: '170',
+        WEIGHT: '88',
+        ACTIVITY: 'light',
+      }
+- tapOn:
+    id: 'onboarding-members.screen.continue'
+
+- extendedWaitUntil:
+    visible:
+      id: 'intake-household.screen'
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: 'intake-household.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-household.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+
+# Health: type 2 diabetes, insulin, intends to fast
+- extendedWaitUntil:
+    visible:
+      id: 'intake-health.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-health.condition.type_2_diabetes'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.medications.new.input'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.medications.new.input'
+- inputText: 'Insulin glargine'
+- hideKeyboard
+- tapOn:
+    id: 'intake-health.medications.new.add'
+- assertVisible:
+    id: 'intake-health.medication-0.flag.insulin'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.supplements.none'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.supplements.none'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.weight-change.no'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.weight-change.no'
+- tapOn:
+    id: 'intake-health.eating-concern.no'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.intends-to-fast.yes'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.intends-to-fast.yes'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.red-flag'
+    direction: DOWN
+- assertVisible:
+    id: 'intake-health.red-flag'
+- takeScreenshot: 06-health-red-flag
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.screen.next'
+
+# Remaining steps with defaults
+- extendedWaitUntil:
+    visible:
+      id: 'intake-allergies.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-allergies.none'
+- tapOn:
+    id: 'intake-allergies.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-food.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'intake-food.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-food.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-lifestyle.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'intake-lifestyle.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-lifestyle.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-modules.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'intake-modules.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-modules.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-goals.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'intake-goals.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-goals.screen.next'
+
+# Review shows the flag for Tariq
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-review.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'intake-review.red-flags'
+- assertVisible:
+    id: 'intake-review.member-0.flag.insulin_or_sulfonylurea_fasting'
+- scrollUntilVisible:
+    element:
+      id: 'intake-review.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-review.screen.next'
+
+# Assessment: clinician card, no fasting plan
+- extendedWaitUntil:
+    visible:
+      id: 'assessment.members'
+    timeout: 60000
+- scrollUntilVisible:
+    element:
+      id: 'assessment.member-0.clinician'
+    direction: DOWN
+- assertVisible:
+    id: 'assessment.member-0.clinician'
+- takeScreenshot: 06-assessment-clinician

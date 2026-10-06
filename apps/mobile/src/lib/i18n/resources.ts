@@ -4,6 +4,8 @@ import enDebug from '@locales/en/debug.json';
 import enErrors from '@locales/en/errors.json';
 import enFamily from '@locales/en/family.json';
 import enHousehold from '@locales/en/household.json';
+import enIntake from '@locales/en/intake.json';
+import enKnowledge from '@locales/en/knowledge.json';
 import enNavigation from '@locales/en/navigation.json';
 import enOnboarding from '@locales/en/onboarding.json';
 import enSettings from '@locales/en/settings.json';
@@ -13,6 +15,8 @@ import urDebug from '@locales/ur/debug.json';
 import urErrors from '@locales/ur/errors.json';
 import urFamily from '@locales/ur/family.json';
 import urHousehold from '@locales/ur/household.json';
+import urIntake from '@locales/ur/intake.json';
+import urKnowledge from '@locales/ur/knowledge.json';
 import urNavigation from '@locales/ur/navigation.json';
 import urOnboarding from '@locales/ur/onboarding.json';
 import urSettings from '@locales/ur/settings.json';
@@ -25,6 +29,8 @@ export const NAMESPACES = [
   'settings',
   'household',
   'family',
+  'intake',
+  'knowledge',
   'errors',
   'debug',
 ] as const;
@@ -39,6 +45,8 @@ export const resources = {
     settings: enSettings,
     household: enHousehold,
     family: enFamily,
+    intake: enIntake,
+    knowledge: enKnowledge,
     errors: enErrors,
     debug: enDebug,
   },
@@ -50,6 +58,8 @@ export const resources = {
     settings: urSettings,
     household: urHousehold,
     family: urFamily,
+    intake: urIntake,
+    knowledge: urKnowledge,
     errors: urErrors,
     debug: urDebug,
   },

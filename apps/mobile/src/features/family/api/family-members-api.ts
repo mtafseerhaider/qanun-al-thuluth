@@ -62,8 +62,14 @@ export async function insertFamilyMember(
 }
 
 export async function updateFamilyMember(id: string, input: FamilyMemberInput): Promise<void> {
-  const parsed = FamilyMemberInput.parse(input);
-  const { error } = await client().from('family_members').update(definedOnly(parsed)).eq('id', id);
+  // The member form does not edit modules or blood group; the schema defaults ([] / 'unknown')
+  // must not overwrite what intake saved (S2-06).
+  const {
+    special_modules: _modules,
+    blood_group: _blood,
+    ...patch
+  } = FamilyMemberInput.parse(input);
+  const { error } = await client().from('family_members').update(definedOnly(patch)).eq('id', id);
   if (error) throw toDbAppError(error);
 }
 
