@@ -1,0 +1,69 @@
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  js:
+    name: Typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm turbo run typecheck lint test --cache-dir=.turbo
+      - run: pnpm format:check
+
+  edge-functions:
+    name: Edge Functions (deno check + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check shared packages under Deno
+        working-directory: supabase/functions
+        run: deno check ../../packages/shared/src/index.ts ../../packages/ai-core/src/index.ts
+      - name: Type-check functions
+        working-directory: supabase/functions
+        run: deno check */index.ts
+      - name: Test functions
+        run: deno test --config supabase/functions/deno.json --allow-env supabase/tests/functions
+
+  database:
+    name: Migrations + pgTAP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: bash tooling/scripts/db-test.sh
+
+  ai-evals:
+    name: AI eval smoke (fake provider)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm --filter @thuluth/ai-core evals --suite smoke
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

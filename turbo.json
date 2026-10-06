@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "agentGuidance": false,
+  "globalEnv": ["APP_ENV"],
+  "tasks": {
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^typecheck"],
+      "outputs": ["coverage/**"]
+    },
+    "gen:db-types": {
+      "cache": false,
+      "outputs": ["packages/shared/src/db/database.types.ts"]
+    },
+    "gen:i18n-keys": {
+      "inputs": ["apps/mobile/locales/en/**"],
+      "outputs": ["packages/shared/src/i18n/keys.ts"]
+    },
+    "evals": {
+      "cache": false,
+      "dependsOn": ["^typecheck"]
+    }
+  }
+}

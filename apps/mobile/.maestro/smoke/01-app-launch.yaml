@@ -1,0 +1,33 @@
+# Sprint 0 smoke flow (docs/21-testing-strategy.md §10): launch a development build, enter the
+# dev-only guest session, and check that the five tabs are present. Uses testIDs, not copy, so it
+# passes in en and ur. Run: maestro test apps/mobile/.maestro/smoke/01-app-launch.yaml
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 01 app launch
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: 'auth-welcome.screen'
+    timeout: 20000
+- tapOn:
+    id: 'auth-welcome.dev-guest-button'
+- extendedWaitUntil:
+    visible:
+      id: 'tab.today'
+    timeout: 10000
+- assertVisible:
+    id: 'tab.plan'
+- assertVisible:
+    id: 'tab.chat'
+- assertVisible:
+    id: 'tab.family'
+- assertVisible:
+    id: 'tab.more'
+- tapOn:
+    id: 'tab.more'
+- assertVisible:
+    id: 'settings-more-home.screen'
+- takeScreenshot: 01-app-launch-more

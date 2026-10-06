@@ -1,0 +1,17 @@
+{
+  "tabs": {
+    "today": "آج",
+    "plan": "منصوبہ",
+    "chat": "پوچھیں",
+    "family": "خاندان",
+    "more": "مزید"
+  },
+  "screens": {
+    "dashboard": "آج",
+    "mealPlans": "کھانے کے منصوبے",
+    "chatThread": "ثُلُث سے پوچھیں",
+    "familyManagement": "خاندان",
+    "moreHome": "مزید",
+    "debug": "ڈیبگ ٹولز"
+  }
+}
