@@ -1,0 +1,504 @@
+[
+  {
+    "id": "redflag-intake-001-usman-weight-loss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": ["weight_loss"],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-002-hina-breastfeeding-weight-loss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 408,
+      "weightKg": 62,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": true,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": ["weight_loss"],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-003-ibrahim-picky-8y",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 96,
+      "weightKg": 24,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": ["child_growth"],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-004-maryam-autism-4y",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 50,
+      "weightKg": 15,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": ["child_growth"],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-005-insulin-ramadan-intent",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": ["insulin"],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "intends_to_fast": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["diabetes_fasting_high_risk"],
+      "escalation_reason": "insulin_or_sulfonylurea_fasting"
+    }
+  },
+  {
+    "id": "redflag-intake-006-sulfonylurea-lifestyle-fasting",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 768,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": ["sulfonylurea"],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": ["ramadan"],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": ["diabetes_fasting_high_risk"],
+      "escalation_reason": "insulin_or_sulfonylurea_fasting"
+    }
+  },
+  {
+    "id": "redflag-intake-007-condition-flag-insulin-monday-fasts",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [
+        {
+          "label": "Type 2 diabetes",
+          "onInsulinOrSulfonylurea": true
+        }
+      ],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": ["sunnah_monday_thursday"],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": ["diabetes_fasting_high_risk"],
+      "escalation_reason": "insulin_or_sulfonylurea_fasting"
+    }
+  },
+  {
+    "id": "redflag-intake-008-gestational-diabetes-fasting",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 360,
+      "weightKg": 84,
+      "pregnant": true,
+      "gestationalDiabetes": true,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "intends_to_fast": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["diabetes_fasting_high_risk"],
+      "escalation_reason": "insulin_or_sulfonylurea_fasting"
+    }
+  },
+  {
+    "id": "redflag-intake-009-metformin-fasting-near-miss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": ["metformin"],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": ["ramadan"],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-010-insulin-no-fasting-near-miss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": ["insulin"],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-011-ed-history-teen",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 180,
+      "weightKg": 48,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "eating_disorder_history": "yes"
+      }
+    },
+    "expect": {
+      "hard_codes": ["eating_disorder_signal"],
+      "escalation_reason": "eating_disorder_signals"
+    }
+  },
+  {
+    "id": "redflag-intake-012-ed-condition-adult",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [
+        {
+          "label": "Bulimia nervosa"
+        }
+      ],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": ["eating_disorder_signal"],
+      "escalation_reason": "eating_disorder_signals"
+    }
+  },
+  {
+    "id": "redflag-intake-013-ed-prefer-not-to-say-near-miss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 84,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "eating_disorder_history": "prefer_not_to_say"
+      }
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-014-child-rapid-weight-loss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 108,
+      "weightKg": 26,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "unintended_weight_change": {
+          "kg": -2,
+          "months": 2
+        }
+      }
+    },
+    "expect": {
+      "hard_codes": ["child_rapid_weight_loss"],
+      "escalation_reason": "rapid_child_weight_loss"
+    }
+  },
+  {
+    "id": "redflag-intake-015-child-slow-loss-near-miss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 108,
+      "weightKg": 26,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "unintended_weight_change": {
+          "kg": -0.5,
+          "months": 6
+        }
+      }
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-016-adult-unintended-loss",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 456,
+      "weightKg": 70,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "unintended_weight_change": {
+          "kg": -6,
+          "months": 4
+        }
+      }
+    },
+    "expect": {
+      "hard_codes": ["unintended_weight_loss"],
+      "escalation_reason": "other_clinical"
+    }
+  },
+  {
+    "id": "redflag-intake-017-child-food-group-refusal",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 72,
+      "weightKg": 18,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "refuses_food_groups_with_weight_loss": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["feeding_losing_foods"],
+      "escalation_reason": "rapid_child_weight_loss"
+    }
+  },
+  {
+    "id": "redflag-intake-018-arfid-gagging",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 48,
+      "weightKg": 15,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "gags_on_most_textures": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["feeding_choking_gagging_vomiting"],
+      "escalation_reason": "other_clinical"
+    }
+  },
+  {
+    "id": "redflag-intake-019-fasting-dark-urine-teen",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 168,
+      "weightKg": 45,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "faint_or_dark_urine_when_fasting": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["dehydration_signs"],
+      "escalation_reason": "dehydration_signs"
+    }
+  },
+  {
+    "id": "redflag-intake-020-pregnancy-cannot-keep-fluids",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 336,
+      "weightKg": 60,
+      "pregnant": true,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": {
+        "pregnancy_vomiting_cannot_keep_fluids": true
+      }
+    },
+    "expect": {
+      "hard_codes": ["pregnancy_warning_sign"],
+      "escalation_reason": "pregnancy_complication"
+    }
+  },
+  {
+    "id": "redflag-intake-021-anaphylaxis-banner-only",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 84,
+      "weightKg": 22,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": ["anaphylactic"],
+      "goals": [],
+      "fastingPractice": [],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  },
+  {
+    "id": "redflag-intake-022-child-under-7-fasting-info",
+    "suite": "red-flags-intake",
+    "member": {
+      "ageMonths": 60,
+      "weightKg": 18,
+      "pregnant": false,
+      "gestationalDiabetes": false,
+      "breastfeeding": false,
+      "conditions": [],
+      "medicationFlags": [],
+      "allergySeverities": [],
+      "goals": [],
+      "fastingPractice": ["ramadan"],
+      "screening": null
+    },
+    "expect": {
+      "hard_codes": [],
+      "escalation_reason": null
+    }
+  }
+]
