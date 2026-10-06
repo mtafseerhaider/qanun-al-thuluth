@@ -315,6 +315,8 @@ The 25 documents were written in parallel against this baseline. Where they made
 | Plan status after generation | Generation finishes at `draft`. The first plan created during onboarding is activated automatically by the app calling `activate_meal_plan`; every later plan shows a review screen and becomes `active` when the user taps "Start this plan". |
 | Coach permissions (Phase 2) | Coaches read household data for the members the owner grants and write plans for them; RLS in `05-database-schema.md` is the reference. |
 | JS bundle budget | 6 MB of Hermes bytecode, enforced as a PR check (`21-testing-strategy.md`). |
+| Free-tier chat model (Sprint 0) | Route key `chat.free` (Anthropic `claude-haiku-4-5-20251001`, Gemini Flash fallback) serves free-tier chat; premium uses `chat.default`. Implements the default for open decision 1 until pricing is revisited after beta. |
+| Smoke Edge Function (Sprint 0) | `ai-smoke` sends one prompt through `chat.default` and meters `ai_usage`, for the hidden debug screen. Disabled when `APP_ENV=production`, capped at 10 calls per user per day, and removed once `ai-chat` ships in Sprint 5. |
 
 ### Decisions still open for the product owner
 
