@@ -81,10 +81,11 @@ export function fromPostgrestError(err: PgErrorLike): HttpError {
     const key = message.slice(11).trim();
     const detail = detailJson(err);
     const rule = typeof detail.rule === 'string' ? detail.rule : (CHILD_RULES[key] ?? key);
-    return new HttpError('VALIDATION_FAILED', 'This goal is not available for members under 18.', {
-      ...detail,
-      rule,
-    });
+    const text =
+      key === 'fasting_under_7'
+        ? 'Children under 7 do not fast; they can join the family at suhoor and iftar.'
+        : 'This goal is not available for members under 18.';
+    return new HttpError('VALIDATION_FAILED', text, { ...detail, rule });
   }
   if (message === 'CHILD_DATA_CONSENT_REQUIRED') {
     return new HttpError('CONSENT_REQUIRED', 'Consent for child data is needed first.', {
@@ -116,10 +117,23 @@ export function fromPostgrestError(err: PgErrorLike): HttpError {
     );
   }
   if (message === 'PREMIUM_REQUIRED') {
+    const detail = detailJson(err);
+    // S5 downgrade (17 §6): a read-only household cannot start or reactivate a plan.
+    if (detail.reason === 'household_read_only') {
+      return new HttpError(
+        'PREMIUM_REQUIRED',
+        'This household is read-only on the free plan. Upgrade to make changes.',
+        { feature: 'household.write', ...detail },
+      );
+    }
     return new HttpError('PREMIUM_REQUIRED', 'This plan option needs Premium.', {
       feature: 'plan.multi_week_or_kind',
-      ...detailJson(err),
+      ...detail,
     });
+  }
+  // S5 table guards raising a plain VALIDATION_FAILED (e.g. ramadan_plans foreign member keys).
+  if (message === 'VALIDATION_FAILED') {
+    return new HttpError('VALIDATION_FAILED', 'Some values are not valid.', detailJson(err));
   }
   if (err.code === '42501') return new HttpError('FORBIDDEN', 'Not allowed');
   if (err.code === '23505') return new HttpError('CONFLICT', 'Already exists');

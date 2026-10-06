@@ -715,3 +715,151 @@ Deno.test('oneSignalSender: request shape, no subscribers, retryable errors', as
     reason: 'not_configured',
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// S5-12: an active Ramadan plan drives suhoor and iftar reminders
+
+function ramadanSnapshot(): Snapshot {
+  const snap = baseSnapshot();
+  snap.hydration = [];
+  snap.fasts = [];
+  snap.ramadan = [
+    {
+      household_id: HH,
+      start_date: '2026-10-06',
+      end_date: '2026-11-04',
+      // The plan's own schedule (e.g. a corrected method): Fajr 04:50, iftar 17:45 on Wednesday.
+      prayer_times: [
+        { date: '2026-10-07', fajr: '04:50', maghrib: '17:44', iftar: '17:45' },
+        { date: '2026-10-08', fajr: '04:51', maghrib: '17:43', iftar: '17:44' },
+      ],
+      child_participation: {
+        [FATHER]: { mode: 'fasting', guidance: [] },
+        [TEEN]: { mode: 'practice_fast', days: ['thu'], until: 'asr', guidance: [] },
+        [CHILD5]: { mode: 'none', guidance: [] },
+      },
+    },
+  ];
+  return snap;
+}
+
+Deno.test('ramadan plan: suhoor and iftar from the plan schedule without any fasting log', () => {
+  const snap = ramadanSnapshot();
+  // Suhoor reminder 60 minutes before the plan's Fajr 04:50 PKT (= 23:50Z) on 2026-10-07.
+  const night = materialize(snap, new Date('2026-10-06T22:45:00Z'));
+  const suhoor = night.filter((r) => r.kind === 'suhoor_reminder');
+  assertEquals(
+    suhoor.map((r) => [r.user_id, r.scheduled_for]),
+    [[OWNER, '2026-10-06T22:50:00.000Z']],
+  );
+  assertEquals(suhoor[0]!.body, 'Suhoor ends at 04:50.');
+  assertEquals(suhoor[0]!.data.source, 'ramadan_plan');
+  assertEquals(suhoor[0]!.dedupe_key, `suhoor:${HH}:2026-10-07`);
+  // Iftar 17:45 PKT = 12:45Z, reminder 10 minutes before.
+  const iftar = materialize(snap, new Date('2026-10-07T12:30:00Z')).filter(
+    (r) => r.kind === 'iftar_reminder',
+  );
+  assertEquals(
+    iftar.map((r) => [r.user_id, r.scheduled_for]),
+    [[OWNER, '2026-10-07T12:35:00.000Z']],
+  );
+  assertEquals(iftar[0]!.body, 'Iftar is at 17:45.');
+});
+
+Deno.test('ramadan plan: practice days reach the carers; under-7 and other days never do', () => {
+  const snap = ramadanSnapshot();
+  // Thursday 2026-10-08: the 12-year-old's practice day, Fajr 04:51 = 23:51Z on the 7th.
+  const thursday = materialize(snap, new Date('2026-10-07T22:45:00Z')).filter(
+    (r) => r.kind === 'suhoor_reminder',
+  );
+  assertEquals(thursday.map((r) => r.user_id).sort(), [OWNER, CAREGIVER].sort());
+  // Wednesday: only the father fasts, so the caregiver gets nothing.
+  const wednesday = materialize(snap, new Date('2026-10-06T22:45:00Z')).filter(
+    (r) => r.kind === 'suhoor_reminder',
+  );
+  assertEquals(
+    wednesday.map((r) => r.user_id),
+    [OWNER],
+  );
+  // Even a malformed plan that marks the 5-year-old as fasting never targets them.
+  snap.ramadan![0]!.child_participation = { [CHILD5]: { mode: 'fasting' } };
+  assertEquals(
+    materialize(snap, new Date('2026-10-06T22:45:00Z')).filter((r) => r.kind === 'suhoor_reminder'),
+    [],
+  );
+});
+
+Deno.test(
+  'ramadan plan: dates without a stored schedule fall back to computed times; voluntary logs still work outside',
+  () => {
+    const snap = ramadanSnapshot();
+    snap.ramadan![0]!.prayer_times = [];
+    const night = materialize(snap, new Date('2026-10-06T22:30:00Z')).filter(
+      (r) => r.kind === 'suhoor_reminder',
+    );
+    // Computed Karachi-method Fajr 04:39 as in the fasting_logs test.
+    assertEquals(
+      night.map((r) => r.scheduled_for),
+      ['2026-10-06T22:39:00.000Z'],
+    );
+    assertEquals(night[0]!.data.source, undefined);
+
+    // Outside the plan's dates the fasting_logs path is unchanged.
+    const later = baseSnapshot();
+    later.hydration = [];
+    later.ramadan = [
+      { ...ramadanSnapshot().ramadan![0]!, start_date: '2026-11-01', end_date: '2026-11-29' },
+    ];
+    later.fasts = [
+      {
+        household_id: HH,
+        family_member_id: FATHER,
+        fast_date: '2026-10-07',
+        kind: 'sunnah_monday_thursday',
+        exemption_reason: null,
+      },
+    ];
+    const voluntary = materialize(later, new Date('2026-10-06T22:30:00Z')).filter(
+      (r) => r.kind === 'suhoor_reminder',
+    );
+    assertEquals(
+      voluntary.map((r) => r.scheduled_for),
+      ['2026-10-06T22:39:00.000Z'],
+    );
+  },
+);
+
+Deno.test('ramadan plan: hydration nudges only between iftar and suhoor on fasting days', () => {
+  const snap = ramadanSnapshot();
+  snap.hydration = baseSnapshot().hydration.filter((h) => h.family_member_id === FATHER);
+  // 12:30 PKT pre-lunch window on a fasting day: suppressed.
+  assertEquals(
+    materialize(snap, new Date('2026-10-07T07:25:00Z')).filter(
+      (r) => r.kind === 'hydration_reminder',
+    ),
+    [],
+  );
+  snap.ramadan = [];
+  assertEquals(
+    materialize(snap, new Date('2026-10-07T07:25:00Z')).filter(
+      (r) => r.kind === 'hydration_reminder',
+    ).length,
+    1,
+    'the same window is sent on a non-fasting day',
+  );
+});
+
+Deno.test('billing_issue template: lock-screen safe, settings route', () => {
+  const row = notificationRow({
+    key: 'billing_issue',
+    user_id: OWNER,
+    household_id: null,
+    locale: 'ur',
+    scheduled_for: new Date('2026-10-07T00:00:00Z'),
+    dedupe_key: 'billing_issue:evt',
+    route: routeFor('billing_issue'),
+  });
+  assertEquals(row.kind, 'billing_issue');
+  assertEquals(row.data.route, 'thuluth://settings/subscription');
+  assert(row.title.length > 0);
+});

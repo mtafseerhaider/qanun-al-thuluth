@@ -1,4 +1,5 @@
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
+import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
 import { supabaseGroceryStore } from '../_shared/grocery/store.ts';
 import { supabasePlatformStore } from '../_shared/platform.ts';
 import { createGroceryGenerateHandler } from './handler.ts';
@@ -9,6 +10,7 @@ Deno.serve(
   createGroceryGenerateHandler({
     verify: verifyWithSupabase,
     platform: supabasePlatformStore(admin),
+    entitlements: supabaseEntitlementStore(admin),
     store: supabaseGroceryStore(admin),
   }),
 );

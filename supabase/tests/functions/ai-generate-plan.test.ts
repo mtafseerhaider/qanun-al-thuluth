@@ -39,6 +39,7 @@ function setup(opts: MemoryOptions & { script?: PlanScript } = {}) {
       jwt === 'owner' ? { sub: OWNER } : jwt === 'viewer' ? { sub: VIEWER } : null,
     secrets: () => [SECRET],
     store: mem.store,
+    entitlements: mem.entitlements,
     fallback: ai.fallback,
     writeUsage: ai.writeUsage,
     kick: bg.kick,
@@ -596,5 +597,50 @@ Deno.test(
     assertEquals(await resumed.json(), { processed: 1, rescheduled: false });
     assertEquals(plan.status, 'draft');
     assertEquals(state.acked, [1]);
+  },
+);
+
+// ---- S5-14 entitlement gates (17 §10.3, FR-SUB-06) -------------------------------------------
+
+Deno.test('free read-only household: PREMIUM_REQUIRED before any plan row', async () => {
+  const { handler, state } = setup({ premium: false });
+  state.readOnly = true;
+  const res = await handler(post({ week_count: 1 }));
+  assertEquals(res.status, 402);
+  const body = (await res.json()) as { error: { code: string; details: Record<string, unknown> } };
+  assertEquals(body.error.code, 'PREMIUM_REQUIRED');
+  assertEquals(body.error.details.reason, 'household_read_only');
+  assertEquals(state.plans.size, 0);
+  // Premium households are never read-only for planning.
+  const premium = setup({ premium: true });
+  premium.state.readOnly = true;
+  assertEquals((await premium.handler(post({ week_count: 1 }))).status, 202);
+});
+
+Deno.test(
+  'free plan with more than 6 members: the first 6 are planned, the rest excluded',
+  async () => {
+    const extra = Array.from({ length: 8 - FAMILY.length }, (_, i) => ({
+      ...FAMILY[0]!,
+      id: `00000000-0000-4000-c000-0000000000${String(90 + i)}`,
+      name: `Guest ${i + 1}`,
+      goals: [],
+    }));
+    const members = [...FAMILY, ...extra];
+    const { handler, state } = setup({ premium: false, members });
+    const res = await handler(post({ week_count: 1 }));
+    assertEquals(res.status, 202);
+    assertEquals(res.headers.get('x-members-excluded'), '2');
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    const meta = state.plans.get(meal_plan_id)?.generation_meta as unknown as GenerationMeta;
+    assertEquals(
+      meta.family_member_ids,
+      members.slice(0, 6).map((m) => m.id),
+    );
+    // Premium plans everyone, no header.
+    const premium = setup({ premium: true, members });
+    const all = await premium.handler(post({ week_count: 1 }));
+    assertEquals(all.status, 202);
+    assertEquals(all.headers.get('x-members-excluded'), null);
   },
 );

@@ -119,6 +119,7 @@ function setup(
     verify,
     secrets: () => [SECRET],
     store: mem.store,
+    entitlements: mem.entitlements,
     fallback: ai.fallback,
     writeUsage: ai.writeUsage,
     kick: bg.kick,
@@ -127,6 +128,7 @@ function setup(
   const handler = createAdjustPlanHandler({
     verify,
     store: mem.store,
+    entitlements: mem.entitlements,
     fallback: ai.fallback,
     writeUsage: ai.writeUsage,
     kick: bg.kick,

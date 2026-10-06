@@ -53,6 +53,8 @@ export interface CatalogMeal {
   prepMin: number;
   kidFriendly: boolean;
   autismFriendly: boolean;
+  /** Every component recipe has `recipes.ramadan_suitable` (14 §8, Ramadan plans prefer these). */
+  ramadanSuitable?: boolean | undefined;
   portions: readonly CatalogPortion[];
   /** `meal_alternatives` rows where this meal is `meal_id`. */
   alternatives: ReadonlyArray<{ mealId: string; reason: AlternativeReason }>;
@@ -139,6 +141,8 @@ export interface PlanRequest {
   cheaper?: boolean | undefined;
   /** Prefer meals with a smaller carb share for adults (adjustment "less rice"). */
   lighterCarbs?: boolean | undefined;
+  /** Ramadan plans (`ramadan-generate`): prefer `ramadanSuitable` meals (soft, never a filter). */
+  preferRamadanSuitable?: boolean | undefined;
   /** Deterministic tie-breaking. */
   seed: number;
 }

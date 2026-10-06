@@ -93,6 +93,10 @@ export const INGREDIENTS: GroceryIngredient[] = [
   }),
   ing('i-water', 'Water', 'beverage', 'beverages'),
   ing('i-guava', 'Guava (amrood)', 'fruit', 'produce_fruit'),
+  ing('i-dates', 'Dates (Aseel)', 'fruit', 'produce_fruit', {
+    name_i18n: { en: 'Dates (Aseel)', ur: 'کھجور (اصیل)' },
+  }),
+  ing('i-dates-fresh', 'Fresh dates (doka)', 'fruit', 'produce_fruit'),
 ];
 
 /** Price per kg, minor units (14 §16.2 Lahore seed: unit price × 1000 / unit_grams). */
@@ -110,6 +114,7 @@ export const PRICES: Record<string, number> = {
   'i-atta': 13500,
   'i-almonds': 360000,
   'i-peanuts': 90000,
+  'i-dates': 60000,
 };
 
 const recipe = (servings: number, ingredients: Array<[string, number]>) => ({
@@ -223,6 +228,10 @@ export interface GroceryMemoryOptions {
   rules?: SubstitutionRule[];
   lists?: GroceryListRow[];
   planStatus?: string;
+  /** `meal_plans.kind` of PLAN (default 'standard'). */
+  kind?: string;
+  /** Replaces the week of servings for PLAN. */
+  servings?: PlannedServing[];
 }
 
 export const LAHORE_PROFILE: PriceProfileRow = {
@@ -252,6 +261,7 @@ export function groceryStore(opts: GroceryMemoryOptions = {}) {
       status: opts.planStatus ?? 'active',
       start_date: WEEK[0]!,
       end_date: WEEK[6]!,
+      kind: opts.kind ?? 'standard',
     },
     {
       id: OTHER_PLAN,
@@ -271,7 +281,9 @@ export function groceryStore(opts: GroceryMemoryOptions = {}) {
     userLocale: async () => 'en',
     plan: async (id) => plans.find((p) => p.id === id) ?? null,
     planServings: async (planId, _h, from, to) =>
-      planId === PLAN ? weekServings().filter((s) => s.plan_date >= from && s.plan_date <= to) : [],
+      planId === PLAN
+        ? (opts.servings ?? weekServings()).filter((s) => s.plan_date >= from && s.plan_date <= to)
+        : [],
     mealRecipes: async (ids) =>
       new Map(MEALS.filter((m) => ids.includes(m.meal_id)).map((m) => [m.meal_id, m])),
     ingredients: async () => ingredients,

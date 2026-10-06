@@ -1,5 +1,6 @@
 import type { HouseholdRole } from '@thuluth/shared';
 
+import type { EntitlementStore } from '../../functions/_shared/entitlements.ts';
 import type { PlatformStore } from '../../functions/_shared/platform.ts';
 
 /** In-memory `PlatformStore` (membership, premium, flags, rate limits, idempotency, audit). */
@@ -17,6 +18,13 @@ export function memoryPlatform(opts: {
       { id: string; hash: string; status?: number; body?: unknown; done: boolean }
     >(),
     audits: [] as Array<{ action: string; entity: string; diff: Record<string, unknown> }>,
+    userPremium: false,
+    readOnly: false,
+  };
+  const entitlements: EntitlementStore = {
+    userPremium: async () => state.userPremium,
+    householdPremium: async () => state.premium,
+    householdReadOnly: async () => state.readOnly,
   };
   const platform: PlatformStore = {
     membership: async (_h, u) => opts.roles[u] ?? null,
@@ -54,5 +62,5 @@ export function memoryPlatform(opts: {
       state.audits.push({ action: e.action, entity: e.entity, diff: e.diff });
     },
   };
-  return { platform, state };
+  return { platform, state, entitlements };
 }

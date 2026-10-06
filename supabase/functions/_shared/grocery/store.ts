@@ -56,6 +56,8 @@ export interface GroceryPlanRow {
   status: string;
   start_date: string;
   end_date: string;
+  /** `meal_plans.kind`; 'ramadan' switches on the Ramadan list rules (FR-RAM-06). */
+  kind?: string;
 }
 
 export interface GroceryListRow {
@@ -120,7 +122,7 @@ export function supabaseGroceryCatalog(admin: SupabaseClient): GroceryCatalogSto
           admin
             .from('daily_meals')
             .select(
-              'id, plan_date, meal_id, batch_multiplier, source_daily_meal_id, daily_meal_servings(family_member_id, adapted_meal_id, portions(grams))',
+              'id, plan_date, meal_type, meal_id, batch_multiplier, source_daily_meal_id, daily_meal_servings(family_member_id, adapted_meal_id, portions(grams))',
             )
             .eq('meal_plan_id', mealPlanId)
             .eq('household_id', householdId)
@@ -137,6 +139,7 @@ export function supabaseGroceryCatalog(admin: SupabaseClient): GroceryCatalogSto
       for (const r of rows as Array<{
         id: string;
         plan_date: string;
+        meal_type: string | null;
         meal_id: string;
         batch_multiplier: number | string;
         daily_meal_servings: Array<{
@@ -154,6 +157,7 @@ export function supabaseGroceryCatalog(admin: SupabaseClient): GroceryCatalogSto
             batch_multiplier: Number(r.batch_multiplier ?? 1),
             life_stage: stages.get(s.family_member_id) ?? 'adult',
             portion_grams: s.portions ? Number(s.portions.grams) : null,
+            ...(r.meal_type ? { meal_type: r.meal_type } : {}),
           });
         }
       }
@@ -380,7 +384,7 @@ export function supabaseGroceryStore(admin: SupabaseClient): GroceryStore {
       return check(
         await admin
           .from('meal_plans')
-          .select('id, household_id, status, start_date, end_date')
+          .select('id, household_id, status, start_date, end_date, kind')
           .eq('id', mealPlanId)
           .is('deleted_at', null)
           .maybeSingle(),

@@ -18,7 +18,8 @@ export type TemplateKey =
   | 'suhoor_reminder'
   | 'iftar_reminder'
   | 'fasting_sunnah_reminder.evening'
-  | 'fasting_sunnah_reminder.suhoor';
+  | 'fasting_sunnah_reminder.suhoor'
+  | 'billing_issue';
 
 interface Copy {
   title: string;
@@ -61,6 +62,17 @@ export const TEMPLATES: Record<TemplateKey, Record<Locale, Copy>> = {
   'fasting_sunnah_reminder.suhoor': {
     en: { title: 'Suhoor for {fast}', body: 'Suhoor ends at {time}.' },
     ur: { title: '{fast} کی سحری', body: 'سحری {time} پر ختم ہوگی۔' },
+  },
+  // revenuecat-webhook (17 §10.2): grace period or billing retry. No amounts, no plan names.
+  billing_issue: {
+    en: {
+      title: "Your payment didn't go through",
+      body: 'Update your payment in your store settings to keep Premium.',
+    },
+    ur: {
+      title: 'آپ کی ادائیگی نہیں ہو سکی',
+      body: 'پریمیم جاری رکھنے کے لیے اسٹور کی سیٹنگز میں ادائیگی اپ ڈیٹ کریں۔',
+    },
   },
 };
 
@@ -173,6 +185,8 @@ export function routeFor(
     case 'fasting_sunnah_reminder.evening':
     case 'fasting_sunnah_reminder.suhoor':
       return 'thuluth://fasting';
+    case 'billing_issue':
+      return 'thuluth://settings/subscription';
   }
 }
 

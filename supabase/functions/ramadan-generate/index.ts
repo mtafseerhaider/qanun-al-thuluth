@@ -1,27 +1,27 @@
 import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
-import { supabaseGroceryCatalog } from '../_shared/grocery/store.ts';
 import { supabasePlanStore } from '../_shared/plan/store.ts';
-import { createAdjustPlanHandler } from './handler.ts';
+import { createRamadanGenerateHandler } from './handler.ts';
+import { supabaseRamadanStore } from './store.ts';
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
 const admin = adminClient();
 
+/** Runs the plan worker after the response; the plan_generation queue stays the retry path. */
 function background(run: () => Promise<unknown>): void {
   const p = run().catch((err) =>
-    console.error(
-      JSON.stringify({ level: 'error', scope: 'plan-adjust-worker', error: String(err) }),
-    ),
+    console.error(JSON.stringify({ level: 'error', scope: 'ramadan-worker', error: String(err) })),
   );
   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(p);
 }
 
 Deno.serve(
-  createAdjustPlanHandler({
+  createRamadanGenerateHandler({
     verify: verifyWithSupabase,
     store: supabasePlanStore(admin),
+    ramadan: supabaseRamadanStore(admin),
     entitlements: supabaseEntitlementStore(admin),
     fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
     writeUsage: async (row) => {
@@ -29,6 +29,5 @@ Deno.serve(
       if (error) throw error;
     },
     kick: background,
-    grocery: supabaseGroceryCatalog(admin),
   }),
 );

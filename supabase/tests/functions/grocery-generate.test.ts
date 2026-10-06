@@ -10,15 +10,23 @@ import {
   matchesExclusion,
   periodTarget,
 } from '../../functions/_shared/grocery/engine.ts';
-import type { BudgetProfile } from '../../functions/_shared/grocery/engine.ts';
+import type { BudgetProfile, PlannedServing } from '../../functions/_shared/grocery/engine.ts';
+import {
+  addIftarDates,
+  datesIngredient,
+  isDriedDates,
+  isRamadanStaple,
+} from '../../functions/_shared/grocery/ramadan.ts';
 import {
   BUDGET,
+  FAMILY,
   FAMILY_FACTOR,
   groceryStore,
   HH,
   INGREDIENTS,
   LAHORE,
   LAHORE_PROFILE,
+  MEAL,
   MEALS,
   NOW,
   OTHER_PLAN,
@@ -26,6 +34,7 @@ import {
   PLAN,
   REGION_PB,
   VIEWER,
+  WEEK,
   weekServings,
 } from './grocery-fixtures.ts';
 import type { GroceryMemoryOptions } from './grocery-fixtures.ts';
@@ -41,6 +50,7 @@ function setup(opts: GroceryMemoryOptions & { premium?: boolean } = {}) {
     verify: async (jwt) =>
       jwt === 'owner' ? { sub: OWNER } : jwt === 'viewer' ? { sub: VIEWER } : null,
     platform: plat.platform,
+    entitlements: plat.entitlements,
     store: mem.store,
     now: () => NOW,
   });
@@ -401,4 +411,113 @@ Deno.test('engine: price book resolution order (14 §12.5)', () => {
     'khi',
   );
   assertEquals(choosePriceProfile([karachi], { ...hh, currency: 'GBP' }, '2026-10-06'), null);
+});
+
+// ---- Ramadan lists (S5-12, FR-RAM-06) -------------------------------------------------------------
+
+const RAMADAN_SLOTS: Array<[string, string]> = [
+  ['suhoor', MEAL.breakfast],
+  ['iftar', MEAL.lunch],
+  ['snack', MEAL.snack],
+];
+
+function ramadanWeek(): PlannedServing[] {
+  const out: PlannedServing[] = [];
+  for (const date of WEEK) {
+    for (const [meal_type, meal] of RAMADAN_SLOTS) {
+      for (const m of FAMILY) {
+        out.push({
+          plan_date: date,
+          daily_meal_id: `${date}:${meal_type}`,
+          meal_id: meal,
+          base_meal_id: meal,
+          batch_multiplier: 1,
+          life_stage: m.stage,
+          portion_grams: null,
+          meal_type,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+Deno.test(
+  'ramadan (free): iftar dates added, staples not fresh, Ramadan price uplift applied',
+  async () => {
+    const { handler, state, plat } = setup({ kind: 'ramadan', servings: ramadanWeek() });
+    const res = await handler(post());
+    assertEquals(res.status, 200);
+    const body = GroceryGenerateResponse.parse(await res.json());
+    const saved = state.saved[0];
+    assertExists(saved);
+    assertEquals(saved.list.period, 'weekly');
+    // 7 iftars x 24 g x 2.83 adult servings = 476 g dried dates (+5 percent fruit trim).
+    const dates = saved.items.find((i) => i.ingredient_id === 'i-dates');
+    assertExists(dates);
+    assertEquals(dates.need_grams, Math.round(7 * 24 * FAMILY_FACTOR * 1.05));
+    assertEquals(dates.is_fresh, false);
+    // Fresh dates (doka) are never the iftar dates.
+    assert(!saved.items.some((i) => i.ingredient_id === 'i-dates-fresh'));
+    // Uplift: fruit 1.25, plant protein 1.08, vegetables 1.15.
+    assertEquals(dates.price_per_kg_minor, 75000);
+    const masoor = saved.items.find((i) => i.ingredient_id === 'i-masoor');
+    assertEquals([masoor?.price_per_kg_minor, masoor?.is_fresh], [32400, false]);
+    const onion = saved.items.find((i) => i.ingredient_id === 'i-onion');
+    assertEquals([onion?.price_per_kg_minor, onion?.is_fresh], [13800, true]);
+    const sum = saved.items.reduce((s, i) => s + (i.estimated_minor ?? 0), 0);
+    assertEquals(body.estimated_total_minor, sum);
+    const audit = plat.audits.at(-1);
+    assertEquals(audit?.diff.ramadan, {
+      price_uplift: 'interim_2026_10',
+      iftar_dates_grams: Math.round(7 * 24 * FAMILY_FACTOR),
+    });
+  },
+);
+
+Deno.test('ramadan (premium monthly): staples only, fresh food left to weekly lists', async () => {
+  const { handler, state } = setup({
+    premium: true,
+    kind: 'ramadan',
+    servings: ramadanWeek(),
+  });
+  const res = await handler(post({ period: 'monthly', optimize: false }));
+  assertEquals(res.status, 200);
+  const body = GroceryGenerateResponse.parse(await res.json());
+  const saved = state.saved[0];
+  assertExists(saved);
+  assertEquals(saved.list.period, 'monthly');
+  assertEquals(body.fresh_items_count, 0);
+  const ids = saved.items.map((i) => i.ingredient_id).sort();
+  // Dates, atta, daal and oil (FR-RAM-06) plus other dry goods; no onion, tomato, eggs, cucumber.
+  for (const staple of ['i-dates', 'i-atta', 'i-masoor', 'i-canola']) assert(ids.includes(staple));
+  for (const fresh of ['i-onion', 'i-tomato', 'i-eggs', 'i-cucumber']) {
+    assert(!ids.includes(fresh), fresh);
+  }
+});
+
+Deno.test('a standard plan gets no iftar dates and no uplift', async () => {
+  const { handler, state, plat } = setup({ servings: ramadanWeek() });
+  assertEquals((await handler(post())).status, 200);
+  const saved = state.saved[0];
+  assert(!saved?.items.some((i) => i.ingredient_id === 'i-dates'));
+  const masoor = saved?.items.find((i) => i.ingredient_id === 'i-masoor');
+  assertEquals(masoor?.price_per_kg_minor, 30000);
+  assertEquals(plat.audits.at(-1)?.diff.ramadan, undefined);
+});
+
+Deno.test('engine: dates matching and iftar dates keep the larger of meal and Sunnah grams', () => {
+  const byId = new Map(INGREDIENTS.map((i) => [i.id, i]));
+  assertEquals(datesIngredient(byId)?.id, 'i-dates');
+  assert(!isDriedDates({ name: 'Fresh dates (doka)', name_i18n: {} }));
+  assert(isDriedDates({ name: 'Khajoor', name_i18n: {} }));
+  assert(isRamadanStaple(byId.get('i-atta')!));
+  assert(!isRamadanStaple(byId.get('i-onion')!));
+  const iftar = ramadanWeek().filter((s) => s.meal_type === 'iftar');
+  const need = new Map([['i-dates', 1000]]);
+  assertEquals(addIftarDates(need, iftar, byId), 0);
+  assertEquals(need.get('i-dates'), 1000);
+  const empty = new Map<string, number>();
+  assertAlmostEquals(addIftarDates(empty, iftar, byId), 7 * 24 * FAMILY_FACTOR, 1);
+  assertEquals(addIftarDates(new Map(), iftar, new Map()), 0);
 });

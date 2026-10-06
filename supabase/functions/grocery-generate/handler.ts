@@ -24,21 +24,31 @@ import {
   totalMinor,
 } from '../_shared/grocery/engine.ts';
 import type { AppliedSubstitution, ListItem, SubstitutionRule } from '../_shared/grocery/engine.ts';
+import {
+  addIftarDates,
+  ramadanListItems,
+  ramadanPrices,
+  RAMADAN_UPLIFT_VERSION,
+} from '../_shared/grocery/ramadan.ts';
 import type { GroceryStore } from '../_shared/grocery/store.ts';
 import { jsonHandler } from '../_shared/http.ts';
 import { daysBetween, localDate } from '../_shared/plan/pipeline.ts';
 import type { PlatformStore } from '../_shared/platform.ts';
+import { consumeTierQuota, resolveEntitlement, TIER_LIMITS } from '../_shared/entitlements.ts';
+import type { EntitlementStore } from '../_shared/entitlements.ts';
 
 export const SCOPE = 'grocery-generate';
-/** 06 §2.7: 10/day free (basic), 30/day premium, 3/min. */
-export const DAILY_LIMIT = { free: 10, premium: 30 } as const;
-export const BURST_PER_MINUTE = 3;
+/** 06 §2.7: 10/day free (basic), 30/day premium, 3/min (`TIER_LIMITS`, `_shared/entitlements.ts`). */
+export const DAILY_LIMIT = TIER_LIMITS['grocery-generate'].daily;
+export const BURST_PER_MINUTE = TIER_LIMITS['grocery-generate'].perMinute.premium;
 /** Longest list range: a monthly list plus a few days of slack. */
 export const MAX_RANGE_DAYS = 35;
 
 export interface GroceryGenerateDeps {
   verify: ClaimsVerifier;
   platform: PlatformStore;
+  /** Server-side tier (17 §9): optimisation, pantry and monthly lists follow the owner (FR-HH-06). */
+  entitlements: EntitlementStore;
   store: GroceryStore;
   now?: () => Date;
 }
@@ -151,29 +161,13 @@ export function createGroceryGenerateHandler(deps: GroceryGenerateDeps) {
         }
       }
 
-      const premium = await deps.platform.householdPremium(input.household_id);
-      const tier = premium ? 'premium' : 'free';
-      const burst = await deps.platform.consumeRateLimit(
-        `${SCOPE}:${user.userId}:min`,
-        BURST_PER_MINUTE,
-        60,
-      );
-      if (!burst.allowed) {
-        throw new HttpError('RATE_LIMITED', 'Please wait a moment before making another list.', {
-          reset_at: burst.reset_at,
-        });
-      }
-      const daily = await deps.platform.consumeRateLimit(
-        `${SCOPE}:${user.userId}:day`,
-        DAILY_LIMIT[tier],
-        86_400,
-      );
-      if (!daily.allowed) {
-        throw new HttpError('QUOTA_EXCEEDED', 'You have made the most grocery lists for today.', {
-          limit: DAILY_LIMIT[tier],
-          reset_at: daily.reset_at,
-        });
-      }
+      const ent = await resolveEntitlement(deps.entitlements, {
+        userId: user.userId,
+        householdId: input.household_id,
+        scope: 'household',
+      });
+      const premium = ent.premium;
+      const quota = await consumeTierQuota(deps.platform, SCOPE, user.userId, ent.tier);
 
       const today = localDate(now(), household.timezone);
       const from = input.starts_on < plan.start_date ? plan.start_date : input.starts_on;
@@ -204,12 +198,17 @@ export function createGroceryGenerateHandler(deps: GroceryGenerateDeps) {
 
       // 2. Aggregate the plan (14 §10.1).
       const servings = await deps.store.planServings(plan.id, input.household_id, from, to);
-      const [meals, ingredients, prices] = await Promise.all([
+      const [meals, ingredients, bookPrices] = await Promise.all([
         deps.store.mealRecipes([...new Set(servings.flatMap((s) => [s.meal_id, s.base_meal_id]))]),
         deps.store.ingredients(),
         profile ? deps.store.prices(profile.id) : Promise.resolve(new Map<string, number>()),
       ]);
-      let need = applyWaste(aggregateNeed(servings, meals).need, ingredients);
+      // FR-RAM-06: Ramadan plans price with the Ramadan uplift and open every iftar with dates.
+      const ramadan = plan.kind === 'ramadan';
+      const prices = ramadan ? ramadanPrices(bookPrices, ingredients) : bookPrices;
+      const raw = aggregateNeed(servings, meals).need;
+      const iftarDatesGrams = ramadan ? addIftarDates(raw, servings, ingredients) : 0;
+      let need = applyWaste(raw, ingredients);
       if (premium) need = deductPantry(need, await deps.store.pantry(input.household_id), today);
       const exclusions = new Set(
         input.pantry_exclusions.map((l) => l.trim().toLowerCase()).filter(Boolean),
@@ -218,10 +217,11 @@ export function createGroceryGenerateHandler(deps: GroceryGenerateDeps) {
         const ing = ingredients.get(id);
         if (ing && matchesExclusion(ing, exclusions)) need.delete(id);
       }
-      let items: ListItem[] = buildItems(need, ingredients, prices, locale);
-
       // 3. Budget (14 §11) and the premium optimiser.
       const period = premium ? input.period : 'weekly';
+      let items: ListItem[] = buildItems(need, ingredients, prices, locale);
+      // Ramadan staples are monthly; a premium monthly Ramadan list carries the staples only.
+      if (ramadan) items = ramadanListItems(items, ingredients, period);
       const target =
         budget && budget.currency === household.currency
           ? periodTarget(budget, days, period)
@@ -275,6 +275,14 @@ export function createGroceryGenerateHandler(deps: GroceryGenerateDeps) {
           items: items.length,
           substitutions: applied.length,
           estimated_total_minor: total,
+          ...(ramadan
+            ? {
+                ramadan: {
+                  price_uplift: RAMADAN_UPLIFT_VERSION,
+                  iftar_dates_grams: iftarDatesGrams,
+                },
+              }
+            : {}),
         },
       });
 
@@ -311,10 +319,7 @@ export function createGroceryGenerateHandler(deps: GroceryGenerateDeps) {
         body,
         headers: {
           ...corsHeaders,
-          'ratelimit-limit': String(BURST_PER_MINUTE),
-          'ratelimit-remaining': String(burst.remaining),
-          'x-quota-limit': String(DAILY_LIMIT[tier]),
-          'x-quota-remaining': String(daily.remaining),
+          ...quota,
         },
       };
     }

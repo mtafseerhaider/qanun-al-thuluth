@@ -1,3 +1,4 @@
+import type { EntitlementStore } from '../../functions/_shared/entitlements.ts';
 import { FakeProvider, RouteResolver } from '@thuluth/ai-core';
 import type {
   AIError,
@@ -152,8 +153,17 @@ export function memoryStore(opts: MemoryOptions = {}) {
       { id: string; hash: string; status?: number; body?: unknown; done: boolean }
     >(),
     weeks: [] as Array<{ planId: string; week: PlanWeekPayload }>,
+    /** The caller's personal premium (17 §8); household scope follows `premium` (the owner). */
+    userPremium: false,
+    /** `household_is_read_only` (17 §10.3): a free owner's extra household. */
+    readOnly: false,
   };
   let n = 0;
+  const entitlements: EntitlementStore = {
+    userPremium: async () => state.userPremium,
+    householdPremium: async () => state.premium,
+    householdReadOnly: async () => state.readOnly,
+  };
   const store: PlanStore = {
     household: async (id) => (id === HH ? household : null),
     membership: async (_h, u) => roles.get(u) ?? null,
@@ -319,7 +329,7 @@ export function memoryStore(opts: MemoryOptions = {}) {
       state.audits.push(`${e.action}:${e.entity}`);
     },
   };
-  return { store, state, catalog };
+  return { store, state, catalog, entitlements };
 }
 
 export const ROUTES: AiModelRouteRow[] = (
