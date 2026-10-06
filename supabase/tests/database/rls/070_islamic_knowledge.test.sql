@@ -7,6 +7,14 @@
 begin;
 select plan(29);
 
+-- start from an empty knowledge base: the catalog seeds (100-120) load unverified content that would
+-- otherwise collide with the fixture references and the whole-table counts below.
+delete from public.recommendations;
+delete from public.islamic_sources;
+delete from public.quran_references;
+delete from public.hadith_references;
+delete from public.scientific_evidence;
+
 select tests.create_user('isl-user@test.thuluth.app')   as uid \gset
 select tests.create_user('isl-editor@test.thuluth.app') as editor \gset
 

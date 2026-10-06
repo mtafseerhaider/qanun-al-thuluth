@@ -99,6 +99,44 @@ begin
   values (v_hid, 6000000, 'PKR');
   insert into public.consents (user_id, household_id, kind, version)
   values (p_owner, v_hid, 'child_data', '2026-10');
+  insert into public.consents (user_id, kind, version)
+  select p_owner, 'health_data', '2026-10'
+  where not exists (select 1 from public.consents c where c.user_id = p_owner and c.kind = 'health_data' and c.withdrawn_at is null);
+  -- Sprint 2 health profile, assessment and safety rows (S2-02, 0018a)
+  insert into public.medical_conditions (household_id, family_member_id, label)
+  select v_hid, fm.id, 'Fixture condition' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.allergies (household_id, family_member_id, allergen_id, severity)
+  select v_hid, fm.id, a.id, 'moderate' from public.family_members fm, public.allergens a
+   where fm.household_id = v_hid and fm.name = 'Son' and a.code = 'peanuts';
+  insert into public.medications (household_id, family_member_id, name)
+  select v_hid, fm.id, 'Fixture medication' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.supplements (household_id, family_member_id, name)
+  select v_hid, fm.id, 'Vitamin D' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.food_preferences (household_id, family_member_id, label, is_safe_food)
+  select v_hid, fm.id, 'Plain rice', true from public.family_members fm where fm.household_id = v_hid and fm.name = 'Daughter';
+  insert into public.food_dislikes (household_id, family_member_id, label)
+  select v_hid, fm.id, 'Karela' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Son';
+  insert into public.nutrition_goals (household_id, family_member_id, goal_type, is_primary)
+  select v_hid, fm.id, case when fm.name = 'Adult' then 'maintain' else 'child_growth' end::public.goal_type, true
+    from public.family_members fm where fm.household_id = v_hid;
+  insert into public.pregnancy_profiles (household_id, family_member_id, trimester)
+  select v_hid, fm.id, 2 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.sensory_profiles (household_id, family_member_id, texture_likes, texture_avoids)
+  select v_hid, fm.id, '{smooth}', '{lumpy}' from public.family_members fm where fm.household_id = v_hid and fm.name = 'Daughter';
+  insert into public.hydration_targets (household_id, family_member_id, daily_ml)
+  select v_hid, fm.id, 2300 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.ai_assessments (household_id, family_member_id, kind, summary, model_route, prompt_version)
+  select v_hid, fm.id, 'intake', 'Fixture assessment', 'plan.generate', 'intake_assess@1'
+    from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.safety_events (household_id, source, category, urgency)
+  values (v_hid, 'intake', 'fixture', 'routine');
+  -- Sprint 2 household-private catalog rows (S2-16)
+  insert into public.recipes (household_id, created_by_user_id, title, meal_types, servings, source)
+  values (v_hid, p_owner, 'Fixture family daal', '{lunch}', 4, 'user');
+  insert into public.meals (household_id, source, title, meal_type, components)
+  values (v_hid, 'user', 'Fixture meal', 'lunch', '[{"label":"Daal","role":"main"}]');
+  insert into public.portions (household_id, meal_id, life_stage, grams, household_measure)
+  select v_hid, m.id, 'adult', 300, '1 katori' from public.meals m where m.household_id = v_hid;
   insert into public.ai_usage (user_id, household_id, route_key, provider, model)
   values (p_owner, v_hid, 'chat.free', 'anthropic', 'claude-haiku-4-5-20251001');
   insert into public.analytics_events (user_id, household_id, event, occurred_at)
@@ -107,7 +145,10 @@ begin
   perform set_config('app.bypass_entitlements', 'off', true);
   insert into tests.rls_fixture_coverage (table_name)
   select t from unnest(array['household_members','household_invitations','family_members','budget_profiles',
-                             'consents','audit_log','ai_usage','analytics_events']) t
+                             'consents','audit_log','ai_usage','analytics_events',
+                             'medical_conditions','allergies','medications','supplements','food_preferences',
+                             'food_dislikes','nutrition_goals','pregnancy_profiles','sensory_profiles',
+                             'hydration_targets','ai_assessments','safety_events','recipes','meals','portions']) t
   on conflict do nothing;
   return v_hid;
 end $$;

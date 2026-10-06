@@ -5,7 +5,7 @@
 -- read, owner writes, acceptance service-only), household_members (insert only through
 -- household-invite, role changes by the owner), soft_delete RPC and soft-deleted rows.
 begin;
-select plan(44);
+select plan(45);
 
 select tests.create_user('rm-owner@test.thuluth.app')   as owner \gset
 select tests.create_user('rm-care@test.thuluth.app')    as care \gset
@@ -31,6 +31,9 @@ select tests.clear_authentication();
 
 select tests.authenticate_as(:'care');
 select is((select count(*) from public.family_members where household_id = :'hid'), 3::bigint, 'caregiver reads family members');
+select throws_ok(format($$insert into public.family_members (household_id, name, date_of_birth) values (%L, 'Baby', current_date - 100)$$, :'hid'),
+  'P0001', 'CHILD_DATA_CONSENT_REQUIRED', 'caregiver without a child_data consent cannot add a minor (0022)');
+insert into public.consents (user_id, household_id, kind, version) values (:'care', :'hid', 'child_data', '2026-10');
 select lives_ok(format($$insert into public.family_members (household_id, name, date_of_birth) values (%L, 'Baby', current_date - 100)$$, :'hid'),
   'caregiver adds a family member');
 select is(tests.affected_rows(format($q$update public.family_members set height_cm = 125 where id = %L$q$, :'son')),
