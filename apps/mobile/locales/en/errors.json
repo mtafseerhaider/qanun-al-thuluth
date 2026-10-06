@@ -42,6 +42,13 @@
     "FEATURE_DISABLED": "This is paused for a short while. Please try again later.",
     "PLAN_ALREADY_ACTIVE": "You already have an active plan this week.",
     "PLAN_NOT_ADJUSTABLE": "This plan can't be changed any more.",
+    "ACCOUNT_DELETION_PENDING": "Your account is already scheduled for deletion.",
+    "OWNERSHIP_TRANSFER_REQUIRED": "You own a household with other members. Make someone else the owner first.",
+    "EXPORT_KIND_UNSUPPORTED": "This kind of export isn't available yet.",
+    "GROWTH_REFERENCE_OUT_OF_RANGE": "This measurement is outside the range the growth charts cover.",
+    "CONSENT_REQUIRED": "Please review and accept the required consent first.",
+    "UPSTREAM_UNAVAILABLE": "A service we rely on isn't answering. Please try again in a few minutes.",
+    "IDEMPOTENCY_IN_PROGRESS": "This is still being processed. Please wait a moment.",
     "UNKNOWN": "Something went wrong. Please try again."
   }
 }

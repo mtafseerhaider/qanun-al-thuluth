@@ -58,6 +58,7 @@ export function AssistantTurn({
   memberName,
   onConfirm,
   onDismiss,
+  onReview,
   onRetry,
   onOpenCitation,
   onFollowUp,
@@ -73,6 +74,7 @@ export function AssistantTurn({
   memberName: (id: string) => string;
   onConfirm: (p: ChatProposal) => void;
   onDismiss: (p: ChatProposal) => void;
+  onReview?: (p: ChatProposal) => void;
   onRetry: () => void;
   onOpenCitation: (c: ChatCitation) => void;
   onFollowUp: (text: string) => void;
@@ -124,6 +126,7 @@ export function AssistantTurn({
           online={online}
           onConfirm={() => onConfirm(p)}
           onDismiss={() => onDismiss(p)}
+          {...(onReview ? { onReview: () => onReview(p) } : {})}
           testID={`${testID}.proposal-${i}`}
         />
       ))}

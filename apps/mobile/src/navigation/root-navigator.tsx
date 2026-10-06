@@ -2,10 +2,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 
 import { BootScreen } from '@/features/auth';
+import { LogExposureSheet } from '@/features/exposures';
+import { CreateExportSheet } from '@/features/exports';
 import { FastLogSheet } from '@/features/fasting';
+import { AddGrowthMeasurementScreen } from '@/features/growth';
 import { AcceptInviteScreen, InviteCaregiverScreen } from '@/features/household';
 import { DehydrationCheckSheet } from '@/features/hydration';
-import { SourceDetailSheet } from '@/features/knowledge';
+import { ReportSourceSheet, SourceDetailSheet } from '@/features/knowledge';
 import { MealAnalysisResultScreen, MealPhotoCaptureScreen } from '@/features/meal-log';
 import { SwapMealSheet } from '@/features/meals';
 import { PlanGenerationProgressScreen } from '@/features/plan';
@@ -129,6 +132,38 @@ export function RootNavigator() {
                 name="RamadanSetup"
                 component={RamadanSetupScreen}
                 options={{ title: t('screens.ramadanSetup') }}
+              />
+              <Stack.Screen
+                name="AddGrowthMeasurementModal"
+                component={AddGrowthMeasurementScreen}
+                options={{ title: t('screens.addGrowthMeasurement') }}
+              />
+              <Stack.Screen
+                name="LogExposureSheet"
+                component={LogExposureSheet}
+                options={{
+                  title: t('screens.logExposure'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.9, 1],
+                }}
+              />
+              <Stack.Screen
+                name="CreateExportSheet"
+                component={CreateExportSheet}
+                options={{
+                  title: t('screens.createExport'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.9, 1],
+                }}
+              />
+              <Stack.Screen
+                name="ReportSourceSheet"
+                component={ReportSourceSheet}
+                options={{
+                  title: t('screens.reportSource'),
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: [0.8, 1],
+                }}
               />
               <Stack.Screen
                 name="DehydrationCheckSheet"

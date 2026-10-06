@@ -15,7 +15,7 @@ import { ThemeToggle } from '../components/theme-toggle';
 
 /**
  * M1 More: trackers (water, fasting, weight, budget; Sprint 4; the Ramadan planner, Sprint 5),
- * account, Premium, AI memory and notification settings,
+ * account, Premium, AI memory and notification settings, privacy (Sprint 6), insights, exports, help,
  * appearance and language, feedback, plus the hidden debug entry.
  */
 export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
@@ -68,6 +68,18 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
             onPress={() => navigation.navigate('BudgetDashboard', {})}
             testID="settings-more-home.budget-button"
           />
+          <Button
+            label={t('settings:home.insights')}
+            variant="secondary"
+            onPress={() => navigation.navigate('NutritionInsights', {})}
+            testID="settings-more-home.insights-button"
+          />
+          <Button
+            label={t('settings:home.exports')}
+            variant="secondary"
+            onPress={() => navigation.navigate('Exports')}
+            testID="settings-more-home.exports-button"
+          />
         </View>
       </Card>
       {!isDevGuest ? (
@@ -99,6 +111,12 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
             onPress={() => navigation.navigate('SettingsMemory')}
             testID="settings-more-home.memory-button"
           />
+          <Button
+            label={t('settings:home.privacy')}
+            variant="secondary"
+            onPress={() => navigation.navigate('SettingsPrivacy')}
+            testID="settings-more-home.privacy-button"
+          />
         </Card>
       ) : null}
       <Card>
@@ -109,6 +127,23 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
       </Card>
       <Card>
         <LanguageToggle />
+      </Card>
+      <Card testID="settings-more-home.help">
+        <Text variant="overline" tone="muted">
+          {t('settings:home.helpTitle')}
+        </Text>
+        <Button
+          label={t('settings:home.help')}
+          variant="secondary"
+          onPress={() => navigation.navigate('HelpCenter', {})}
+          testID="settings-more-home.help-button"
+        />
+        <Button
+          label={t('settings:home.contact')}
+          variant="ghost"
+          onPress={() => navigation.navigate('ContactSupport')}
+          testID="settings-more-home.contact-button"
+        />
       </Card>
       <Card>
         <Text variant="overline" tone="muted">

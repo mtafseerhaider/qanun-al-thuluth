@@ -1,0 +1,27 @@
+# Sprint 6 (S6-13): family insights. More -> Insights. Free accounts see the upsell; premium
+# accounts see the family summary from the server view, plus a per-child acceptance index that is
+# computed on the device (the screen says so).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 23 insights
+tags:
+  - insights
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- tapOn:
+    id: 'settings-more-home.insights-button'
+- extendedWaitUntil:
+    visible:
+      id: 'insights.screen'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'insights.upsell|insights.family|insights.empty|insights.server-unavailable'
+    timeout: 15000
+- takeScreenshot: 23-insights

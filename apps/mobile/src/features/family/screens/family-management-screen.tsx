@@ -10,6 +10,7 @@ import type { FamilyScreenProps } from '@/navigation/types';
 import { selectCanEdit, useActiveHouseholdStore } from '@/stores/use-active-household-store';
 
 import { FamilyMembersEditor } from '../components/family-members-editor';
+import { HealthModulesCard } from '../components/health-modules-card';
 
 /** F1 Family Management (02 §7.8.1): the household's members and who has access. */
 export function FamilyManagementScreen({ navigation }: FamilyScreenProps<'FamilyManagement'>) {
@@ -29,6 +30,16 @@ export function FamilyManagementScreen({ navigation }: FamilyScreenProps<'Family
       {householdId ? (
         <>
           <FamilyMembersEditor householdId={householdId} source="family" canEdit={canEdit} />
+          <HealthModulesCard
+            householdId={householdId}
+            onOpen={(link, familyMemberId) =>
+              link === 'growth'
+                ? navigation.navigate('GrowthDashboard', { familyMemberId })
+                : link === 'picky'
+                  ? navigation.navigate('PickyEaterHub', { familyMemberId })
+                  : navigation.navigate('AutismHub', { familyMemberId })
+            }
+          />
           <Card>
             <Text variant="heading" accessibilityRole="header">
               {t('family:access.title')}

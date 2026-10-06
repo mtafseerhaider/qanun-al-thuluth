@@ -13,15 +13,6 @@
     "sent": "{{count}} ایونٹس فلش ہو گئے۔",
     "failed": "فلش ناکام: {{message}}"
   },
-  "aiSmoke": {
-    "title": "اے آئی اسموک ٹیسٹ",
-    "promptLabel": "پرامپٹ",
-    "defaultPrompt": "ایک مختصر جملے میں سلام کہیں۔",
-    "send": "ai-smoke کال کریں",
-    "reply": "جواب",
-    "meta": "{{provider}} · {{model}} · {{route}} · {{tokensIn}} اِن / {{tokensOut}} آؤٹ · {{latency}} ms",
-    "error": "خرابی {{code}}: {{message}}"
-  },
   "flags": {
     "title": "فیچر فلیگز",
     "debugMenu": "debug_menu: {{value}}"
@@ -30,7 +21,7 @@
   "session": {
     "title": "ڈیولپر سیشن",
     "signedIn": "{{userId}} کے طور پر سائن اِن",
-    "signedOut": "سپابیس سیشن نہیں ہے۔ تجزیات اور ai-smoke کے لیے سیشن ضروری ہے۔",
+    "signedOut": "سپابیس سیشن نہیں ہے۔ تجزیات کے لیے سیشن ضروری ہے۔",
     "signIn": "مقامی ڈیولپر صارف کے طور پر سائن اِن کریں"
   }
 }

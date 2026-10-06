@@ -1,8 +1,10 @@
 import * as SplashScreen from 'expo-splash-screen';
 
 import { registerBudgetOutboxHandlers } from '@/features/budget';
+import { registerExposureOutboxHandlers } from '@/features/exposures';
 import { registerFastingOutboxHandlers } from '@/features/fasting';
 import { registerGroceryOutboxHandlers } from '@/features/grocery';
+import { registerGrowthOutboxHandlers } from '@/features/growth';
 import { registerAlphaFeedbackOutboxHandler } from '@/features/help';
 import { registerHydrationOutboxHandlers } from '@/features/hydration';
 import { registerMealLogOutboxHandlers } from '@/features/meal-log';
@@ -51,6 +53,8 @@ export function bootstrap(): void {
   registerNotificationOutboxHandlers(queryClient);
   registerMealLogOutboxHandlers(queryClient);
   registerAlphaFeedbackOutboxHandler();
+  registerGrowthOutboxHandlers(queryClient);
+  registerExposureOutboxHandlers(queryClient);
   startOutboxSync();
   // Push: a tap opens the notification's screen (parked until the signed-in app is mounted).
   if (

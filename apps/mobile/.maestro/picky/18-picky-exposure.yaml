@@ -1,0 +1,83 @@
+# Sprint 6 (S6-05): log a food try for a picky eater and read the division-of-responsibility guide.
+# Uses the Usman intake fixture (Ibrahim, 8, picky eater). Family -> Picky eating -> Log a try:
+# pick a food from the catalog, choose "tasted", save (queued in the outbox, so it also works
+# offline) -> the exposure log lists the food. Needs the local stack with seeded ingredients.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 18 picky eater exposure
+tags:
+  - picky
+  - sprint-6
+---
+- runFlow: ../intake/05-intake-usman.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.family'
+- scrollUntilVisible:
+    element:
+      id: 'family-management.module.picky.*'
+    direction: DOWN
+- tapOn:
+    id: 'family-management.module.picky.*'
+- extendedWaitUntil:
+    visible:
+      id: 'picky.hub'
+    timeout: 10000
+- assertVisible:
+    id: 'picky.pair'
+- assertNotVisible:
+    text: '.*kcal.*'
+- tapOn:
+    id: 'picky.log'
+- extendedWaitUntil:
+    visible:
+      id: 'log-exposure.screen'
+    timeout: 5000
+- tapOn:
+    id: 'log-exposure.food.query'
+- inputText: 'carrot'
+- extendedWaitUntil:
+    visible:
+      id: 'log-exposure.food.result'
+    timeout: 10000
+- tapOn:
+    id: 'log-exposure.food.result'
+    index: 0
+- hideKeyboard
+- tapOn:
+    id: 'log-exposure.acceptance.3_tasted'
+- scrollUntilVisible:
+    element:
+      id: 'log-exposure.save'
+    direction: DOWN
+- tapOn:
+    id: 'log-exposure.save'
+- extendedWaitUntil:
+    visible:
+      id: 'picky.hub'
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: 'picky.nav.log'
+    direction: DOWN
+- tapOn:
+    id: 'picky.nav.log'
+- extendedWaitUntil:
+    visible:
+      id: 'exposure-log.food'
+    timeout: 10000
+- takeScreenshot: 18-exposure-log
+- back
+- scrollUntilVisible:
+    element:
+      id: 'picky.nav.dor'
+    direction: DOWN
+- tapOn:
+    id: 'picky.nav.dor'
+- extendedWaitUntil:
+    visible:
+      id: 'dor.screen'
+    timeout: 5000
+- takeScreenshot: 18-dor-guide

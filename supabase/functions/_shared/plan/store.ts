@@ -6,10 +6,12 @@ import type {
   CatalogIngredient,
   CatalogMeal,
   CatalogPortion,
+  ExposureObs,
   HalalStatus,
   PlanMealType,
   PortionTier,
   ReviewStatus,
+  SensoryLite,
 } from '@thuluth/ai-core';
 import type { ConsentKind } from '@thuluth/shared/domain/consent.ts';
 import type { GoalType, HouseholdRole, LifeStage, Severity, SpecialModule } from '@thuluth/shared';
@@ -166,6 +168,13 @@ export interface SafetyEventInsert {
   evidence: string;
 }
 
+export interface FeedingContext {
+  family_member_id: string;
+  exposures: ExposureObs[];
+  ladder_targets: string[];
+  sensory: SensoryLite | null;
+}
+
 export interface QueueMessage {
   msg_id: number;
   read_ct: number;
@@ -215,6 +224,16 @@ export interface PlanStore {
   catalog(householdId: string): Promise<{ catalog: Catalog; includeInReview: boolean }>;
   seasonal(regionId: string | null, month: number): Promise<Map<string, Availability>>;
   verifiedRecommendations(): Promise<RecommendationRow[]>;
+  /**
+   * Picky-eater and autism inputs for the weekly exposure pair (S6-05): `food_exposures` since a
+   * date, active `exposure_ladders` targets and the `sensory_profiles` row per member. Optional so
+   * stores without the Sprint 6 tables still plan (no pair is added then).
+   */
+  feedingContext?(
+    householdId: string,
+    memberIds: readonly string[],
+    since: string,
+  ): Promise<FeedingContext[]>;
 
   /** Non-deleted plans of the household, newest first (status, kind, created order). */
   planHistory(householdId: string): Promise<Array<Pick<MealPlanRow, 'id' | 'status' | 'kind'>>>;
@@ -717,7 +736,7 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
           admin
             .from('ingredients')
             .select(
-              'id, name, category, halal_status, is_sunnah_food, ingredient_allergens(allergens(code))',
+              'id, name, category, halal_status, is_sunnah_food, textures, color, ingredient_allergens(allergens(code))',
             )
             .eq('is_active', true)
             .order('id')
@@ -749,6 +768,8 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
           category: string;
           halal_status: HalalStatus;
           is_sunnah_food: boolean;
+          textures: string[] | null;
+          color: string | null;
           ingredient_allergens: Array<{ allergens: { code: string } | null }>;
         }>
       ).map((i) => ({
@@ -757,6 +778,8 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
         category: i.category,
         halalStatus: i.halal_status,
         isSunnahFood: i.is_sunnah_food,
+        textures: i.textures ?? [],
+        color: i.color,
         allergenCodes: (i.ingredient_allergens ?? [])
           .map((a) => a.allergens?.code)
           .filter((c): c is string => !!c),
@@ -791,6 +814,89 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
           .eq('review_status', 'verified')
           .order('code'),
       ) as RecommendationRow[];
+    },
+
+    async feedingContext(householdId, memberIds, since) {
+      if (!memberIds.length) return [];
+      const ids = [...memberIds];
+      const [exposures, ladders, sensory] = await Promise.all([
+        selectAll((from, to) =>
+          admin
+            .from('food_exposures')
+            .select(
+              'family_member_id, ingredient_id, exposed_on, stage, acceptance, context, ladder_step_id',
+            )
+            .eq('household_id', householdId)
+            .in('family_member_id', ids)
+            .gte('exposed_on', since)
+            .order('exposed_on')
+            .order('id')
+            .range(from, to),
+        ),
+        admin
+          .from('exposure_ladders')
+          .select('family_member_id, target_ingredient_id')
+          .eq('household_id', householdId)
+          .in('family_member_id', ids)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('created_at'),
+        admin
+          .from('sensory_profiles')
+          .select(
+            'family_member_id, texture_likes, texture_avoids, color_sensitivities, temperature_prefs',
+          )
+          .eq('household_id', householdId)
+          .in('family_member_id', ids)
+          .is('deleted_at', null),
+      ]);
+      const ex = exposures as unknown as Array<{
+        family_member_id: string;
+        ingredient_id: string;
+        exposed_on: string;
+        stage: ExposureObs['stage'];
+        acceptance: ExposureObs['acceptance'];
+        context: string | null;
+        ladder_step_id: string | null;
+      }>;
+      const ls = check(ladders) as Array<{
+        family_member_id: string;
+        target_ingredient_id: string;
+      }>;
+      const sp = check(sensory) as Array<{
+        family_member_id: string;
+        texture_likes: string[] | null;
+        texture_avoids: string[] | null;
+        color_sensitivities: string[] | null;
+        temperature_prefs: string[] | null;
+      }>;
+      return ids.map((id) => {
+        const s = sp.find((r) => r.family_member_id === id);
+        return {
+          family_member_id: id,
+          exposures: ex
+            .filter((e) => e.family_member_id === id)
+            .map((e) => ({
+              ingredientId: e.ingredient_id,
+              exposedOn: e.exposed_on,
+              stage: e.stage,
+              acceptance: e.acceptance,
+              context: e.context,
+              ladderStepId: e.ladder_step_id,
+            })),
+          ladder_targets: ls
+            .filter((l) => l.family_member_id === id)
+            .map((l) => l.target_ingredient_id),
+          sensory: s
+            ? {
+                textureLikes: s.texture_likes ?? [],
+                textureAvoids: s.texture_avoids ?? [],
+                colorSensitivities: s.color_sensitivities ?? [],
+                temperaturePrefs: s.temperature_prefs ?? [],
+              }
+            : null,
+        };
+      });
     },
 
     async planHistory(householdId) {

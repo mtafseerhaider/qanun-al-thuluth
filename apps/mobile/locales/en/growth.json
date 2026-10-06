@@ -1,0 +1,122 @@
+{
+  "title": "{{name}}'s growth",
+  "child": "Child",
+  "ageMonths_one": "{{count}} month old",
+  "ageMonths_other": "{{count}} months old",
+  "ageYearsMonths": "{{years}} y {{months}} m",
+  "ageMonthsShort_one": "{{count}} mo",
+  "ageMonthsShort_other": "{{count}} mo",
+  "ageYearsShort_one": "{{count}} y",
+  "ageYearsShort_other": "{{count}} y",
+  "needDob": "Add {{name}}'s date of birth in the family profile to see growth charts.",
+  "viewerNotice": "Growth details are visible to parents and caregivers only.",
+  "status": {
+    "none": "No measurements yet for {{name}}.",
+    "pending": "Saved. The percentile appears once the device is online.",
+    "steady": "{{name}} is growing along their own curve.",
+    "remeasure": "A recent value looks unusual. A quick re-measure helps.",
+    "watch": "Worth a closer look at the next check-up.",
+    "red_flag": "Please book a visit with {{name}}'s doctor."
+  },
+  "lastMeasured": "Last measured {{date}}",
+  "nextDue": "Next measurement around {{date}}",
+  "addButton": "Add measurement",
+  "latestTitle": "Latest",
+  "valueLine": "{{measure}}: {{value}}",
+  "percentile": "around the {{value}} percentile",
+  "notComputed": "not calculated yet",
+  "offline": "Saved on this device. It will sync when you are online.",
+  "empty": "Measure {{name}} at home and add the first values here.",
+  "upsell": {
+    "title": "See the full growth chart",
+    "body": "Premium shows the WHO percentile chart with reference lines and the full history."
+  },
+  "indicator": "Chart",
+  "indicators": {
+    "wfa": "Weight for age",
+    "hfa": "Height for age",
+    "bmi": "BMI for age",
+    "hc": "Head for age"
+  },
+  "measures": {
+    "wfa": "Weight",
+    "hfa": "Height",
+    "bmi": "BMI",
+    "hc": "Head"
+  },
+  "units": {
+    "kg": "kg",
+    "lb": "lb",
+    "cm": "cm",
+    "in": "in"
+  },
+  "trend": {
+    "rising": "moving up",
+    "falling": "moving down",
+    "steady": "steady",
+    "unknown": "not enough points yet"
+  },
+  "chartSummary": "{{indicator}} chart with {{count}} points. Latest {{latest}}, {{trend}}.",
+  "noPoints": "No calculated points yet for this chart.",
+  "viewChart": "Show chart",
+  "viewTable": "Show as table",
+  "bandsNote": "Lines show the 3rd, 15th, 50th, 85th and 97th percentiles. Each child follows their own curve.",
+  "history": "History",
+  "excluded": "Not shown on the chart (please re-measure)",
+  "howToMeasure": "How to measure at home",
+  "disclaimer": "Growth charts support, and never replace, your child's doctor.",
+  "alert": {
+    "pausedTitle": "Growth planning is paused",
+    "pausedBody": "New growth plans for {{name}} wait until a doctor has seen them. Everyday family meals stay the same.",
+    "redFlagTitle": "Please see a doctor",
+    "watchTitle": "Something to mention at the next check-up",
+    "whatToDo": "Bring this chart to the appointment. It is nobody's fault, and a doctor can help work out what is going on.",
+    "export": "Export for the doctor",
+    "showChart": "Show the chart",
+    "understand": "I understand",
+    "codes": {
+      "weight_for_age_below_p3": "{{name}}'s weight is below the 3rd percentile for age.",
+      "crossed_two_major_percentiles": "{{name}}'s weight has crossed two major percentile lines.",
+      "rapid_weight_loss": "{{name}} has lost weight quickly.",
+      "bmi_for_age_above_p97": "{{name}}'s BMI for age is above the 97th percentile. Keep family habits calm and talk to a doctor; no dieting for children.",
+      "height_for_age_below_p3": "{{name}}'s height is below the 3rd percentile for age.",
+      "severe_thinness": "{{name}}'s BMI for age is very low.",
+      "head_circumference_out_of_range": "{{name}}'s head measurement is outside the usual range. Mention it at the next check-up.",
+      "implausible_measurement": "One of {{name}}'s measurements looks unlikely, so it is left off the chart. Please measure again."
+    }
+  },
+  "add": {
+    "title": "Measure {{name}}",
+    "date": "Date",
+    "dateHint": "YYYY-MM-DD",
+    "length": "Length (lying down)",
+    "height": "Height",
+    "lengthHint": "Under 2 years, measure lying down.",
+    "position": "How was it measured?",
+    "positions": {
+      "recumbent": "Lying down",
+      "standing": "Standing"
+    },
+    "weight": "Weight",
+    "head": "Head circumference",
+    "headHint": "Optional, around the widest part of the head.",
+    "offlineNote": "Saves on this device first, so it works offline.",
+    "save": "Save",
+    "checkTitle": "Double-check?",
+    "check": {
+      "height_decrease": "Height is lower than last time. Measuring again often helps.",
+      "weight_jump": "Weight changed a lot in a month. Measuring again often helps."
+    },
+    "checkEdit": "Edit",
+    "checkSave": "Save anyway",
+    "errors": {
+      "date_invalid": "Enter a date as YYYY-MM-DD.",
+      "date_future": "The date can't be in the future.",
+      "date_before_birth": "The date can't be before the date of birth.",
+      "height_range": "Enter a height between 30 and 220 cm.",
+      "weight_range": "Enter a weight between 1 and 200 kg.",
+      "head_range": "Enter a head size between 25 and 60 cm.",
+      "need_one": "Enter a height or a weight."
+    }
+  }
+}

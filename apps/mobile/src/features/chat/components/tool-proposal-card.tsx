@@ -20,6 +20,7 @@ export function ToolProposalCard({
   online,
   onConfirm,
   onDismiss,
+  onReview,
   testID,
 }: {
   proposal: ChatProposal;
@@ -29,6 +30,8 @@ export function ToolProposalCard({
   online: boolean;
   onConfirm: () => void;
   onDismiss: () => void;
+  /** Ladder proposals: open the editor to change steps before saving. */
+  onReview?: () => void;
   testID?: string;
 }) {
   const { t } = useTranslation(['chat', 'mealLog', 'fasting']);
@@ -46,6 +49,11 @@ export function ToolProposalCard({
         return action.practice
           ? t('chat:proposal.practiceFast', { name: memberName, date: action.fastDate })
           : t('chat:proposal.fast', { name: memberName, date: action.fastDate });
+      case 'ladder':
+        return t(
+          action.strategy === 'food_chaining' ? 'chat:proposal.chain' : 'chat:proposal.ladder',
+          { name: memberName, food: action.targetFood, count: action.steps.length },
+        );
       case 'plan_adjust':
         return t('chat:proposal.planAdjust', {
           summary: action.scopeSummary || action.changeRequest,
@@ -57,7 +65,13 @@ export function ToolProposalCard({
     }
   })();
   const title =
-    action.kind === 'plan_adjust' ? t('chat:proposal.planTitle') : t('chat:proposal.logTitle');
+    action.kind === 'plan_adjust'
+      ? t('chat:proposal.planTitle')
+      : action.kind === 'ladder'
+        ? t('chat:proposal.ladderTitle')
+        : t('chat:proposal.logTitle');
+  const canReview =
+    action.kind === 'ladder' && proposal.status === 'pending' && canEdit && Boolean(onReview);
   const needsNetwork = action.kind === 'plan_adjust';
   const showButtons = canConfirm(proposal, action, canEdit);
 
@@ -71,6 +85,34 @@ export function ToolProposalCard({
         <Text variant="caption" tone="muted">
           {t('chat:proposal.nothingYet')}
         </Text>
+      ) : null}
+      {action.kind === 'ladder' && proposal.status === 'pending' ? (
+        <View className="gap-0.5">
+          {action.steps.slice(0, 4).map((s) => (
+            <Text key={s.stepNo} variant="caption" tone="muted">
+              {t('chat:proposal.ladderStep', {
+                n: s.stepNo,
+                food: s.foodLabel,
+                criteria: s.criteria,
+              })}
+            </Text>
+          ))}
+          {action.targetIngredientId === null ? (
+            <Text variant="caption" tone="muted">
+              {t('chat:proposal.ladderPickFood')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+      {canReview ? (
+        <Button
+          label={t('chat:proposal.review')}
+          size="sm"
+          variant="secondary"
+          className="self-start"
+          onPress={() => onReview?.()}
+          {...(testID ? { testID: `${testID}.review` } : {})}
+        />
       ) : null}
       {showButtons ? (
         <View className="flex-row flex-wrap gap-2">
@@ -99,7 +141,9 @@ export function ToolProposalCard({
         <Text variant="caption" tone="success" {...(testID ? { testID: `${testID}.applied` } : {})}>
           {action.kind === 'plan_adjust'
             ? t('chat:proposal.planApplied')
-            : t('chat:proposal.logged')}
+            : action.kind === 'ladder'
+              ? t('chat:proposal.ladderSaved')
+              : t('chat:proposal.logged')}
         </Text>
       ) : null}
       {proposal.status === 'dismissed' ? (

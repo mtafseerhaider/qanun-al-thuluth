@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Catalog, ClimateZone, KnowledgeRpc, RecalledMemory } from '@thuluth/ai-core';
+import type {
+  Catalog,
+  ClimateZone,
+  GrowthRow,
+  KnowledgeRpc,
+  RecalledMemory,
+  SensoryLite,
+} from '@thuluth/ai-core';
 import type { ActivityLevel, SexAtBirth } from '@thuluth/shared';
 import type { ConsentKind } from '@thuluth/shared/domain/consent.ts';
 
@@ -184,6 +191,10 @@ export interface ChatStore {
     target: { mealPlanId: string } | { groceryListId: string },
   ): Promise<GroceryEstimate | null>;
   mealLog(householdId: string, mealLogId: string): Promise<MealLogSummary | null>;
+  /** `growth_tracking` rows of one member, newest first (computed values; S6). */
+  growthRows(householdId: string, familyMemberId: string, limit: number): Promise<GrowthRow[]>;
+  /** The member's live `sensory_profiles` row (autism module), or null. */
+  sensoryProfile(householdId: string, familyMemberId: string): Promise<SensoryLite | null>;
 
   /** Retrieval RPCs (`search_islamic_sources`, `match_knowledge`): citable rows only. */
   knowledge: KnowledgeRpc;
@@ -454,6 +465,59 @@ export function supabaseChatStore(admin: SupabaseClient): ChatStore {
           .is('deleted_at', null)
           .maybeSingle(),
       ) as MealLogSummary | null;
+    },
+
+    async growthRows(householdId, familyMemberId, limit) {
+      const rows = check(
+        await admin
+          .from('growth_tracking')
+          .select(
+            'measured_on, reference, age_months, height_for_age_percentile, weight_for_age_percentile, bmi_for_age_percentile, head_circumference_for_age_percentile, weight_for_age_z, height_for_age_z, flags, computed_at',
+          )
+          .eq('household_id', householdId)
+          .eq('family_member_id', familyMemberId)
+          .not('computed_at', 'is', null)
+          .order('measured_on', { ascending: false })
+          .limit(limit),
+      ) as Array<Record<string, unknown>>;
+      const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+      return rows.map((r) => ({
+        measured_on: String(r.measured_on),
+        reference: String(r.reference),
+        age_months: n(r.age_months),
+        height_for_age_percentile: n(r.height_for_age_percentile),
+        weight_for_age_percentile: n(r.weight_for_age_percentile),
+        bmi_for_age_percentile: n(r.bmi_for_age_percentile),
+        head_circumference_for_age_percentile: n(r.head_circumference_for_age_percentile),
+        weight_for_age_z: n(r.weight_for_age_z),
+        height_for_age_z: n(r.height_for_age_z),
+        flags: (r.flags as string[] | null) ?? [],
+        computed_at: (r.computed_at as string | null) ?? null,
+      }));
+    },
+    async sensoryProfile(householdId, familyMemberId) {
+      const row = check(
+        await admin
+          .from('sensory_profiles')
+          .select('texture_likes, texture_avoids, color_sensitivities, temperature_prefs')
+          .eq('household_id', householdId)
+          .eq('family_member_id', familyMemberId)
+          .is('deleted_at', null)
+          .maybeSingle(),
+      ) as {
+        texture_likes: string[];
+        texture_avoids: string[];
+        color_sensitivities: string[];
+        temperature_prefs: string[];
+      } | null;
+      return row
+        ? {
+            textureLikes: row.texture_likes ?? [],
+            textureAvoids: row.texture_avoids ?? [],
+            colorSensitivities: row.color_sensitivities ?? [],
+            temperaturePrefs: row.temperature_prefs ?? [],
+          }
+        : null;
     },
 
     knowledge: {

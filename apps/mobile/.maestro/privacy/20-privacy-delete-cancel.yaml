@@ -1,0 +1,90 @@
+# Sprint 6 (S6-11): privacy settings, analytics opt-out, and account deletion with cancel.
+# More -> Privacy and data (tap 1) -> Delete account (tap 2) -> Verify and delete (tap 3, after the
+# email code step-up) -> the 30-day countdown shows -> Cancel deletion. Same env as
+# auth/02-signup-otp.yaml (EMAIL, INBOX_URL or OTP). testIDs only, so it passes in en and ur.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 20 privacy delete and cancel
+tags:
+  - privacy
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.more'
+- scrollUntilVisible:
+    element:
+      id: 'settings-more-home.privacy-button'
+    direction: DOWN
+- tapOn:
+    id: 'settings-more-home.privacy-button'
+- extendedWaitUntil:
+    visible:
+      id: 'privacy.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'privacy.consents'
+
+# Analytics opt-out toggles on and off
+- scrollUntilVisible:
+    element:
+      id: 'privacy.analytics.opt-out'
+    direction: DOWN
+- tapOn:
+    id: 'privacy.analytics.opt-out'
+- tapOn:
+    id: 'privacy.analytics.opt-out'
+
+# Delete: email code step-up, then the grace countdown
+- scrollUntilVisible:
+    element:
+      id: 'privacy.delete.open'
+    direction: DOWN
+- tapOn:
+    id: 'privacy.delete.open'
+- extendedWaitUntil:
+    visible:
+      id: 'delete-account.screen'
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: 'delete-account.reauth.send'
+    direction: DOWN
+- tapOn:
+    id: 'delete-account.reauth.send'
+- extendedWaitUntil:
+    visible:
+      id: 'delete-account.reauth.code'
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- runScript:
+    file: ../scripts/fetch-otp.js
+    env:
+      EMAIL: ${EMAIL}
+      INBOX_URL: ${INBOX_URL || "http://127.0.0.1:54324"}
+      OTP: ${OTP || ""}
+- tapOn:
+    id: 'delete-account.reauth.code'
+- inputText: ${output.otp}
+- hideKeyboard
+- tapOn:
+    id: 'delete-account.reauth.confirm'
+- extendedWaitUntil:
+    visible:
+      id: 'deletion-countdown'
+    timeout: 20000
+- assertVisible:
+    id: 'deletion-countdown.days'
+- takeScreenshot: 20-deletion-countdown
+- tapOn:
+    id: 'deletion-countdown.cancel'
+- extendedWaitUntil:
+    visible:
+      id: 'privacy.screen'
+    timeout: 15000
+- assertNotVisible:
+    id: 'privacy.countdown'

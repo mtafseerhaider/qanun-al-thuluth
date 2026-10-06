@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { FAST_KINDS, MEAL_TYPES, type FastKind, type MealType } from '@shared';
 import { BEVERAGES, DRINK_TIMINGS } from '@shared/domain/tracking';
 
+import { parseLadderProposal, type LadderStepDraft } from '@/features/exposures';
+
 import type { ChatProposal, ProposalCard } from './chat-stream';
 
 /**
@@ -69,9 +71,31 @@ export type ProposalAction =
       practice: boolean;
     }
   | { kind: 'plan_adjust'; mealPlanId: string; changeRequest: string; scopeSummary: string }
+  | {
+      /** Sprint 6 (S6-06): an exposure ladder or food chain the parent saves or edits first. */
+      kind: 'ladder';
+      memberId: string;
+      strategy: 'exposure_ladder' | 'food_chaining';
+      targetFood: string;
+      targetIngredientId: string | null;
+      steps: LadderStepDraft[];
+    }
   | { kind: 'unsupported'; reason: 'invalid' | 'not_available' };
 
 export function proposalAction(card: ProposalCard): ProposalAction {
+  if (card.kind === 'exposure_ladder_proposal') {
+    const p = parseLadderProposal(card);
+    if (!p || !Uuid.safeParse(p.familyMemberId).success)
+      return { kind: 'unsupported', reason: 'invalid' };
+    return {
+      kind: 'ladder',
+      memberId: p.familyMemberId,
+      strategy: p.strategy,
+      targetFood: p.targetFood,
+      targetIngredientId: p.targetIngredientId,
+      steps: p.steps,
+    };
+  }
   if (card.kind === 'plan_adjustment_proposal') {
     if (!Uuid.safeParse(card.meal_plan_id).success || card.change_request.trim().length < 3)
       return { kind: 'unsupported', reason: 'invalid' };
@@ -121,7 +145,7 @@ export function proposalAction(card: ProposalCard): ProposalAction {
       };
     }
     default:
-      // food_exposures: the exposure log screen arrives with the picky-eater module (Sprint 6).
+      // food_exposures: the AI lane does not propose tries from chat (Sprint 6); log them in the app.
       return { kind: 'unsupported', reason: 'not_available' };
   }
 }
@@ -147,5 +171,6 @@ export function guardForMember(
 
 /** Whether the card shows Confirm / Not now (pending and actionable only). */
 export function canConfirm(p: ChatProposal, action: ProposalAction, canEdit: boolean): boolean {
+  if (action.kind === 'ladder' && action.targetIngredientId === null) return false;
   return p.status === 'pending' && canEdit && action.kind !== 'unsupported';
 }

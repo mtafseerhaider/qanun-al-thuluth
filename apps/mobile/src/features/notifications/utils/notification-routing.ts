@@ -16,7 +16,21 @@ export type NotificationTarget =
   | { tab: 'MoreTab'; screen: 'HydrationTracker' }
   | { tab: 'MoreTab'; screen: 'FastingTracker' }
   | { tab: 'MoreTab'; screen: 'BudgetDashboard' }
-  | { tab: 'MoreTab'; screen: 'SettingsNotifications' };
+  | { tab: 'MoreTab'; screen: 'SettingsNotifications' }
+  // Sprint 6 targets.
+  | { tab: 'MoreTab'; screen: 'RamadanPlanner' }
+  | { tab: 'MoreTab'; screen: 'Exports' }
+  | { tab: 'MoreTab'; screen: 'HelpCenter' }
+  | { tab: 'MoreTab'; screen: 'NutritionInsights' }
+  | { tab: 'MoreTab'; screen: 'SettingsPrivacy' }
+  | { tab: 'FamilyTab'; screen: 'FamilyManagement' }
+  | { tab: 'FamilyTab'; screen: 'GrowthDashboard'; params: { familyMemberId: string } };
+
+/** Routing switches read from feature flags at open time (kept out of this pure module). */
+export interface RoutingOptions {
+  /** `ramadan_planner` flag: the 'ramadan' link opens the planner instead of the fasting tracker. */
+  ramadanPlanner?: boolean;
+}
 
 export const NOTIFICATION_KINDS = [
   'daily_plan',
@@ -51,13 +65,17 @@ const PREFIXES = ['thuluth://', 'https://thuluth.app/', 'https://www.thuluth.app
 const TODAY: NotificationTarget = { tab: 'TodayTab', screen: 'Dashboard' };
 
 /** The target of a `thuluth://` route, or null when the route is not one the app knows. */
-export function targetForRoute(route: string | null | undefined): NotificationTarget | null {
+export function targetForRoute(
+  route: string | null | undefined,
+  opts: RoutingOptions = {},
+): NotificationTarget | null {
   if (!route) return null;
   const prefix = PREFIXES.find((p) => route.startsWith(p));
   if (!prefix) return null;
   const path = (route.slice(prefix.length).split(/[?#]/)[0] ?? '').replace(/\/+$/, '');
   const [head, id, ...rest] = path.split('/');
   if (rest.length > 0) return null;
+  if (head === 'settings' && id === 'privacy') return { tab: 'MoreTab', screen: 'SettingsPrivacy' };
   const withId = (f: (id: string) => NotificationTarget): NotificationTarget | null =>
     id && UUID.test(id) ? f(id) : null;
   if (id === undefined) {
@@ -67,8 +85,21 @@ export function targetForRoute(route: string | null | undefined): NotificationTa
       case 'hydration':
         return { tab: 'MoreTab', screen: 'HydrationTracker' };
       case 'fasting':
-      case 'ramadan':
         return { tab: 'MoreTab', screen: 'FastingTracker' };
+      case 'ramadan':
+        return opts.ramadanPlanner
+          ? { tab: 'MoreTab', screen: 'RamadanPlanner' }
+          : { tab: 'MoreTab', screen: 'FastingTracker' };
+      case 'ramadan-planner':
+        return { tab: 'MoreTab', screen: 'RamadanPlanner' };
+      case 'exports':
+        return { tab: 'MoreTab', screen: 'Exports' };
+      case 'help':
+        return { tab: 'MoreTab', screen: 'HelpCenter' };
+      case 'insights':
+        return { tab: 'MoreTab', screen: 'NutritionInsights' };
+      case 'family':
+        return { tab: 'FamilyTab', screen: 'FamilyManagement' };
       case 'plans':
         return { tab: 'PlanTab', screen: 'MealPlans' };
       case 'grocery':
@@ -96,6 +127,12 @@ export function targetForRoute(route: string | null | undefined): NotificationTa
         screen: 'MealPlanDetail',
         params: { mealPlanId },
       }));
+    case 'growth':
+      return withId((familyMemberId) => ({
+        tab: 'FamilyTab',
+        screen: 'GrowthDashboard',
+        params: { familyMemberId },
+      }));
     case 'grocery':
       return withId((groceryListId) => ({
         tab: 'PlanTab',
@@ -108,8 +145,25 @@ export function targetForRoute(route: string | null | undefined): NotificationTa
 }
 
 /** The fallback screen of a kind when a notification has no usable route. */
-export function targetForKind(kind: string | null | undefined): NotificationTarget {
+export function targetForKind(
+  kind: string | null | undefined,
+  data: Record<string, unknown> = {},
+): NotificationTarget {
+  const memberId =
+    typeof data.family_member_id === 'string' && UUID.test(data.family_member_id)
+      ? data.family_member_id
+      : null;
   switch (kind) {
+    case 'growth_measure_due':
+    case 'growth_alert':
+      return memberId
+        ? { tab: 'FamilyTab', screen: 'GrowthDashboard', params: { familyMemberId: memberId } }
+        : { tab: 'FamilyTab', screen: 'FamilyManagement' };
+    case 'exposure_nudge':
+    case 'coaching_tip':
+      return { tab: 'FamilyTab', screen: 'FamilyManagement' };
+    case 'export_ready':
+      return { tab: 'MoreTab', screen: 'Exports' };
     case 'hydration_reminder':
       return { tab: 'MoreTab', screen: 'HydrationTracker' };
     case 'suhoor_reminder':
@@ -133,10 +187,13 @@ export function targetForKind(kind: string | null | undefined): NotificationTarg
   }
 }
 
-export function targetForNotification(n: {
-  kind?: string | null;
-  data?: unknown;
-}): NotificationTarget {
+export function targetForNotification(
+  n: {
+    kind?: string | null;
+    data?: unknown;
+  },
+  opts: RoutingOptions = {},
+): NotificationTarget {
   const data = (n.data && typeof n.data === 'object' ? n.data : {}) as Record<string, unknown>;
   const route =
     typeof data.route === 'string'
@@ -144,7 +201,7 @@ export function targetForNotification(n: {
       : typeof data.deeplink === 'string'
         ? data.deeplink
         : null;
-  return targetForRoute(route) ?? targetForKind(n.kind ?? null);
+  return targetForRoute(route, opts) ?? targetForKind(n.kind ?? null, data);
 }
 
 /** Inbox row as stored (05 §13.2) with what the dispatcher recorded in `data.dispatch`. */

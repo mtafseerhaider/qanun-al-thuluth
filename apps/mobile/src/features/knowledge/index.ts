@@ -19,3 +19,5 @@ export {
   useVerifiedRecommendationIds,
 } from './hooks/use-knowledge';
 export type { EvidenceView, RecommendationView, SourceView } from './utils/knowledge-rules';
+export { ReportSourceSheet } from './screens/report-source-sheet';
+export { reportTargetColumns } from './api/source-reports-api';

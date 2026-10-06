@@ -11,10 +11,18 @@ export interface Quantity {
 }
 
 const UNIT_RE =
-  /(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(kcal|kilocalories|calories|cal|grams|gram|g|mg|millilitres|milliliters|ml|litres|liters|litre|liter|l|kg|kilos?|cm|percent|%)(?![a-z])/giu;
+  /(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(kcal|kilocalories|calories|cal|grams|gram|g|mg|millilitres|milliliters|ml|litres|liters|litre|liter|l|kg|kilos?|cm|percent|%|کیلو کیلوری|کیلوری|ملی لیٹر|لیٹر|گرام|کلو|سینٹی میٹر|فیصد)(?![a-z])/giu;
 
 function unitOf(u: string): { unit: Quantity['unit']; factor: number } {
   const x = u.toLowerCase();
+  // Urdu units (S6 eval finding: an Urdu calorie number was not grounded).
+  if (x === 'کیلوری' || x === 'کیلو کیلوری') return { unit: 'kcal', factor: 1 };
+  if (x === 'ملی لیٹر') return { unit: 'ml', factor: 1 };
+  if (x === 'لیٹر') return { unit: 'ml', factor: 1000 };
+  if (x === 'گرام') return { unit: 'g', factor: 1 };
+  if (x === 'کلو') return { unit: 'kg', factor: 1 };
+  if (x === 'سینٹی میٹر') return { unit: 'cm', factor: 1 };
+  if (x === 'فیصد') return { unit: 'percent', factor: 1 };
   if (['kcal', 'kilocalories', 'calories', 'cal'].includes(x)) return { unit: 'kcal', factor: 1 };
   if (['grams', 'gram', 'g'].includes(x)) return { unit: 'g', factor: 1 };
   if (x === 'mg') return { unit: 'mg', factor: 1 };
@@ -48,7 +56,7 @@ export function findUngroundedNumbers(
   return extractQuantities(text).filter((q) => {
     const pool = [...(allowed[q.unit] ?? []), ...(q.unit === 'percent' ? RULE_PERCENTS : [])];
     // Litres are usually rounded to one decimal, so allow 50 ml either way.
-    const litres = q.unit === 'ml' && !/ml|millil/i.test(q.raw);
+    const litres = q.unit === 'ml' && !/ml|millil|ملی/i.test(q.raw);
     return !pool.some(
       (v) => Math.abs(v - q.value) <= Math.max(1, Math.abs(v) * 0.01, litres ? 50 : 0),
     );

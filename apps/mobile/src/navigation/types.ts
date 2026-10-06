@@ -8,7 +8,7 @@ import type {
 } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { FastKind, MealType } from '@shared';
+import type { ExposureStage, FastKind, MealType } from '@shared';
 
 export type Uuid = string;
 export type IsoDate = string; // 'YYYY-MM-DD'
@@ -125,7 +125,18 @@ export type FamilyStackParamList = {
   SafeFoods: { familyMemberId: Uuid };
   ExposureLadders: { familyMemberId: Uuid };
   ExposureLadderDetail: { ladderId: Uuid };
-  FoodChaining: { familyMemberId: Uuid; ladderId?: Uuid };
+  /**
+   * Ladder editor for both strategies (S6-06). `proposal` carries a chat ladder proposal as JSON for
+   * the parent to confirm here; nothing is saved until they tap Save.
+   */
+  FoodChaining: {
+    familyMemberId: Uuid;
+    ladderId?: Uuid;
+    strategy?: 'exposure_ladder' | 'food_chaining';
+    proposal?: string;
+  };
+  /** Sprint 6 addition (S6-06): visual "first, then" cards. */
+  FirstThen: { familyMemberId: Uuid };
   PickyEaterHub: { familyMemberId: Uuid };
   DivisionOfResponsibility: undefined;
   ExposureLog: { familyMemberId: Uuid };
@@ -165,6 +176,9 @@ export type MoreStackParamList = {
   HelpCenter: { query?: string };
   HelpArticle: { slug: string };
   About: undefined;
+  /** Sprint 6 additions (S6-11, S6-12): account deletion with reauth, and contact support. */
+  DeleteAccount: undefined;
+  ContactSupport: undefined;
   /** Sprint 4 additions: budget settings (FR-GRO-07) and the adult weight log (FR-TRK-06). */
   BudgetSettings: undefined;
   WeightLog: { familyMemberId?: Uuid };
@@ -220,6 +234,20 @@ export type RootStackParamList = {
     recommendationId?: Uuid;
     islamicSourceId?: Uuid;
     scientificEvidenceId?: Uuid;
+  };
+  /** Sprint 6 additions: log a food try (S6-05, S6-06) and report a source (S6-14). */
+  LogExposureSheet: {
+    familyMemberId: Uuid;
+    module: 'picky' | 'autism';
+    ingredientId?: Uuid;
+    foodLabel?: string;
+    ladderStepId?: Uuid;
+    stage?: ExposureStage;
+  };
+  ReportSourceSheet: {
+    islamicSourceId?: Uuid;
+    scientificEvidenceId?: Uuid;
+    recommendationId?: Uuid;
   };
   HouseholdSwitcherSheet: undefined;
   MemberPickerSheet: {

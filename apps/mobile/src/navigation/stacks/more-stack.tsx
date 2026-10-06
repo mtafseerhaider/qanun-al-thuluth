@@ -5,9 +5,18 @@ import { BudgetDashboardScreen, BudgetSettingsScreen } from '@/features/budget';
 import { MemoryManagementScreen } from '@/features/chat';
 import { DebugScreen, useDebugMenuEnabled } from '@/features/debug';
 import { FastingTrackerScreen } from '@/features/fasting';
-import { AlphaFeedbackScreen } from '@/features/help';
+import { ExportsScreen } from '@/features/exports';
+import {
+  AboutScreen,
+  AlphaFeedbackScreen,
+  ContactSupportScreen,
+  HelpArticleScreen,
+  HelpCenterScreen,
+} from '@/features/help';
 import { HydrationTrackerScreen } from '@/features/hydration';
+import { NutritionInsightsScreen } from '@/features/insights';
 import { SettingsNotificationsScreen } from '@/features/notifications';
+import { DeleteAccountScreen, PrivacySettingsScreen } from '@/features/privacy';
 import { RamadanPlannerScreen } from '@/features/ramadan';
 import { MoreHomeScreen, SettingsProfileScreen, SettingsScreen } from '@/features/settings';
 import { SubscriptionScreen } from '@/features/subscription';
@@ -82,6 +91,42 @@ export function MoreStack() {
         name="SettingsMemory"
         component={MemoryManagementScreen}
         options={{ title: t('screens.settingsMemory') }}
+      />
+      <Stack.Screen
+        name="SettingsPrivacy"
+        component={PrivacySettingsScreen}
+        options={{ title: t('screens.settingsPrivacy') }}
+      />
+      <Stack.Screen
+        name="DeleteAccount"
+        component={DeleteAccountScreen}
+        options={{ title: t('screens.deleteAccount') }}
+      />
+      <Stack.Screen
+        name="HelpCenter"
+        component={HelpCenterScreen}
+        options={{ title: t('screens.helpCenter') }}
+      />
+      <Stack.Screen
+        name="HelpArticle"
+        component={HelpArticleScreen}
+        options={{ title: t('screens.helpArticle') }}
+      />
+      <Stack.Screen
+        name="ContactSupport"
+        component={ContactSupportScreen}
+        options={{ title: t('screens.contactSupport') }}
+      />
+      <Stack.Screen name="About" component={AboutScreen} options={{ title: t('screens.about') }} />
+      <Stack.Screen
+        name="Exports"
+        component={ExportsScreen}
+        options={{ title: t('screens.exports') }}
+      />
+      <Stack.Screen
+        name="NutritionInsights"
+        component={NutritionInsightsScreen}
+        options={{ title: t('screens.insights') }}
       />
       {debugEnabled ? (
         <Stack.Screen

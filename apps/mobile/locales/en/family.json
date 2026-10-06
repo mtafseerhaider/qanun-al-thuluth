@@ -98,5 +98,12 @@
     "teen": "Teen",
     "adult": "Adult",
     "older_adult": "Older adult"
+  },
+  "modules": {
+    "title": "Health modules",
+    "growth": "Growth",
+    "picky": "Picky eating",
+    "autism": "Autism support",
+    "a11y": "{{module}} for {{name}}"
   }
 }

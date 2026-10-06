@@ -3,6 +3,7 @@ import {
   adjustSafetyEscalation,
   adjustUserText,
   AIError,
+  applyExposurePairs,
   budgetTierFor,
   buildCandidateSets,
   buildSlots,
@@ -49,6 +50,7 @@ import type {
   EscalationOut,
   EscalationReason,
   Evaluated,
+  ExposurePair,
   FallbackDeps,
   Locale,
   PlanMealType,
@@ -463,6 +465,60 @@ async function composeWeek(
   return { ...fb, rationale, model, modelIssues };
 }
 
+// ---- weekly exposure pair (S6-05, 15 §4.5) -----------------------------------------------------
+
+/** Exposure history window for the pair: the 90 days the acceptance index looks at (15 §4.7). */
+export const EXPOSURE_HISTORY_DAYS = 90;
+
+/**
+ * Adds one learning-plate pair a week per picky or autism member to the planned meals' notes and
+ * returns the pairs. Stores without the Sprint 6 tables (no `feedingContext`) add nothing.
+ */
+export async function addExposurePairs(
+  deps: PipelineDeps,
+  ctx: Pick<PlanContext, 'members' | 'catalog' | 'req' | 'today' | 'household'>,
+  meals: PlannedMeal[],
+): Promise<ExposurePair[]> {
+  const targets = ctx.members.filter(
+    (m) => isServed(m) && (m.modules.includes('picky_eater') || m.modules.includes('autism')),
+  );
+  if (!targets.length || !deps.store.feedingContext) return [];
+  const feeding = await deps.store.feedingContext(
+    ctx.household.id,
+    targets.map((m) => m.id),
+    addDays(ctx.today, -EXPOSURE_HISTORY_DAYS),
+  );
+  const byId = new Map(feeding.map((f) => [f.family_member_id, f]));
+  return applyExposurePairs(
+    targets.map((member) => ({
+      member,
+      exposures: byId.get(member.id)?.exposures ?? [],
+      ladderTargets: byId.get(member.id)?.ladder_targets ?? [],
+      sensory: byId.get(member.id)?.sensory ?? null,
+    })),
+    ctx.catalog,
+    ctx.req,
+    meals,
+    ctx.today,
+  );
+}
+
+export function exposurePairJson(p: ExposurePair, meals: readonly PlannedMeal[]) {
+  return {
+    family_member_id: p.memberId,
+    week: p.week,
+    new_ingredient_id: p.newIngredientId,
+    new_food: p.newFood,
+    familiar_ingredient_id: p.familiarIngredientId,
+    familiar_label: p.familiarLabel,
+    source: p.source,
+    status: p.lifecycle,
+    slots: meals
+      .filter((pm) => p.slotRefs.includes(pm.slot.ref))
+      .map((pm) => ({ plan_date: pm.slot.date, meal_type: pm.slot.mealType })),
+  };
+}
+
 // ---- writes --------------------------------------------------------------------------------------
 
 function servingsJson(pm: PlannedMeal) {
@@ -862,6 +918,15 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
   );
 
   const recommendations = await planRecommendations(deps, ctx);
+  // Weekly exposure pair for picky and autism members (S6-05): serving notes only.
+  const exposurePairs =
+    meta.tier === 'premium'
+      ? await addExposurePairs(
+          deps,
+          ctx,
+          weeks.flatMap((w) => w.draft.meals),
+        )
+      : [];
   const rows = weeks.flatMap((w) => plannedRows(w.draft.meals));
   const payloads = weekPayloads(
     plan.start_date,
@@ -895,6 +960,12 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
         skipped_members: weeks[0]?.draft.skippedMembers ?? [],
         rationale_replaced: rationale.replaced,
       },
+      exposure_pairs: exposurePairs.map((p) =>
+        exposurePairJson(
+          p,
+          weeks.flatMap((w) => w.draft.meals),
+        ),
+      ),
     } as unknown as Record<string, unknown>,
   });
   await store.audit({

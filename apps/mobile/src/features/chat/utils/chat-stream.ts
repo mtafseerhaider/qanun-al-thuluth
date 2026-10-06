@@ -17,7 +17,7 @@ export type ChatErrorData = EventData<'error'>;
 
 export type ProposalCard = Extract<
   ChatToolCard,
-  { kind: 'plan_adjustment_proposal' | 'log_proposal' }
+  { kind: 'plan_adjustment_proposal' | 'log_proposal' | 'exposure_ladder_proposal' }
 >;
 export type ProposalStatus = 'pending' | 'applying' | 'applied' | 'dismissed' | 'failed';
 
@@ -149,7 +149,9 @@ export function applyChatEvent(turn: ChatTurn, event: ChatEvent): ChatTurn {
         recipeIds = [...recipeIds, card.recipe_id];
       if (
         card &&
-        (card.kind === 'plan_adjustment_proposal' || card.kind === 'log_proposal') &&
+        (card.kind === 'plan_adjustment_proposal' ||
+          card.kind === 'log_proposal' ||
+          card.kind === 'exposure_ladder_proposal') &&
         !proposals.some((p) => p.id === d.tool_call_id)
       )
         // Always recorded as pending: nothing is written until the user confirms.

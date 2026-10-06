@@ -131,6 +131,47 @@ export function fromPostgrestError(err: PgErrorLike): HttpError {
       ...detail,
     });
   }
+  // S6 growth_tracking guards: adults use weight_tracking; no measurement before birth.
+  if (message.startsWith('GROWTH_RULE:')) {
+    return new HttpError(
+      'GROWTH_REFERENCE_OUT_OF_RANGE',
+      'Growth charts cover children only. Use weight tracking for adults.',
+      { ...detailJson(err), rule: message.slice(12).trim() },
+    );
+  }
+  if (message === 'MEASUREMENT_BEFORE_BIRTH') {
+    return new HttpError('VALIDATION_FAILED', 'The measurement date is before the date of birth.', {
+      field: 'measured_on',
+      rule: 'measured_before_birth',
+    });
+  }
+  // S6 account rights RPCs (request/cancel/execute account deletion).
+  if (message === 'ACCOUNT_DELETION_PENDING') {
+    return new HttpError('ACCOUNT_DELETION_PENDING', 'Account deletion is already scheduled.', {
+      ...detailJson(err),
+    });
+  }
+  if (message === 'OWNERSHIP_TRANSFER_REQUIRED') {
+    return new HttpError(
+      'OWNERSHIP_TRANSFER_REQUIRED',
+      'You own a household with other members. Transfer ownership or remove them first.',
+      detailJson(err),
+    );
+  }
+  if (message === 'ACCOUNT_DELETION_NOT_PENDING') {
+    return new HttpError('CONFLICT', 'There is no account deletion to cancel.', {
+      reason: 'not_pending',
+    });
+  }
+  if (message === 'ACCOUNT_DELETION_IN_PROGRESS' || message === 'ACCOUNT_DELETION_NOT_DUE') {
+    return new HttpError('CONFLICT', 'The account deletion can no longer be changed.', {
+      ...detailJson(err),
+      reason: message === 'ACCOUNT_DELETION_IN_PROGRESS' ? 'in_progress' : 'not_due',
+    });
+  }
+  if (message === 'NOT_FOUND' && err.code === 'P0002') {
+    return new HttpError('NOT_FOUND', 'Not found');
+  }
   // S5 table guards raising a plain VALIDATION_FAILED (e.g. ramadan_plans foreign member keys).
   if (message === 'VALIDATION_FAILED') {
     return new HttpError('VALIDATION_FAILED', 'Some values are not valid.', detailJson(err));

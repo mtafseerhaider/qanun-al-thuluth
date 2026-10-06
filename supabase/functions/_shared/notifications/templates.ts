@@ -19,7 +19,11 @@ export type TemplateKey =
   | 'iftar_reminder'
   | 'fasting_sunnah_reminder.evening'
   | 'fasting_sunnah_reminder.suhoor'
-  | 'billing_issue';
+  | 'billing_issue'
+  | 'growth_alert'
+  | 'export_ready'
+  | 'export_ready.account'
+  | 'billing_issue.ai_memory';
 
 interface Copy {
   title: string;
@@ -72,6 +76,44 @@ export const TEMPLATES: Record<TemplateKey, Record<Locale, Copy>> = {
     ur: {
       title: 'آپ کی ادائیگی نہیں ہو سکی',
       body: 'پریمیم جاری رکھنے کے لیے اسٹور کی سیٹنگز میں ادائیگی اپ ڈیٹ کریں۔',
+    },
+  },
+  // growth-compute (06 §4.15, safety, every tier). Says nothing about whose measurement or why.
+  growth_alert: {
+    en: {
+      title: 'Please check a recent update',
+      body: 'Open Thuluth to see a suggestion for your family.',
+    },
+    ur: {
+      title: 'براہِ کرم ایک تازہ اپ ڈیٹ دیکھیں',
+      body: 'اپنے خاندان کے لیے ایک مشورہ دیکھنے کے لیے ثلث کھولیں۔',
+    },
+  },
+  // 17 §10.3: AI memories are deleted 12 months after premium lapsed; notice 30 days before. Sent under
+  // the existing `billing_issue` kind (no new notification_kinds() value needed).
+  'billing_issue.ai_memory': {
+    en: {
+      title: 'Saved chat memories will be removed soon',
+      body: 'Renew Premium within 30 days to keep what Thuluth remembers for your family.',
+    },
+    ur: {
+      title: 'محفوظ چیٹ یادیں جلد ختم ہو جائیں گی',
+      body: 'ثلث کو آپ کے خاندان کے بارے میں جو یاد ہے اسے رکھنے کے لیے 30 دن کے اندر پریمیم دوبارہ لیں۔',
+    },
+  },
+  // export-pdf (async path) and account-export (06 §4.15).
+  export_ready: {
+    en: { title: 'Your PDF is ready', body: 'Tap to open or share it.' },
+    ur: { title: 'آپ کی پی ڈی ایف تیار ہے', body: 'کھولنے یا شیئر کرنے کے لیے ٹیپ کریں۔' },
+  },
+  'export_ready.account': {
+    en: {
+      title: 'Your data download is ready',
+      body: 'Sign in to Thuluth to download it within 24 hours.',
+    },
+    ur: {
+      title: 'آپ کا ڈیٹا ڈاؤن لوڈ کے لیے تیار ہے',
+      body: '24 گھنٹوں کے اندر ڈاؤن لوڈ کرنے کے لیے ثلث میں سائن ان کریں۔',
     },
   },
 };
@@ -167,7 +209,12 @@ export function render(key: TemplateKey, vars: TemplateVars = {}): RenderedCopy 
 /** Deep link per kind (02 §3.4). Every dispatched kind maps to a route (FR-NOT-04). */
 export function routeFor(
   key: TemplateKey,
-  ids: { daily_meal_id?: string; meal_plan_id?: string } = {},
+  ids: {
+    daily_meal_id?: string;
+    meal_plan_id?: string;
+    family_member_id?: string;
+    export_id?: string;
+  } = {},
 ): string {
   switch (key) {
     case 'daily_plan':
@@ -186,7 +233,14 @@ export function routeFor(
     case 'fasting_sunnah_reminder.suhoor':
       return 'thuluth://fasting';
     case 'billing_issue':
+    case 'billing_issue.ai_memory':
       return 'thuluth://settings/subscription';
+    case 'growth_alert':
+      return ids.family_member_id ? `thuluth://growth/${ids.family_member_id}` : 'thuluth://growth';
+    case 'export_ready':
+      return ids.export_id ? `thuluth://exports/${ids.export_id}` : 'thuluth://exports';
+    case 'export_ready.account':
+      return 'thuluth://settings/privacy';
   }
 }
 

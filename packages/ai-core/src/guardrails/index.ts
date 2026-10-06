@@ -2,6 +2,7 @@ export * from './text.ts';
 export * from './child-restriction.ts';
 export * from './fiqh.ts';
 export * from './cure-claims.ts';
+export * from './feeding-pressure.ts';
 export * from './red-flags.ts';
 export * from './templates.ts';
 export * from './disclaimer.ts';

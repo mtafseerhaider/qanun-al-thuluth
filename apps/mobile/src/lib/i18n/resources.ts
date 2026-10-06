@@ -24,6 +24,12 @@ import enChat from '@locales/en/chat.json';
 import enSubscription from '@locales/en/subscription.json';
 import enMealLog from '@locales/en/mealLog.json';
 import enRamadan from '@locales/en/ramadan.json';
+import enGrowth from '@locales/en/growth.json';
+import enPicky from '@locales/en/picky.json';
+import enAutism from '@locales/en/autism.json';
+import enExports from '@locales/en/exports.json';
+import enInsights from '@locales/en/insights.json';
+import enPrivacy from '@locales/en/privacy.json';
 import urAuth from '@locales/ur/auth.json';
 import urCommon from '@locales/ur/common.json';
 import urDebug from '@locales/ur/debug.json';
@@ -50,6 +56,12 @@ import urChat from '@locales/ur/chat.json';
 import urSubscription from '@locales/ur/subscription.json';
 import urMealLog from '@locales/ur/mealLog.json';
 import urRamadan from '@locales/ur/ramadan.json';
+import urGrowth from '@locales/ur/growth.json';
+import urPicky from '@locales/ur/picky.json';
+import urAutism from '@locales/ur/autism.json';
+import urExports from '@locales/ur/exports.json';
+import urInsights from '@locales/ur/insights.json';
+import urPrivacy from '@locales/ur/privacy.json';
 export const NAMESPACES = [
   'common',
   'auth',
@@ -77,6 +89,12 @@ export const NAMESPACES = [
   'subscription',
   'mealLog',
   'ramadan',
+  'growth',
+  'picky',
+  'autism',
+  'exports',
+  'insights',
+  'privacy',
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
@@ -108,6 +126,12 @@ export const resources = {
     subscription: enSubscription,
     mealLog: enMealLog,
     ramadan: enRamadan,
+    growth: enGrowth,
+    picky: enPicky,
+    autism: enAutism,
+    exports: enExports,
+    insights: enInsights,
+    privacy: enPrivacy,
   },
   ur: {
     common: urCommon,
@@ -136,5 +160,11 @@ export const resources = {
     subscription: urSubscription,
     mealLog: urMealLog,
     ramadan: urRamadan,
+    growth: urGrowth,
+    picky: urPicky,
+    autism: urAutism,
+    exports: urExports,
+    insights: urInsights,
+    privacy: urPrivacy,
   },
 } as const;

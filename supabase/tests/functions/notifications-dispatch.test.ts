@@ -863,3 +863,22 @@ Deno.test('billing_issue template: lock-screen safe, settings route', () => {
   assertEquals(row.data.route, 'thuluth://settings/subscription');
   assert(row.title.length > 0);
 });
+
+Deno.test('materialize: AI memory deletion notice goes once to the owner (17 §10.3)', () => {
+  const snap = baseSnapshot();
+  snap.households[0]!.ai_memory_notice_at = '2026-10-06T07:00:00Z';
+  const rows = materialize(snap, new Date('2026-10-06T07:20:00Z')).filter(
+    (r) => r.data.template === 'billing_issue.ai_memory',
+  );
+  assertEquals(
+    rows.map((r) => r.user_id),
+    [OWNER],
+  );
+  assertEquals(rows[0]!.kind, 'billing_issue');
+  assertEquals(rows[0]!.dedupe_key, `ai_memory_notice:${HH}:2026-10-06`);
+  // Not sent more than a week late.
+  const late = materialize(snap, new Date('2026-10-20T07:20:00Z')).filter(
+    (r) => r.data.template === 'billing_issue.ai_memory',
+  );
+  assertEquals(late, []);
+});

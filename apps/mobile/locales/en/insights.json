@@ -1,0 +1,36 @@
+{
+  "title": "Insights",
+  "upsellTitle": "See how the family is doing",
+  "upsellBody": "Premium shows weekly trends for planned meals, water and the thirds, and new foods your children accept.",
+  "range": "Period",
+  "ranges": {
+    "7d": "This week",
+    "30d": "4 weeks",
+    "90d": "12 weeks"
+  },
+  "serverUnavailable": "Family numbers aren't available right now. Children's acceptance below is calculated on this device.",
+  "familyTitle": "The family, latest week",
+  "metrics": {
+    "meals": "Planned meals eaten",
+    "water": "Water goals reached",
+    "thirds": "Adults' thirds balance"
+  },
+  "percentLine": "{{value}}% · {{trend}}",
+  "noData": "Not enough logs yet",
+  "trend": {
+    "up": "up from earlier weeks",
+    "down": "down from earlier weeks",
+    "flat": "about the same",
+    "unknown": "no trend yet"
+  },
+  "newFoods_one": "{{count}} new food accepted by the children",
+  "newFoods_other": "{{count}} new foods accepted by the children",
+  "serverNote": "From your household's logs, updated daily.",
+  "empty": "Insights appear after a week of logging meals and water.",
+  "childrenTitle": "Children's food acceptance",
+  "member": {
+    "index": "{{name}}: acceptance index {{value}} of 100",
+    "none": "{{name}}: no food tries logged yet"
+  },
+  "deviceNote": "Calculated on this device from each child's own food tries in the last 90 days."
+}

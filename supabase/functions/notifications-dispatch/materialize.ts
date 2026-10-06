@@ -37,6 +37,8 @@ export interface SnapshotHousehold {
   city: string | null;
   country_code: string;
   hijri_offset_days: number;
+  /** 17 §10.3: set 11 months after premium lapsed; the owner gets one notice. */
+  ai_memory_notice_at?: string | null;
 }
 export interface SnapshotMembership {
   household_id: string;
@@ -691,6 +693,34 @@ function voluntary(ctx: Ctx) {
  * When a user already gets a `suhoor_reminder` for a day (a logged fast), the voluntary suhoor
  * reminder for the same day is dropped.
  */
+/** Notices older than this are not sent late (the memories are deleted 30 days after the notice). */
+export const AI_MEMORY_NOTICE_MAX_LATE_DAYS = 7;
+
+/**
+ * 17 §10.3: one notice to each household owner when `ai_memory_notice_at` is reached. Not gated by
+ * preferences or quiet-hour windows beyond the normal send path: it tells the owner data will be
+ * deleted. The dedupe key makes it once per household and notice.
+ */
+function aiMemoryNotice(ctx: Ctx, h: SnapshotHousehold, now: Date) {
+  if (!h.ai_memory_notice_at) return;
+  const at = Date.parse(h.ai_memory_notice_at);
+  if (!Number.isFinite(at) || at > ctx.to) return;
+  if (now.getTime() - at > AI_MEMORY_NOTICE_MAX_LATE_DAYS * 86_400_000) return;
+  const owners = ctx.snapshot.memberships.filter(
+    (m) => m.household_id === h.id && m.role === 'owner',
+  );
+  for (const o of owners) {
+    push(
+      ctx,
+      'billing_issue.ai_memory',
+      o.user_id,
+      h.id,
+      new Date(Math.max(at, ctx.from)),
+      `ai_memory_notice:${h.id}:${h.ai_memory_notice_at.slice(0, 10)}`,
+    );
+  }
+}
+
 export function materialize(
   snapshot: Snapshot,
   now: Date,
@@ -706,6 +736,7 @@ export function materialize(
     prayerCache: new Map(),
   };
   for (const h of snapshot.households) {
+    aiMemoryNotice(ctx, h, now);
     hydration(ctx, h);
     meals(ctx, h);
     dailyPlan(ctx, h);

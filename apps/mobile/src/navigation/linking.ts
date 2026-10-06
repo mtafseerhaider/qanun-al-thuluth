@@ -1,7 +1,11 @@
-import type { LinkingOptions } from '@react-navigation/native';
+import {
+  getStateFromPath as defaultGetStateFromPath,
+  type LinkingOptions,
+} from '@react-navigation/native';
 import { Linking } from 'react-native';
 
 import { handleInviteUrl } from '@/lib/auth/pending-invite';
+import { selectFlag, useFeatureFlagStore } from '@/stores/use-feature-flag-store';
 
 import type { RootStackParamList } from './types';
 
@@ -15,6 +19,15 @@ export function filterInviteUrl(url: string | null): string | null {
   return handleInviteUrl(url) ? null : url;
 }
 
+/**
+ * The legacy `ramadan` link (Sprint 4: fasting tracker) opens the Ramadan planner once the
+ * `ramadan_planner` flag is on (Sprint 6 leftover). Pure, tested.
+ */
+export function rewriteRamadanPath(path: string, plannerOn: boolean): string {
+  if (!plannerOn) return path;
+  return path.replace(/^(\/?)ramadan(?=$|[?#/])/, '$1ramadan-planner');
+}
+
 export const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['thuluth://', 'https://thuluth.app'],
   async getInitialURL() {
@@ -26,6 +39,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
       if (forward) listener(forward);
     });
     return () => sub.remove();
+  },
+  getStateFromPath(path, options) {
+    const plannerOn = selectFlag('ramadan_planner')(useFeatureFlagStore.getState());
+    return defaultGetStateFromPath(rewriteRamadanPath(path, plannerOn), options);
   },
   config: {
     screens: {
@@ -49,7 +66,13 @@ export const linking: LinkingOptions<RootStackParamList> = {
             },
           },
           ChatTab: { screens: { ChatSessions: 'chats', ChatThread: 'chat/:sessionId?' } },
-          FamilyTab: { screens: { FamilyManagement: 'family' } },
+          FamilyTab: {
+            screens: {
+              FamilyManagement: 'family',
+              // Sprint 6: growth (growth_measure_due, growth_alert).
+              GrowthDashboard: 'growth/:familyMemberId',
+            },
+          },
           MoreTab: {
             screens: {
               MoreHome: 'more',
@@ -65,6 +88,12 @@ export const linking: LinkingOptions<RootStackParamList> = {
               RamadanPlanner: 'ramadan-planner',
               Subscription: 'premium',
               SettingsMemory: 'settings/memory',
+              // Sprint 6: exports (export_ready), help, insights and privacy.
+              Exports: 'exports',
+              HelpCenter: 'help',
+              HelpArticle: 'help/:slug',
+              NutritionInsights: 'insights',
+              SettingsPrivacy: 'settings/privacy',
             },
           },
         },

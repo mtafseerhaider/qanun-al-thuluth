@@ -34,7 +34,13 @@
     "notifications": "اطلاعات",
     "ramadan": "رمضان پلانر",
     "premium": "ثلث پریمیم",
-    "memory": "ثلث کو کیا یاد ہے"
+    "memory": "ثلث کو کیا یاد ہے",
+    "insights": "بصیرتیں",
+    "exports": "ایکسپورٹس (پی ڈی ایف)",
+    "privacy": "رازداری اور ڈیٹا",
+    "helpTitle": "مدد",
+    "help": "مدد مرکز",
+    "contact": "سپورٹ سے رابطہ"
   },
   "profile": {
     "displayName": "ظاہری نام",

@@ -1,0 +1,57 @@
+# Sprint 6 (S6-04): log a child's measurement and see it on the growth dashboard.
+# Family -> Health modules -> Growth for the child -> Add measurement (weight and height) -> the
+# latest value shows (free tier); premium accounts also see the chart. Children never see kcal or
+# weight targets here. Uses the onboarding fixture (child Zayd, born 2019). testIDs only.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 17 growth measurement
+tags:
+  - growth
+  - sprint-6
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.family'
+- scrollUntilVisible:
+    element:
+      id: 'family-management.module.growth.*'
+    direction: DOWN
+- tapOn:
+    id: 'family-management.module.growth.*'
+- extendedWaitUntil:
+    visible:
+      id: 'growth.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'growth.status'
+- tapOn:
+    id: 'growth.add'
+- extendedWaitUntil:
+    visible:
+      id: 'growth-add.screen'
+    timeout: 5000
+- assertNotVisible:
+    text: '.*kcal.*'
+- tapOn:
+    id: 'growth-add.height'
+- inputText: '121'
+- tapOn:
+    id: 'growth-add.weight'
+- inputText: '22.5'
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: 'growth-add.save'
+    direction: DOWN
+- tapOn:
+    id: 'growth-add.save'
+- extendedWaitUntil:
+    visible:
+      id: 'growth.latest'
+    timeout: 15000
+- assertNotVisible:
+    text: '.*kcal.*'
+- takeScreenshot: 17-growth-latest

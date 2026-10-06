@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  AiSmokeRequest,
-  ERROR_HTTP_STATUS,
-  ErrorCode,
-  ErrorEnvelope,
-} from '../src/contracts/index.ts';
+import { ERROR_HTTP_STATUS, ErrorCode, ErrorEnvelope } from '../src/contracts/index.ts';
 import { formatMinor, toMinor } from '../src/utils/money.ts';
 
 describe('ErrorEnvelope', () => {
@@ -21,14 +16,6 @@ describe('ErrorEnvelope', () => {
   it('has an HTTP status for every code', () => {
     for (const code of ErrorCode.options)
       expect(ERROR_HTTP_STATUS[code]).toBeGreaterThanOrEqual(400);
-  });
-});
-
-describe('AiSmokeRequest', () => {
-  it('trims and bounds the prompt', () => {
-    expect(AiSmokeRequest.safeParse({ prompt: '   ' }).success).toBe(false);
-    expect(AiSmokeRequest.safeParse({ prompt: 'x'.repeat(501) }).success).toBe(false);
-    expect(AiSmokeRequest.parse({ prompt: ' salaam ' }).prompt).toBe('salaam');
   });
 });
 

@@ -17,6 +17,15 @@ export const verifyWithSupabase: ClaimsVerifier = async (jwt) => {
   });
   const { data, error } = await client.auth.getClaims(jwt);
   if (error || !data) return null;
-  const claims = data.claims as { sub?: string; email?: string };
-  return claims.sub ? { sub: claims.sub, ...(claims.email ? { email: claims.email } : {}) } : null;
+  const claims = data.claims as {
+    sub?: string;
+    email?: string;
+    amr?: Array<{ method: string; timestamp: number }>;
+  };
+  if (!claims.sub) return null;
+  return {
+    sub: claims.sub,
+    ...(claims.email ? { email: claims.email } : {}),
+    ...(Array.isArray(claims.amr) ? { amr: claims.amr } : {}),
+  };
 };

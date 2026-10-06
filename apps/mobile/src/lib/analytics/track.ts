@@ -6,6 +6,7 @@ import type { Json } from '@shared/db/database.types';
 import { env } from '@/lib/env';
 import { appStorage } from '@/lib/storage/mmkv';
 import { getCurrentUserId, supabase } from '@/lib/supabase/client';
+import { usePreferencesStore } from '@/stores/use-preferences-store';
 
 import type { EventName, EventProps } from './events';
 import {
@@ -52,6 +53,8 @@ export const analytics = createAnalyticsClient({
     appVersion: env.APP_VERSION,
     platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web',
   }),
+  // Opt-out (FR-SET-07): nothing is queued while it is on.
+  isEnabled: () => !usePreferencesStore.getState().analyticsOptOut,
   onInvalid: (event, issues) => {
     if (__DEV__) console.warn('analytics props invalid', event, issues);
   },
@@ -59,6 +62,11 @@ export const analytics = createAnalyticsClient({
 
 export function track<E extends EventName>(event: E, props: EventProps<E>): boolean {
   return analytics.track(event, props, { locale: currentLocale, householdId: currentHouseholdId });
+}
+
+/** Drops everything queued on this device (used when the user opts out). */
+export function clearAnalyticsQueue(): void {
+  analytics.clear();
 }
 
 export function flushAnalytics(): Promise<FlushResult> {
