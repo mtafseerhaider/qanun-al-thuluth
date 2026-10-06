@@ -8,6 +8,8 @@ select plan(24);
 
 select tests.create_user('fm-owner@test.thuluth.app') as owner \gset
 select tests.create_household(:'owner', 'Family home') as hid \gset
+-- the owner's child_data consent for this household (0022 trigger CHILD_DATA_CONSENT_REQUIRED)
+insert into public.consents (user_id, household_id, kind, version) values (:'owner', :'hid', 'child_data', '2026-10');
 
 select tests.authenticate_as(:'owner');
 -- derivation

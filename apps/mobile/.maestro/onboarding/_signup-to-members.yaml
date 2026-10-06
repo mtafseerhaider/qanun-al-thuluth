@@ -1,0 +1,73 @@
+# Subflow: sign up, then onboarding steps 1 to 3 (welcome, philosophy, consents, household).
+# Ends on the members step. Input (env): DISPLAY_NAME (default Amina).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: sign up to the members step (subflow)
+---
+- runFlow: ../auth/02-signup-otp.yaml
+
+# Step 1 Welcome: display name
+- tapOn:
+    id: 'onboarding-welcome.name'
+- eraseText: 40
+- inputText: ${DISPLAY_NAME || 'Amina'}
+- hideKeyboard
+- tapOn:
+    id: 'onboarding-welcome.screen.continue'
+
+# Step 2 Philosophy: hadith card, plate, children promise, tradition
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-philosophy.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'onboarding-philosophy.hadith'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-philosophy.tradition.shared'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-philosophy.tradition.shared'
+- tapOn:
+    id: 'onboarding-philosophy.screen.continue'
+
+# Consents: age plus the four required kinds; Continue stays disabled until all are ticked
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-consents.screen'
+    timeout: 10000
+- tapOn:
+    id: 'onboarding-consents.age'
+- tapOn:
+    id: 'onboarding-consents.terms'
+- tapOn:
+    id: 'onboarding-consents.privacy'
+- tapOn:
+    id: 'onboarding-consents.health_data'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-consents.ai_processing'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-consents.ai_processing'
+- tapOn:
+    id: 'onboarding-consents.screen.continue'
+
+# Step 3 Household: Pakistan defaults (PKR, Asia/Karachi), Lahore, optional budget
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-household.screen'
+    timeout: 10000
+- tapOn:
+    id: 'onboarding-household.country.PK'
+- tapOn:
+    id: 'onboarding-household.city-Lahore'
+- scrollUntilVisible:
+    element:
+      id: 'onboarding-household.budget'
+    direction: DOWN
+- tapOn:
+    id: 'onboarding-household.budget'
+- inputText: '45000'
+- hideKeyboard
+- tapOn:
+    id: 'onboarding-household.screen.continue'

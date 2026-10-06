@@ -8,9 +8,10 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src test evals",
+    "lint": "eslint src test evals scripts",
     "test": "vitest run",
-    "evals": "node --experimental-strip-types evals/run.ts"
+    "evals": "node --experimental-strip-types evals/run.ts",
+    "knowledge:embed": "node --experimental-strip-types scripts/knowledge-embed.ts"
   },
   "dependencies": {
     "@thuluth/shared": "workspace:*",

@@ -17,6 +17,7 @@
     "settings": "Settings",
     "settingsProfile": "Profile",
     "acceptInvite": "Invitation",
-    "inviteCaregiver": "Invite someone"
+    "inviteCaregiver": "Invite someone",
+    "sourceDetail": "Sources"
   }
 }

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { BootScreen } from '@/features/auth';
 import { AcceptInviteScreen, InviteCaregiverScreen } from '@/features/household';
+import { SourceDetailSheet } from '@/features/knowledge';
 import { useSessionStore, type SessionStatus } from '@/stores/use-session-store';
 
 import { AuthStack } from './auth-stack';
@@ -62,6 +63,15 @@ export function RootNavigator() {
             name="AcceptInvite"
             component={AcceptInviteScreen}
             options={{ title: t('screens.acceptInvite') }}
+          />
+          <Stack.Screen
+            name="SourceDetailSheet"
+            component={SourceDetailSheet}
+            options={{
+              title: t('screens.sourceDetail'),
+              presentation: 'formSheet',
+              sheetAllowedDetents: [0.6, 1],
+            }}
           />
           {branch === 'Main' ? (
             <Stack.Screen

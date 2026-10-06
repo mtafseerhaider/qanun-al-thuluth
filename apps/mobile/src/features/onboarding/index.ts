@@ -3,6 +3,8 @@ export { OnboardingPhilosophyScreen } from './screens/onboarding-philosophy-scre
 export { OnboardingConsentsScreen } from './screens/onboarding-consents-screen';
 export { OnboardingHouseholdScreen } from './screens/onboarding-household-screen';
 export { OnboardingMembersScreen } from './screens/onboarding-members-screen';
+export { OnboardingIntakeScreen } from './screens/onboarding-intake-screen';
+export { OnboardingAssessmentScreen } from './screens/onboarding-assessment-screen';
 export {
   ONBOARDING_STEPS,
   useOnboardingStore,

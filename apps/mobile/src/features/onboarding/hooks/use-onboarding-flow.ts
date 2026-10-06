@@ -22,7 +22,8 @@ type Nav = NativeStackNavigationProp<OnboardingStackParamList>;
 
 /**
  * Step navigation for onboarding: records completion (persisted), moves to the next route, and
- * after the last step sets `users.onboarding_completed_at` so the root navigator switches to Main.
+ * after the last step (the assessment summary until plan generation lands in Sprint 3) sets
+ * `users.onboarding_completed_at` so the root navigator switches to Main (FR-ONB-02).
  */
 export function useOnboardingFlow(step: Exclude<OnboardingStep, 'done'>) {
   const navigation = useNavigation<Nav>();
@@ -30,7 +31,7 @@ export function useOnboardingFlow(step: Exclude<OnboardingStep, 'done'>) {
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<unknown>(null);
 
-  const finish = async (memberCount: number) => {
+  const finish = async (memberCount: number, onFinished?: () => void) => {
     const userId = useSessionStore.getState().userId;
     if (!userId) return;
     setFinishing(true);
@@ -39,7 +40,8 @@ export function useOnboardingFlow(step: Exclude<OnboardingStep, 'done'>) {
       await updateProfile(userId, { onboarding_completed_at: new Date().toISOString() });
       track('onboarding_completed', { members: memberCount });
       void qc.invalidateQueries({ queryKey: qk.profile() });
-      useOnboardingStore.getState().complete('members');
+      useOnboardingStore.getState().complete(step);
+      onFinished?.();
       useSessionStore.getState().markOnboarded();
     } catch (e) {
       setFinishError(e);
@@ -48,12 +50,12 @@ export function useOnboardingFlow(step: Exclude<OnboardingStep, 'done'>) {
     }
   };
 
-  const goNext = (opts: { memberCount?: number } = {}) => {
+  const goNext = (opts: { memberCount?: number; onFinished?: () => void } = {}) => {
     const store = useOnboardingStore.getState();
     track('onboarding_step_completed', { step });
     const next = nextStep(step, { skipHousehold: store.joinedByInvite });
     if (next === 'done') {
-      void finish(opts.memberCount ?? 0);
+      void finish(opts.memberCount ?? 0, opts.onFinished);
       return;
     }
     store.complete(step);

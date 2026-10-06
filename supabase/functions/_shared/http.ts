@@ -15,7 +15,7 @@ export interface HandlerContext<I> {
  */
 export function jsonHandler<S extends z.ZodTypeAny, O>(
   input: S,
-  handler: (ctx: HandlerContext<z.infer<S>>) => Promise<O>,
+  handler: (ctx: HandlerContext<z.infer<S>>) => Promise<O | Response>,
   opts: { onError?: (err: unknown, requestId: string) => void } = {},
 ): (req: Request) => Promise<Response> {
   return async (req) => {
@@ -33,6 +33,12 @@ export function jsonHandler<S extends z.ZodTypeAny, O>(
         });
       }
       const body = await handler({ req, input: parsed.data, requestId });
+      // A handler may return a full Response (idempotent replays, rate-limit headers).
+      if (body instanceof Response) {
+        for (const [k, v] of Object.entries(corsHeaders)) body.headers.set(k, v);
+        body.headers.set('x-request-id', requestId);
+        return body;
+      }
       return Response.json(body, { headers: { ...corsHeaders, 'x-request-id': requestId } });
     } catch (err) {
       if (err instanceof HttpError) return errorResponse(err, requestId);

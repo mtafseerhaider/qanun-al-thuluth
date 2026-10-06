@@ -141,11 +141,30 @@ export interface ProviderCapabilities {
   streaming: boolean;
 }
 
+export interface EmbedRequest {
+  route: RouteKey;
+  inputs: string[];
+  /** Output dimensions (12 §4.2: text-embedding-3-large reduced to 1536). */
+  dimensions: number;
+  metadata: RequestMetadata;
+  signal?: AbortSignal;
+}
+
+export interface EmbedResponse {
+  provider: ProviderId;
+  model: string;
+  vectors: number[][];
+  usage: Usage;
+  latencyMs: number;
+}
+
 export interface AIProvider {
   readonly id: ProviderId;
   readonly supports: ProviderCapabilities;
   chat(req: ChatRequest, model: string, params: ModelParams): Promise<ChatResponse>;
   stream(req: ChatRequest, model: string, params: ModelParams): AsyncIterable<StreamEvent>;
+  /** Embeddings (route `embed.knowledge`); only providers that serve an embedding route implement it. */
+  embed?(req: EmbedRequest, model: string, params: ModelParams): Promise<EmbedResponse>;
 }
 
 export type AIErrorCode =

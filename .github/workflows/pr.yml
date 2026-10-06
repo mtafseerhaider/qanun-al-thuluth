@@ -55,7 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: pnpm --filter @thuluth/ai-core evals --suite smoke
+      # smoke + guardrail suites (child-restriction, fiqh, red-flags, urdu); 100 percent required
+      - run: pnpm --filter @thuluth/ai-core evals --suite all
 
   secrets:
     name: Secret scan

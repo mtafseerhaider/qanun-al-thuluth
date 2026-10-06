@@ -12,3 +12,7 @@ export * from './router/fallback.ts';
 export * from './metering/usage.ts';
 export * from './metering/caps.ts';
 export * from './prompts/render.ts';
+export * from './router/metered.ts';
+export * from './calculators/index.ts';
+export * from './guardrails/index.ts';
+export * from './knowledge/index.ts';

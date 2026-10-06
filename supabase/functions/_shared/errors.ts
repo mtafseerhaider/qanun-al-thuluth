@@ -36,11 +36,76 @@ export function errorResponse(
   );
 }
 
-/** Maps Postgres errors per 06 §2.3: `LIMIT_REACHED:` trigger prefix, 42501 RLS, 23505 unique. */
-export function fromPostgrestError(err: { code?: string; message?: string }): HttpError {
+/** The fields of a PostgREST / Postgres error the mapper reads (`details` is the DETAIL text). */
+export interface PgErrorLike {
+  code?: string;
+  message?: string;
+  details?: string | null;
+  hint?: string | null;
+}
+
+/** RAISE ... DETAIL is JSON text for the guard triggers; anything else yields {}. */
+function detailJson(err: PgErrorLike): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(err.details ?? '');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+/** 06 §3.2 rule names for the under-18 guard, used when the DETAIL JSON is missing. */
+const CHILD_RULES: Record<string, string> = {
+  weight_loss: 'no_weight_loss_under_18',
+  weight_gain: 'no_weight_gain_under_18',
+  kcal_target: 'no_calorie_target_under_18',
+};
+
+/**
+ * Maps Postgres errors per 06 §2.3 and §3.2:
+ * - `LIMIT_REACHED:` trigger prefix -> LIMIT_REACHED
+ * - `CHILD_RULE:<rule>` (S2-03 under-18 guard) -> VALIDATION_FAILED with `details.rule`
+ * - `CONSENT_REQUIRED` / `CHILD_DATA_CONSENT_REQUIRED` (0022 consent guards) -> CONSENT_REQUIRED
+ *   with `details.consents`
+ * - `MODULE_NOT_APPLICABLE` (23514, pregnancy/breastfeeding goal on a child) -> VALIDATION_FAILED
+ * - 42501 RLS -> FORBIDDEN, 23505 unique -> CONFLICT
+ */
+export function fromPostgrestError(err: PgErrorLike): HttpError {
   const message = err.message ?? 'Database error';
   if (message.startsWith('LIMIT_REACHED:'))
     return new HttpError('LIMIT_REACHED', message.slice(14).trim());
+  if (message.startsWith('CHILD_RULE:')) {
+    const key = message.slice(11).trim();
+    const detail = detailJson(err);
+    const rule = typeof detail.rule === 'string' ? detail.rule : (CHILD_RULES[key] ?? key);
+    return new HttpError('VALIDATION_FAILED', 'This goal is not available for members under 18.', {
+      ...detail,
+      rule,
+    });
+  }
+  if (message === 'CHILD_DATA_CONSENT_REQUIRED') {
+    return new HttpError('CONSENT_REQUIRED', 'Consent for child data is needed first.', {
+      consents: ['child_data'],
+    });
+  }
+  if (message === 'CONSENT_REQUIRED') {
+    const kind = detailJson(err).kind;
+    return new HttpError('CONSENT_REQUIRED', 'Consent for health data is needed first.', {
+      consents: [typeof kind === 'string' ? kind : 'health_data'],
+    });
+  }
+  if (message === 'MODULE_NOT_APPLICABLE') {
+    // DETAIL is the goal_type as plain text today; JSON keys are passed through if it changes.
+    const detail = detailJson(err);
+    const plain = !Object.keys(detail).length && err.details ? { goal_type: err.details } : {};
+    return new HttpError('VALIDATION_FAILED', 'This goal does not apply to this family member.', {
+      ...detail,
+      ...plain,
+      rule: 'module_not_applicable',
+    });
+  }
   if (err.code === '42501') return new HttpError('FORBIDDEN', 'Not allowed');
   if (err.code === '23505') return new HttpError('CONFLICT', 'Already exists');
   return new HttpError('INTERNAL', 'Unexpected database error');

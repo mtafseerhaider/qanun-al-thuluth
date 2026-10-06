@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:test": "bash tooling/scripts/db-test.sh",
-    "mobile": "pnpm --filter @thuluth/mobile start"
+    "mobile": "pnpm --filter @thuluth/mobile start",
+    "knowledge:embed": "pnpm --filter @thuluth/ai-core knowledge:embed"
   },
   "prettier": "@thuluth/config/prettier",
   "devDependencies": {

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HouseholdRole } from '@thuluth/shared';
 
 import { fromPostgrestError } from '../_shared/errors.ts';
+import type { PgErrorLike } from '../_shared/errors.ts';
 
 export interface Invitation {
   id: string;
@@ -45,7 +46,7 @@ export interface InviteStore {
 const INVITE_COLUMNS =
   'id, household_id, email, role, invited_by, expires_at, accepted_at, revoked_at';
 
-function check<T>(result: { data: T; error: { code?: string; message?: string } | null }): T {
+function check<T>(result: { data: T; error: PgErrorLike | null }): T {
   if (result.error) throw fromPostgrestError(result.error);
   return result.data;
 }

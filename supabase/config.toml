@@ -120,3 +120,5 @@ deno_version = 2
 verify_jwt = true           # Sprint 0 smoke function (00 section 11); removed when ai-chat ships
 [functions.household-invite]
 verify_jwt = true
+[functions.ai-intake-assess]
+verify_jwt = true           # S2-09 intake assessment (06 section 4.2)

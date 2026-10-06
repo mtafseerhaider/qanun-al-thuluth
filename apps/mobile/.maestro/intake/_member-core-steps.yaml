@@ -1,0 +1,109 @@
+# Subflow: the core per-member intake steps (health, allergies, food, routine, modules) with
+# "no conditions / no allergies" answers. Inputs (env): LIKE (a suggested food label such as Daal),
+# MODULE (optional: pregnancy|breastfeeding|autism|picky_eater|adhd). Ends after the modules step.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: member core intake steps (subflow)
+---
+# Health: no conditions, medicines or supplements; screening answered "No"
+- extendedWaitUntil:
+    visible:
+      id: 'intake-health.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-health.conditions.none'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.medications.none'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.medications.none'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.supplements.none'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.supplements.none'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.weight-change.no'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.weight-change.no'
+- runFlow:
+    when:
+      visible:
+        id: 'intake-health.eating-concern.no'
+    commands:
+      - tapOn:
+          id: 'intake-health.eating-concern.no'
+- runFlow:
+    when:
+      visible:
+        id: 'intake-health.intends-to-fast.no'
+    commands:
+      - tapOn:
+          id: 'intake-health.intends-to-fast.no'
+- scrollUntilVisible:
+    element:
+      id: 'intake-health.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-health.screen.next'
+
+# Allergies: none
+- extendedWaitUntil:
+    visible:
+      id: 'intake-allergies.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-allergies.none'
+- tapOn:
+    id: 'intake-allergies.screen.next'
+
+# Food: one liked food
+- extendedWaitUntil:
+    visible:
+      id: 'intake-food.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-food.likes.suggestions.${LIKE}'
+- scrollUntilVisible:
+    element:
+      id: 'intake-food.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-food.screen.next'
+
+# Routine: defaults
+- extendedWaitUntil:
+    visible:
+      id: 'intake-lifestyle.screen'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'intake-lifestyle.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-lifestyle.screen.next'
+
+# Modules
+- extendedWaitUntil:
+    visible:
+      id: 'intake-modules.screen'
+    timeout: 10000
+- runFlow:
+    when:
+      true: ${MODULE != null && MODULE != ''}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: 'intake-modules.${MODULE}'
+          direction: DOWN
+      - tapOn:
+          id: 'intake-modules.${MODULE}'
+- scrollUntilVisible:
+    element:
+      id: 'intake-modules.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-modules.screen.next'

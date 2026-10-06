@@ -1,0 +1,321 @@
+# S2-17: full health intake for the Usman fixture household (01 §3.2 persona 1), then the
+# assessment summary (S2-15). Usman 38 (84 kg, 175 cm, moderately active, weight loss), Hina 34
+# (breastfeeding), Ibrahim 8 (picky eater with accepted foods) and Maryam 4 (autism sensory profile
+# with safe foods). Needs the local stack with ai-intake-assess. testIDs only, so it passes in en and ur.
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 05 intake (Usman household)
+tags:
+  - intake
+  - sprint-2
+---
+- runFlow:
+    file: ../onboarding/_signup-to-members.yaml
+    env:
+      DISPLAY_NAME: 'Usman'
+
+# Members (sort order = add order)
+- extendedWaitUntil:
+    visible:
+      id: 'onboarding-members.screen'
+    timeout: 15000
+- runFlow:
+    file: _add-fixture-member.yaml
+    env:
+      {
+        NAME: 'Usman',
+        DAY: '14',
+        MONTH: '3',
+        YEAR: '1988',
+        SEX: 'male',
+        HEIGHT: '175',
+        WEIGHT: '84',
+        ACTIVITY: 'moderate',
+      }
+- runFlow:
+    file: _add-fixture-member.yaml
+    env:
+      {
+        NAME: 'Hina',
+        DAY: '2',
+        MONTH: '6',
+        YEAR: '1992',
+        SEX: 'female',
+        HEIGHT: '160',
+        WEIGHT: '62',
+        ACTIVITY: 'light',
+      }
+- runFlow:
+    file: _add-fixture-member.yaml
+    env:
+      {
+        NAME: 'Ibrahim',
+        DAY: '20',
+        MONTH: '4',
+        YEAR: '2018',
+        SEX: 'male',
+        HEIGHT: '128',
+        WEIGHT: '25',
+      }
+- runFlow:
+    file: _add-fixture-member.yaml
+    env:
+      {
+        NAME: 'Maryam',
+        DAY: '10',
+        MONTH: '1',
+        YEAR: '2022',
+        SEX: 'female',
+        HEIGHT: '102',
+        WEIGHT: '16',
+      }
+- assertVisible:
+    id: 'family-members.row-3'
+- tapOn:
+    id: 'onboarding-members.screen.continue'
+
+# I1 Household preferences
+- extendedWaitUntil:
+    visible:
+      id: 'intake-household.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-household.cuisines.pakistani'
+- scrollUntilVisible:
+    element:
+      id: 'intake-household.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-household.screen.next'
+
+# Usman: core steps, then weight loss as the goal
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- runFlow:
+    file: _member-core-steps.yaml
+    env: { LIKE: 'Daal' }
+- extendedWaitUntil:
+    visible:
+      id: 'intake-goals.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-goals.weight_loss'
+- tapOn:
+    id: 'intake-goals.target-weight'
+- inputText: '78'
+- hideKeyboard
+- assertNotVisible:
+    id: 'intake-goals.child-weight-note'
+- scrollUntilVisible:
+    element:
+      id: 'intake-goals.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-goals.screen.next'
+
+# Hina: breastfeeding module
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- runFlow:
+    file: _member-core-steps.yaml
+    env: { LIKE: 'Yogurt', MODULE: 'breastfeeding' }
+- extendedWaitUntil:
+    visible:
+      id: 'intake-pregnancy.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-pregnancy.feeding.exclusive'
+- tapOn:
+    id: 'intake-pregnancy.baby-age'
+- inputText: '6'
+- hideKeyboard
+- assertVisible:
+    id: 'intake-pregnancy.scholar-notice'
+- tapOn:
+    id: 'intake-pregnancy.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-goals.screen'
+    timeout: 10000
+- assertNotVisible:
+    id: 'intake-goals.weight_loss'
+- tapOn:
+    id: 'intake-goals.breastfeeding_support'
+- scrollUntilVisible:
+    element:
+      id: 'intake-goals.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-goals.screen.next'
+
+# Ibrahim: picky eater with accepted foods; children never see weight goals
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- runFlow:
+    file: _member-core-steps.yaml
+    env: { LIKE: 'Roti', MODULE: 'picky_eater' }
+- extendedWaitUntil:
+    visible:
+      id: 'intake-picky.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Roti'
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Rice'
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Chicken'
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Banana'
+- scrollUntilVisible:
+    element:
+      id: 'intake-picky.mealtimes.sometimes_hard'
+    direction: DOWN
+- tapOn:
+    id: 'intake-picky.mealtimes.sometimes_hard'
+- tapOn:
+    id: 'intake-picky.growth-concern.no'
+- tapOn:
+    id: 'intake-picky.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-goals.screen'
+    timeout: 10000
+- assertVisible:
+    id: 'intake-goals.child_growth'
+- assertVisible:
+    id: 'intake-goals.child-weight-note'
+- assertNotVisible:
+    id: 'intake-goals.weight_loss'
+- assertNotVisible:
+    id: 'intake-goals.weight_gain'
+- tapOn:
+    id: 'intake-goals.screen.next'
+
+# Maryam: autism sensory profile, then safe foods
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- runFlow:
+    file: _member-core-steps.yaml
+    env: { LIKE: 'Yogurt', MODULE: 'autism' }
+- extendedWaitUntil:
+    visible:
+      id: 'intake-sensory.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-sensory.diagnosis.diagnosed'
+- tapOn:
+    id: 'intake-sensory.likes.smooth'
+- tapOn:
+    id: 'intake-sensory.likes.crunchy'
+- tapOn:
+    id: 'intake-sensory.avoids.lumpy'
+- tapOn:
+    id: 'intake-sensory.avoids.mixed'
+- scrollUntilVisible:
+    element:
+      id: 'intake-sensory.presentation.separate_foods'
+    direction: DOWN
+- tapOn:
+    id: 'intake-sensory.presentation.separate_foods'
+- scrollUntilVisible:
+    element:
+      id: 'intake-sensory.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-sensory.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-picky.screen'
+    timeout: 10000
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Yogurt'
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Banana'
+- tapOn:
+    id: 'intake-picky.safe-foods.suggestions.Rice'
+- scrollUntilVisible:
+    element:
+      id: 'intake-picky.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-picky.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-goals.screen'
+    timeout: 10000
+- assertNotVisible:
+    id: 'intake-goals.weight_loss'
+- tapOn:
+    id: 'intake-goals.screen.next'
+
+# Review: everyone done, no red flags
+- extendedWaitUntil:
+    visible:
+      id: 'intake-members.screen'
+    timeout: 15000
+- tapOn:
+    id: 'intake-members.screen.next'
+- extendedWaitUntil:
+    visible:
+      id: 'intake-review.screen'
+    timeout: 10000
+- assertNotVisible:
+    id: 'intake-review.red-flags'
+- takeScreenshot: 05-intake-review
+- scrollUntilVisible:
+    element:
+      id: 'intake-review.screen.next'
+    direction: DOWN
+- tapOn:
+    id: 'intake-review.screen.next'
+
+# O7 Assessment: Usman gets an energy range and TDEE 2,711; the children get no numbers
+- extendedWaitUntil:
+    visible:
+      id: 'assessment.members'
+    timeout: 60000
+- assertVisible:
+    id: 'assessment.member-0.energy'
+- assertVisible:
+    id: 'assessment.member-0.tdee'
+    text: '.*2[,٬]?711.*|.*۲[,٬]?۷۱۱.*'
+- scrollUntilVisible:
+    element:
+      id: 'assessment.member-2.child'
+    direction: DOWN
+- assertNotVisible:
+    id: 'assessment.member-2.energy'
+- assertNotVisible:
+    id: 'assessment.member-2.tdee'
+- scrollUntilVisible:
+    element:
+      id: 'assessment.member-3.child'
+    direction: DOWN
+- assertNotVisible:
+    id: 'assessment.member-3.energy'
+- takeScreenshot: 05-assessment
+- scrollUntilVisible:
+    element:
+      id: 'assessment.continue'
+    direction: DOWN
+- tapOn:
+    id: 'assessment.continue'
+- extendedWaitUntil:
+    visible:
+      id: 'tab.today'
+    timeout: 15000

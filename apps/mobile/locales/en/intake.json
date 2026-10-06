@@ -1,0 +1,547 @@
+{
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "finishLater": "Finish later",
+    "progress": "Step {{current}} of {{total}}",
+    "memberProgress": "{{name}}: step {{current}} of {{total}}",
+    "completeness": "Profile {{score}}% complete",
+    "yes": "Yes",
+    "no": "No",
+    "preferNot": "Prefer not to say",
+    "add": "Add",
+    "remove": "Remove",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "noHousehold": "We couldn't find your household. Go back and create it first.",
+    "tapToRemove": "Tap to remove",
+    "tapToChange": "Tap to change",
+    "kg": "kg",
+    "months": "months",
+    "minutes": "min",
+    "minutesPerWeek": "min a week",
+    "datePlaceholder": "YYYY-MM-DD",
+    "timePlaceholder": "HH:MM",
+    "listSeparator": ", ",
+    "show": "Show",
+    "hide": "Hide"
+  },
+  "household": {
+    "title": "How does your kitchen work?",
+    "helper": "This helps us suggest meals that fit your time, tools and tastes. Everything here is optional.",
+    "cuisines": "Cuisines you enjoy",
+    "cuisineNames": {
+      "pakistani": "Pakistani",
+      "north_indian": "North Indian",
+      "afghan": "Afghan",
+      "arab": "Arab",
+      "persian": "Persian",
+      "turkish": "Turkish",
+      "british": "British",
+      "continental": "Continental"
+    },
+    "weekdayMinutes": "Cooking time on a weekday",
+    "weekendMinutes": "Cooking time at the weekend",
+    "equipment": "Kitchen equipment",
+    "equipmentNames": {
+      "pressure_cooker": "Pressure cooker",
+      "oven": "Oven",
+      "air_fryer": "Air fryer",
+      "blender": "Blender",
+      "microwave": "Microwave",
+      "tandoor_access": "Tandoor nearby"
+    },
+    "batchCooking": "Batch cooking",
+    "batch": {
+      "none": "We cook fresh each day",
+      "some": "Sometimes we cook extra",
+      "weekly_batch_day": "We have a weekly batch-cooking day"
+    },
+    "shopping": "How do you shop?",
+    "cadence": {
+      "weekly_fresh_monthly_staples": "Fresh produce weekly, staples monthly",
+      "weekly_only": "Everything once a week",
+      "ad_hoc": "When we need something"
+    },
+    "sharedMeals": "Meals the family usually eats together",
+    "halal": "Halal checks for packaged foods",
+    "halalHint": "We never certify products as halal. This only changes how carefully we flag packaged items.",
+    "halalLevels": {
+      "certified_only": {
+        "title": "Certified only",
+        "description": "Only suggest packaged foods with a trusted halal certification."
+      },
+      "ingredient_checked": {
+        "title": "Check ingredients",
+        "description": "Flag ingredients such as gelatine or alcohol so you can check."
+      },
+      "standard": {
+        "title": "Standard",
+        "description": "Avoid pork and alcohol; no extra label checks."
+      }
+    }
+  },
+  "members": {
+    "title": "Tell us about each person",
+    "helper": "A few questions per person. You can finish anyone later; we'll use sensible defaults until then.",
+    "householdScore": "Family profile {{score}}% complete",
+    "continueWith": "Continue with {{name}}",
+    "review": "Review answers",
+    "skipToReview": "Skip to review",
+    "start": "Start",
+    "continue": "Continue",
+    "edit": "Edit",
+    "status": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "complete": "Done",
+      "later": "Finish later"
+    }
+  },
+  "health": {
+    "title": "Does {{name}} have any health conditions we should plan around?",
+    "helper": "This helps us avoid foods that don't suit them. It never replaces their doctor's advice.",
+    "conditions": {
+      "title": "Conditions",
+      "none": "No conditions",
+      "search": "Search conditions",
+      "other": "Something else"
+    },
+    "fastingRiskBanner": "We'll keep fasting and big diet changes off {{name}}'s plan until you've spoken with their doctor.",
+    "medications": {
+      "title": "Medicines",
+      "none": "No regular medicines",
+      "add": "Medicine name",
+      "helper": "We check a short list of medicines that interact with food or fasting.",
+      "dose": "Dose (optional)",
+      "frequency": "How often",
+      "frequencies": {
+        "once_daily": "Once a day",
+        "twice_daily": "Twice a day",
+        "with_meals": "With meals",
+        "as_needed": "As needed",
+        "other": "Other"
+      },
+      "flagsTitle": "Things we'll plan around"
+    },
+    "supplements": {
+      "title": "Supplements",
+      "none": "No supplements",
+      "common": "Common supplements",
+      "other": "Another supplement"
+    },
+    "screening": {
+      "title": "A few safety questions",
+      "helper": "These help us spot when a doctor should be involved first. Your answers are only used to keep plans safe.",
+      "weightChange": "Has {{name}}'s weight changed recently without trying?",
+      "direction": "Lost or gained?",
+      "lost": "Lost weight",
+      "gained": "Gained weight",
+      "kg": "About how much?",
+      "months": "Over how many months?",
+      "eatingConcern": "Has {{name}} been worried about food, weight or eating lately?",
+      "eatingSupportTitle": "Thank you for telling us",
+      "eatingSupport": "We'll keep {{name}}'s plan gentle, with no weight goals or calorie talk. A doctor or eating-support service can help; you can talk to them any time.",
+      "foodGroups": "Is {{name}} refusing whole food groups and losing weight?",
+      "gagging": "Does {{name}} gag or choke on most textures?",
+      "intendsToFast": "Is {{name}} planning to fast, for example in Ramadan?",
+      "clinicianFirstTitle": "Doctor first for fasting",
+      "clinicianFirst": "With these medicines, fasting can cause dangerously low blood sugar. We won't plan fasts for {{name}}; please speak with their doctor before fasting.",
+      "fastingSymptoms": "When {{name}} fasts, do they feel faint or have very dark urine?"
+    }
+  },
+  "conditions": {
+    "type_1_diabetes": "Type 1 diabetes",
+    "type_2_diabetes": "Type 2 diabetes",
+    "prediabetes": "Prediabetes",
+    "hypertension": "High blood pressure",
+    "high_cholesterol": "High cholesterol",
+    "pcos": "PCOS",
+    "hypothyroidism": "Underactive thyroid",
+    "ibs": "Irritable bowel syndrome (IBS)",
+    "gerd": "Acid reflux (GERD)",
+    "celiac": "Celiac disease",
+    "anaemia": "Anaemia",
+    "kidney_disease": "Kidney disease",
+    "gestational_diabetes": "Gestational diabetes"
+  },
+  "medicationFlags": {
+    "insulin": "Insulin: meals need steady carbohydrate, and fasting needs a doctor's plan.",
+    "sulfonylurea": "This medicine can cause low blood sugar if meals are skipped or during fasting.",
+    "metformin": "Usually taken with meals to settle the stomach.",
+    "warfarin_vitamin_k": "Keep leafy greens steady from week to week rather than cutting them out.",
+    "maoi_tyramine": "Aged cheese, cured meats and some fermented foods need care.",
+    "levothyroxine_timing": "Take on an empty stomach, away from tea, milk and iron.",
+    "stimulant_appetite_suppression": "Appetite may be low at midday; we'll plan a bigger breakfast and an evening snack.",
+    "iron_calcium_spacing": "Space iron and calcium apart, and away from tea."
+  },
+  "supplements": {
+    "vitamin_d": "Vitamin D",
+    "iron": "Iron",
+    "folic_acid": "Folic acid",
+    "multivitamin": "Multivitamin",
+    "omega_3": "Omega-3",
+    "calcium": "Calcium"
+  },
+  "allergies": {
+    "title": "Does {{name}} have any food allergies or intolerances?",
+    "helper": "We'll keep these out of {{name}}'s meals.",
+    "none": "No allergies or intolerances",
+    "search": "Search allergens",
+    "loadError": "We couldn't load the allergen list.",
+    "kind": "Type",
+    "kinds": {
+      "allergy": "Allergy",
+      "intolerance": "Intolerance"
+    },
+    "severity": "How severe?",
+    "severities": {
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe",
+      "anaphylactic": "Severe reaction (anaphylaxis)"
+    },
+    "severityRequired": "Please choose how severe this is.",
+    "anaphylactic": "We'll exclude {{allergen}} and foods that may contain it from all of {{name}}'s meals, and flag shared family dishes. Always check labels; our data can't guarantee cross-contamination safety.",
+    "notes": "What happens? (optional)"
+  },
+  "food": {
+    "title": "What does {{name}} enjoy? And what would they rather skip?",
+    "childHelper": "Dislikes are normal. We'll keep offering a little, without pressure.",
+    "likes": "Likes",
+    "dislikes": "Would rather skip",
+    "strengthHint": "Tap again for love and favourite.",
+    "strength": {
+      "1": "like",
+      "2": "love",
+      "3": "favourite"
+    },
+    "addOther": "Add another food",
+    "reason": "Why?",
+    "reasons": {
+      "taste": "Taste",
+      "texture": "Texture",
+      "smell": "Smell",
+      "color": "Colour",
+      "religious": "Religious",
+      "other": "Other"
+    }
+  },
+  "foods": {
+    "daal": "Daal",
+    "roti": "Roti",
+    "chicken": "Chicken",
+    "eggs": "Eggs",
+    "rice": "Rice",
+    "yogurt": "Yogurt",
+    "banana": "Banana",
+    "guava": "Guava",
+    "lauki": "Lauki",
+    "spinach": "Spinach",
+    "pumpkin": "Pumpkin",
+    "paratha": "Paratha"
+  },
+  "meals": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "snack": "Snack",
+    "dinner": "Dinner"
+  },
+  "lifestyle": {
+    "title": "What does a usual day of eating look like for {{name}}?",
+    "helper": "Rough answers are fine.",
+    "mealPattern": "Meals usually eaten",
+    "schoolLunch": "Eats school lunch",
+    "officeCanteen": "Eats at a work canteen",
+    "packedLunch": "Takes a packed lunch or tiffin",
+    "takeaway": "Takeaway meals a week",
+    "screens": "Screens at mealtimes",
+    "frequency": {
+      "never": "Never",
+      "sometimes": "Sometimes",
+      "usually": "Usually"
+    },
+    "waterGlasses": "Glasses of water a day",
+    "waterCups": "Cups of water a day",
+    "tea": "Cups of tea or coffee a day",
+    "teaWithMeals": "Usually with meals",
+    "sugaryDrinks": "Sweet drinks a week",
+    "exercise": "Exercise",
+    "activeplay": "Active play",
+    "fasting": "Fasting practice",
+    "fastingHint": "We'll plan suhoor, iftar and water around these.",
+    "fastingChildHint": "For children we only plan gentle practice fasts.",
+    "appetite": "Appetite through the day"
+  },
+  "fasts": {
+    "ramadan": "Ramadan",
+    "sunnah_monday_thursday": "Mondays and Thursdays",
+    "ayyam_al_bid": "Ayyam al-Bid",
+    "arafah": "Day of Arafah",
+    "ashura": "Ashura",
+    "nafl": "Other voluntary fasts"
+  },
+  "modules": {
+    "title": "Would any extra support help {{name}}?",
+    "helper": "Choose any that apply. You can change this later.",
+    "noneNote": "None selected. That's fine.",
+    "selectedNote": "We'll ask a few more questions for each.",
+    "pregnancy": {
+      "title": "Pregnancy",
+      "description": "Enough nourishment for both, with no calorie cutting."
+    },
+    "breastfeeding": {
+      "title": "Breastfeeding",
+      "description": "Extra water and nourishment for feeding."
+    },
+    "autism": {
+      "title": "Autism",
+      "description": "Sensory-friendly meals, safe foods and gentle food exploration. Free: safe-food list. Premium: full module."
+    },
+    "picky_eater": {
+      "title": "Picky eating",
+      "description": "Calm strategies for selective eating. Free: guide. Premium: full module."
+    },
+    "adhd": {
+      "title": "ADHD",
+      "description": "Meal timing around medicine and appetite."
+    }
+  },
+  "pregnancy": {
+    "title": "Pregnancy details for {{name}}",
+    "congrats": "Congratulations! We'll make sure {{name}} gets enough, with no calorie cutting.",
+    "dueDate": "Due date",
+    "dueDateHelper": "Year, month and day, for example 2027-03-15.",
+    "dueDateErrors": {
+      "format": "Please enter the date as YYYY-MM-DD.",
+      "range": "The due date should be between today and 42 weeks from now."
+    },
+    "trimester": "Trimester",
+    "trimesters": {
+      "1": "First",
+      "2": "Second",
+      "3": "Third"
+    },
+    "gestationalDiabetes": "Gestational diabetes",
+    "nausea": "Nausea",
+    "nauseaLevels": {
+      "none": "None",
+      "mild": "Some",
+      "severe": "A lot"
+    },
+    "vomiting": "Is {{name}} vomiting so much she can't keep fluids down?",
+    "vomitingTitle": "Please contact a doctor or midwife today",
+    "vomitingBody": "Not keeping fluids down in pregnancy needs medical care. We'll keep the plan simple until then.",
+    "scholarNotice": "For questions about fasting while pregnant or breastfeeding, please ask your doctor and a qualified scholar you trust."
+  },
+  "breastfeeding": {
+    "title": "Breastfeeding details for {{name}}",
+    "feeding": "Feeding",
+    "exclusive": "Breastfeeding only",
+    "partial": "Breast and formula or solids",
+    "babyAge": "Baby's age"
+  },
+  "sensory": {
+    "title": "What feels comfortable for {{name}}?",
+    "helper": "Every child experiences food differently. Tell us what feels comfortable for {{name}}.",
+    "diagnosis": "Diagnosis",
+    "diagnoses": {
+      "diagnosed": "Diagnosed",
+      "assessment_pending": "Waiting for assessment",
+      "suspected": "We think so"
+    },
+    "likes": "Textures {{name}} enjoys",
+    "avoids": "Textures {{name}} avoids",
+    "textures": {
+      "smooth": "Smooth",
+      "soft": "Soft",
+      "crunchy": "Crunchy",
+      "chewy": "Chewy",
+      "crispy": "Crispy",
+      "mixed": "Mixed",
+      "lumpy": "Lumpy",
+      "wet": "Wet",
+      "dry": "Dry"
+    },
+    "colours": "Colours that are hard",
+    "coloursHint": "Each colour has a label; pick any that put {{name}} off.",
+    "colourNames": {
+      "green": "Green",
+      "red": "Red",
+      "orange": "Orange",
+      "white": "White",
+      "brown": "Brown",
+      "mixed": "Mixed colours"
+    },
+    "presentation": "How food is served",
+    "presentationFlags": {
+      "separate_foods": "Foods kept separate",
+      "same_plate": "Always the same plate",
+      "divided_plate": "Divided plate",
+      "sauce_on_side": "Sauce on the side",
+      "specific_utensils": "Specific cup or spoon"
+    },
+    "cutShapes": "Preferred shapes",
+    "shapes": {
+      "strips": "Strips",
+      "circles": "Rounds",
+      "squares": "Cubes",
+      "triangles": "Triangles",
+      "whole": "Whole"
+    },
+    "temperature": "Temperature",
+    "temperatures": {
+      "hot": "Hot",
+      "warm": "Warm",
+      "room": "Room temperature",
+      "cold": "Cold"
+    },
+    "brand": "Prefers the same brand or packaging"
+  },
+  "picky": {
+    "title": "Safe foods for {{name}}",
+    "helper": "Safe foods are foods your child eats without stress. We'll include one at every meal.",
+    "safeFoods": "Foods {{name}} reliably eats",
+    "fewSafeFoods": "That's okay. We'll start from whatever {{name}} eats today.",
+    "hardFoods": "Foods that are hard right now",
+    "mealtimes": "How are mealtimes lately?",
+    "mealtimeOptions": {
+      "calm": "Mostly calm",
+      "sometimes_hard": "Sometimes hard",
+      "often_stressful": "Often stressful"
+    },
+    "growthConcern": "Has a doctor mentioned concerns about growth?"
+  },
+  "adhd": {
+    "title": "ADHD routine for {{name}}",
+    "helper": "Some ADHD medicines lower appetite midday. We can plan a bigger breakfast and an evening snack.",
+    "stimulant": "Does {{name}} take a stimulant medicine?",
+    "stimulantOptions": {
+      "yes": "Yes",
+      "no": "No",
+      "not_sure": "Not sure"
+    },
+    "medicationName": "Medicine name",
+    "doseTime": "Usual dose time",
+    "doseTimeHelper": "24-hour time, for example 07:30.",
+    "doseTimeError": "Please enter a time like 07:30.",
+    "lowLunch": "Appetite is lower at lunch",
+    "snacks": "Needs snacks on a schedule"
+  },
+  "goals": {
+    "title": "What would help {{name}} most right now?",
+    "helper": "Pick up to three, and mark the most important one.",
+    "childHeader": "For children, our goal is always healthy growth.",
+    "childWeightNote": "If a doctor has advised weight gain, add it in Health notes and we'll support it with more energy-dense meals.",
+    "eatingConcernNote": "We've kept weight goals off {{name}}'s options so the plan stays gentle.",
+    "primary": "Most important",
+    "targetWeight": "Target weight (optional)",
+    "targetHelper": "A steady pace is up to about half a kilo a week.",
+    "targetDate": "By when? (optional)",
+    "bmiFloor": "This target is below a healthy weight for {{name}}'s height. Please choose a higher target.",
+    "tooFast": "That pace is faster than we'd recommend. A later date would be gentler.",
+    "types": {
+      "weight_loss": {
+        "title": "Lose weight gradually",
+        "description": "A steady pace within the family's meals."
+      },
+      "weight_gain": {
+        "title": "Gain weight",
+        "description": "More energy-dense meals and snacks."
+      },
+      "maintain": {
+        "title": "Stay healthy and balanced",
+        "description": "Balanced plates in thirds."
+      },
+      "child_growth": {
+        "title": "Healthy growth",
+        "description": "Regular meals and growing along their curve."
+      },
+      "energy": {
+        "title": "More energy",
+        "description": "Steady meals through the day."
+      },
+      "digestive_health": {
+        "title": "Comfortable digestion",
+        "description": "Fibre, water and regular meals."
+      },
+      "pregnancy_support": {
+        "title": "A healthy pregnancy",
+        "description": "Nourishment for both, no calorie cutting."
+      },
+      "breastfeeding_support": {
+        "title": "Support breastfeeding",
+        "description": "Enough food and water for feeding."
+      },
+      "blood_sugar": {
+        "title": "Steadier blood sugar",
+        "description": "Balanced carbohydrates and fibre."
+      },
+      "heart_health": {
+        "title": "Heart health",
+        "description": "Less salt, more vegetables and whole grains."
+      }
+    }
+  },
+  "review": {
+    "title": "Let's check everything",
+    "helper": "You can edit anyone's answers before we put your plan together.",
+    "submit": "See our assessment",
+    "skipped": "Finish later: we'll use sensible defaults for now",
+    "edit": "Edit",
+    "redFlagTitle": "Some answers need a doctor first",
+    "redFlagBody": "For {{names}}, we'll leave out anything risky (such as fasting or weight goals) and suggest speaking with a doctor. Everyone else's plan goes ahead as usual."
+  },
+  "redFlags": {
+    "insulin_or_sulfonylurea_fasting": "Fasting with these medicines needs a doctor's plan.",
+    "eating_disorder_signals": "Concerns about eating: we'll keep the plan gentle.",
+    "rapid_child_weight_loss": "Weight loss in a child is worth checking with a doctor.",
+    "dehydration_signs": "Fainting or dark urine while fasting needs a doctor's advice.",
+    "pregnancy_complication": "Vomiting that stops fluids needs care today.",
+    "severe_allergy_reaction": "Severe allergy: strict exclusion in every meal.",
+    "faltering_growth": "Growth is worth checking with a doctor.",
+    "feeding_gagging": "Gagging on most textures is worth discussing with a feeding specialist."
+  },
+  "riskFlags": {
+    "eating_disorder_signals": "{{name}}'s answers suggest worries about eating. We've kept the plan gentle with no weight goals; a doctor can help.",
+    "ed_signals": "{{name}}'s answers suggest worries about eating. We've kept the plan gentle with no weight goals; a doctor can help.",
+    "rapid_child_weight_loss": "{{name}} has lost weight. Please check with a doctor; meanwhile we'll offer regular, filling meals.",
+    "faltering_growth": "{{name}}'s growth is worth checking with a doctor.",
+    "dehydration_signs": "Fainting or dark urine while fasting are signs of dehydration. Please speak with a doctor before {{name}} fasts again.",
+    "pregnancy_complication": "Vomiting that stops fluids needs medical care today.",
+    "severe_allergy_reaction": "{{name}} has a severe allergy. We'll strictly exclude it; always check labels.",
+    "insulin_or_sulfonylurea_fasting": "{{name}}'s medicines make fasting risky. We won't plan fasts until a doctor has advised.",
+    "other": "Something in {{name}}'s answers is worth checking with a doctor."
+  },
+  "assessment": {
+    "title": "Here's what we understood about your family",
+    "loading": "Understanding your family…",
+    "loadingBody": "This usually takes a few seconds. Your answers are saved.",
+    "errorCode": "Code: {{code}}",
+    "recommendations": "Key guidance for your family",
+    "disclaimer": "Thuluth offers general nutrition education, not medical advice. Please speak to your doctor about health conditions.",
+    "continue": "Continue",
+    "notRight": "Something's not right",
+    "energyRange": "Around {{low}} to {{high}} kcal a day.",
+    "tdee": "Daily energy use (TDEE): {{kcal}} kcal",
+    "macros": "Protein {{protein}} g · Carbohydrate {{carbs}} g · Fat {{fat}} g · Fibre {{fiber}} g",
+    "waterGlasses_one": "Water: about {{count}} glass ({{litres}} L), mostly before and after meals.",
+    "waterGlasses_other": "Water: about {{count}} glasses ({{litres}} L), mostly before and after meals.",
+    "waterCups_one": "Water: about {{count}} cup ({{litres}} L).",
+    "waterCups_other": "Water: about {{count}} cups ({{litres}} L).",
+    "childGoal": "Growing well is the goal.",
+    "childPortions": "Child-sized portions, and seconds are always fine if they are still hungry.",
+    "forParents": "For parents",
+    "clinician": {
+      "title": "Talk to a doctor first",
+      "planNote": "We'll leave out anything risky for {{name}} until then.",
+      "recommend": {
+        "see_gp": "Suggested: your family doctor",
+        "see_pediatrician": "Suggested: a paediatrician",
+        "see_dietitian": "Suggested: a dietitian",
+        "urgent_care": "Please get medical help today",
+        "emergency": "Please call emergency services now"
+      }
+    }
+  }
+}
