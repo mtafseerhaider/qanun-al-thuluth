@@ -465,3 +465,136 @@ Deno.test('replace_active: no restore when another plan became active meanwhile'
   assertEquals(state.plans.get(active.id)?.status, 'archived');
   assertEquals(state.plans.get(other.id)?.status, 'active');
 });
+
+// ---- Sprint 4: plan_ready / plan_failed notifications and the generation sweeper ------------------
+
+const minutesAgo = (min: number) => new Date(NOW.getTime() - min * 60_000).toISOString();
+
+Deno.test(
+  'plan_ready: a finished generation notifies the requester, lock-screen safe',
+  async () => {
+    const { handler, bg, state } = setup();
+    const res = await handler(post({}));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    await bg.drain();
+    assertEquals(state.plans.get(meal_plan_id)?.status, 'draft');
+    assertEquals(state.notifications.length, 1);
+    const n = state.notifications[0]!;
+    assertEquals(n.kind, 'plan_ready');
+    assertEquals(n.user_id, OWNER);
+    assertEquals(n.household_id, HH);
+    assertEquals(n.dedupe_key, `plan_ready:${meal_plan_id}`);
+    assertEquals(n.title, 'Your meal plan is ready');
+    assertEquals(n.data.route, `thuluth://plan/${meal_plan_id}`);
+    assertEquals(n.scheduled_for, NOW.toISOString());
+  },
+);
+
+Deno.test(
+  'plan_failed: a failed generation notifies without naming the member or the reason',
+  async () => {
+    const { handler, bg, state } = setup({ members: withUnresolvedAllergy });
+    const res = await handler(post({}));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    await bg.drain();
+    assertEquals(state.plans.get(meal_plan_id)?.status, 'failed');
+    assertEquals(
+      state.notifications.map((n) => n.kind),
+      ['plan_failed'],
+    );
+    const n = state.notifications[0]!;
+    const text = `${n.title} ${n.body}`.toLowerCase();
+    assert(!text.includes('ibrahim') && !text.includes('allerg'), text);
+    assertEquals(n.data.route, `thuluth://plan/${meal_plan_id}`);
+  },
+);
+
+Deno.test(
+  'sweeper: a plan stalled mid-generation for 15 minutes is re-queued and finished',
+  async () => {
+    const { handler, state } = setup();
+    const res = await handler(post({}));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    const plan = state.plans.get(meal_plan_id)!;
+    // The worker claimed it, then died.
+    plan.generation_progress = { ...plan.generation_progress, phase: 'generating', attempt: 1 };
+    plan.updated_at = minutesAgo(20);
+    state.enqueued.length = 0;
+    const run = await handler(worker({}));
+    assertEquals(await run.json(), { processed: 0, rescheduled: true });
+    assertEquals(plan.status, 'draft', 'without pgmq the sweeper runs one plan inline');
+    assertEquals(plan.generation_progress.attempt, 2);
+    // The re-queued message is then read in the same run, finds the plan done, and is acked.
+    assertEquals(state.enqueued, []);
+    assertEquals(state.acked, [1]);
+    assertEquals(
+      state.notifications.map((n) => n.kind),
+      ['plan_ready'],
+    );
+  },
+);
+
+Deno.test(
+  'sweeper: after 3 attempts a stalled plan fails with AI_UNAVAILABLE and restores the replaced plan',
+  async () => {
+    const active = activePlan('00000000-0000-4000-e000-00000000000e');
+    const { handler, state } = setup({ premium: false, plans: [active] });
+    const res = await handler(post({ replace_active: true }));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    assertEquals(state.plans.get(active.id)?.status, 'archived');
+    const plan = state.plans.get(meal_plan_id)!;
+    plan.generation_progress = { ...plan.generation_progress, phase: 'validating', attempt: 3 };
+    plan.updated_at = minutesAgo(16);
+    state.enqueued.length = 0;
+    const run = await handler(worker({}));
+    assertEquals(await run.json(), { processed: 0, rescheduled: false });
+    assertEquals(plan.status, 'failed');
+    assertEquals(plan.generation_progress.error_code, 'AI_UNAVAILABLE');
+    assertEquals(state.plans.get(active.id)?.status, 'active');
+    assertEquals(
+      state.notifications.map((n) => n.kind),
+      ['plan_failed'],
+    );
+  },
+);
+
+Deno.test(
+  'worker: a message read more than 3 times fails its plan (04 §5.3) and is acked',
+  async () => {
+    const { handler, state } = setup();
+    const res = await handler(post({}));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    state.readCt.set(meal_plan_id, 4);
+    const run = await handler(worker({}));
+    assertEquals(await run.json(), { processed: 0, rescheduled: false });
+    const plan = state.plans.get(meal_plan_id)!;
+    assertEquals(plan.status, 'failed');
+    assertEquals(plan.generation_progress.error_code, 'AI_UNAVAILABLE');
+    assertEquals((plan.generation_progress.detail as { read_ct: number }).read_ct, 4);
+    assertEquals(state.acked, [1]);
+  },
+);
+
+Deno.test(
+  'worker: a redelivered message resumes a dead run, but waits while the plan is still moving',
+  async () => {
+    const { handler, state } = setup();
+    const res = await handler(post({}));
+    const { meal_plan_id } = (await res.json()) as { meal_plan_id: string };
+    const plan = state.plans.get(meal_plan_id)!;
+    plan.generation_progress = { ...plan.generation_progress, phase: 'generating', attempt: 1 };
+    plan.updated_at = minutesAgo(1);
+    state.readCt.set(meal_plan_id, 2);
+    const busy = await handler(worker({}));
+    assertEquals(await busy.json(), { processed: 0, rescheduled: true });
+    assertEquals(plan.status, 'generating');
+    assertEquals(state.acked, [], 'left for redelivery');
+
+    state.enqueued.push(meal_plan_id);
+    plan.updated_at = minutesAgo(6);
+    const resumed = await handler(worker({}));
+    assertEquals(await resumed.json(), { processed: 1, rescheduled: false });
+    assertEquals(plan.status, 'draft');
+    assertEquals(state.acked, [1]);
+  },
+);

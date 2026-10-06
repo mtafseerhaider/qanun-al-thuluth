@@ -126,3 +126,9 @@ verify_jwt = true           # S2-09 intake assessment (06 section 4.2)
 verify_jwt = false          # dual mode (10 section 9.1): user JWT verified in code; /worker needs x-internal-secret
 [functions.ai-adjust-plan]
 verify_jwt = true           # S3-14 plan adjustment (06 section 4.4)
+[functions.grocery-generate]
+verify_jwt = true           # S4-04 grocery list from a plan (06 section 4.7)
+[functions.prices-refresh]
+verify_jwt = false          # S4-06 cron (pg_cron 00:15); x-internal-secret checked in code
+[functions.notifications-dispatch]
+verify_jwt = false          # S4-13 cron every minute; x-internal-secret checked in code

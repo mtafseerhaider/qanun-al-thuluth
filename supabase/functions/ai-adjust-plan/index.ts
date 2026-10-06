@@ -1,5 +1,6 @@
 import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
+import { supabaseGroceryCatalog } from '../_shared/grocery/store.ts';
 import { supabasePlanStore } from '../_shared/plan/store.ts';
 import { createAdjustPlanHandler } from './handler.ts';
 
@@ -26,5 +27,6 @@ Deno.serve(
       if (error) throw error;
     },
     kick: background,
+    grocery: supabaseGroceryCatalog(admin),
   }),
 );
