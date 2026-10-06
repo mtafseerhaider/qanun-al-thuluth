@@ -3,6 +3,7 @@ import type { ConsentKind } from '@thuluth/shared/domain/consent.ts';
 import type { HouseholdRole } from '@thuluth/shared';
 
 import { fromPostgrestError } from '../_shared/errors.ts';
+import type { PgErrorLike } from '../_shared/errors.ts';
 
 /** Intake data for one member, read with the column names of 05 §6.5 and §8 (S2-02 migration). */
 export interface MemberContext {
@@ -127,7 +128,7 @@ export interface IntakeStore {
   }): Promise<void>;
 }
 
-function check<T>(result: { data: T; error: { code?: string; message?: string } | null }): T {
+function check<T>(result: { data: T; error: PgErrorLike | null }): T {
   if (result.error) throw fromPostgrestError(result.error);
   return result.data;
 }
