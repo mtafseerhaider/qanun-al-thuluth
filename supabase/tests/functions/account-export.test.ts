@@ -7,6 +7,7 @@ import {
 } from '../../functions/account-export/handler.ts';
 import type { AccountExportDeps } from '../../functions/account-export/handler.ts';
 import type { AccountExportStore } from '../../functions/account-export/store.ts';
+import type { AccountEmail } from '../../functions/_shared/integrations/account-emails.ts';
 import type { NotificationRow } from '../../functions/_shared/notifications/templates.ts';
 import type { StorageAdmin } from '../../functions/_shared/storage.ts';
 import { crc32, unzip, zip } from '../../functions/_shared/zip.ts';
@@ -25,6 +26,7 @@ function setup(o: { pdfs?: AccountExportDeps['pdfs']; photoBytes?: number } = {}
     jobs: [] as Promise<unknown>[],
     jwtSeen: [] as string[],
     audits: 0,
+    emails: [] as AccountEmail[],
   };
   const store: AccountExportStore = {
     consumeRateLimit: async () => ({ allowed: true, remaining: 1, reset_at: 'x' }),
@@ -56,6 +58,7 @@ function setup(o: { pdfs?: AccountExportDeps['pdfs']; photoBytes?: number } = {}
       state.notifications.push(row);
     },
     userLocale: async () => 'ur',
+    contact: async () => ({ email: 'u@example.com', locale: 'ur', timezone: 'Asia/Karachi' }),
     audit: async () => {
       state.audits++;
     },
@@ -79,6 +82,10 @@ function setup(o: { pdfs?: AccountExportDeps['pdfs']; photoBytes?: number } = {}
     pdfs: o.pdfs ?? null,
     kick: (run) => {
       state.jobs.push(run());
+    },
+    email: async (e) => {
+      state.emails.push(e);
+      return { sent: true };
     },
     now: () => NOW,
   });
@@ -131,6 +138,16 @@ Deno.test(
     assert(state.jwtSeen.every((j) => j === '30'));
     assertEquals(state.notifications[0]!.kind, 'export_ready');
     assertEquals(state.audits, 1);
+    // "Your data is ready" email in the user's locale, with the expiry and no link (06 §4.12).
+    assertEquals(state.emails, [
+      {
+        kind: 'export_ready',
+        to: 'u@example.com',
+        locale: 'ur',
+        timezone: 'Asia/Karachi',
+        at: '2026-10-07T08:00:00.000Z',
+      },
+    ]);
   },
 );
 
@@ -157,7 +174,26 @@ Deno.test(
 Deno.test("account-export: needs a recent sign-in and only the caller's households", async () => {
   const { handler } = setup();
   const stale = await call(handler, {}, 400);
-  assertEquals((await stale.json()).error.details.reauth, true);
+  const staleBody = await stale.json();
+  assertEquals(stale.status, 401);
+  assertEquals(staleBody.error.code, 'UNAUTHENTICATED'); // older clients: no capability header
+  assertEquals(staleBody.error.details.reauth, true);
+  const capable = await handler(
+    new Request('http://localhost/account-export', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer 400',
+        'idempotency-key': crypto.randomUUID(),
+        'x-thuluth-client-caps': 'other, reauth_required',
+      },
+      body: '{}',
+    }),
+  );
+  const capableBody = await capable.json();
+  assertEquals(capable.status, 401);
+  assertEquals(capableBody.error.code, 'REAUTH_REQUIRED');
+  assertEquals(capableBody.error.details.reauth, true);
   const foreign = await call(handler, { household_ids: [OTHER_HH] });
   assertEquals((await foreign.json()).error.code, 'NOT_FOUND');
 });

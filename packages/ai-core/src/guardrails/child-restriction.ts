@@ -42,6 +42,37 @@ const RESTRICTION_PATTERNS: readonly Pattern[] = [
   { code: 'stop_point', re: /\b(70|80) ?(percent|%) full\b/i },
   // Urdu (Nastaliq) and roman Urdu.
   { code: 'weight_loss', re: /(وزن\s*کم|پتلا\s*کر|wazan\s*kam|patla\s*kar)/iu },
+  // Roman Urdu (S7-10 red team): "1000 kalori", "diet par rakhein", "roti kam karein".
+  {
+    code: 'kcal_number',
+    re: /\d[\d,.]*\s*(kalori|kelori|calori|kailori)\w*/i,
+    ignoreNegation: true,
+  },
+  {
+    code: 'calorie_target',
+    re: /\b(calorie|calories|kalori|calori)\s*(ka|ki|ke)?\s*(target|had|hadd|limit|ginti)\b/i,
+  },
+  {
+    code: 'diet',
+    re: /\b(diet (par|pe|pr|py) (rakh|daal|dal|laga|shuru)\w*|diet chart|dieting (karwa|karao|karayen)\w*|parhez(i)? khana)\b/i,
+  },
+  {
+    code: 'weight_loss',
+    re: /\b(wazan (ghata|kam ka?r|kam ho)\w*|(dubla|dubli|patla|patli|smart) (kar|karna|karo|karein|karen|karwa)\w*|motapa (kam|khatam) (kar|karna|karo|karein)\w*)\b/i,
+  },
+  {
+    code: 'eat_less',
+    re: /\b(kam khana|khana kam|kam khila\w*|kam khilay\w*|kam kha(o|ye|aye|ein|en|na)|(roti|chawal|chaawal|khana|portion|hissa) (kam|chhota|chota|aadha|adha) (kar|kardo|kar do|karein|karen|karo|dein|den)\w*|aadhi roti|adhi roti|ek hi roti)\b/i,
+  },
+  {
+    code: 'skip_meals',
+    re: /\b(nashta|nashtay|khana|dinner|lunch|raat ka khana) (skip|chhor|chor|chhurwa|band)\w*/i,
+  },
+  {
+    code: 'no_seconds',
+    re: /\b(dobara|dubara|doosri (baar|dafa)|dusri (baar|dafa)) (na|mat|nahi|nahin) (dein|do|den|dena)\b/i,
+    ignoreNegation: true,
+  },
   { code: 'diet', re: /(ڈائٹ|ڈائیٹ|پرہیزی\s*کھانا)/iu },
   {
     code: 'eat_less',
@@ -98,10 +129,10 @@ export function validateMinorAssessment(
 }
 
 const CHILD_REF =
-  /\b(son|daughter|child|children|kid|kids|boy|girl|toddler|baby|teen|teenager|\d{1,2}[- ]?(year|yr)s?[- ]?old|\d{1,2} ?(y\/o|yo)|grade \d|class \d|beta|beti|bacha|bachay|bachi|bachon|munna|munni)\b|(بیٹا|بیٹے|بیٹی|بچہ|بچے|بچی|بچوں|سالہ|سال کا|سال کی)/iu;
+  /\b(son|daughter|child|children|kid|kids|boy|girl|toddler|baby|teen|teenager|\d{1,2}[- ]?(year|yr)s?[- ]?old|\d{1,2} ?(y\/o|yo)|grade \d|class \d|beta|bete|betay|beti|bacha|bachay|bachi|bachon|bachche|bachchay|bachchi|baccha|bacche|bacchi|munna|munni|larka|larki|ladka|ladki|\d{1,2} ?(saal|sal|baras) (ka|ki|ke))\b|(بیٹا|بیٹے|بیٹی|بچہ|بچے|بچی|بچوں|سالہ|سال کا|سال کی)/iu;
 
 const WEIGHT_REQUEST =
-  /\b(lose weight|weight loss|lose some weight|lose \d+(\.\d+)? ?(kg|kgs|kilos?|pounds|lbs)|slim\w*|thin|thinner|heavy|deficit|portions?|reduce|cut for|weigh-?in|make weight|diet|calorie|calories|kcal|eat less|cut (his|her|their|down|back)|smaller portions?|fat|chubby|overweight|obese|too heavy|fewer meals|skip|reduce (his|her|their)|portion size|stop eating|less rice|less roti|70 ?percent|80 ?percent|fast(ing)? to lose|wazan|patla|mota|moti)\b|(وزن|ڈائٹ|کیلوری|موٹا|موٹی|پتلا|کم کھا|کم کھلا)/iu;
+  /\b(lose weight|weight loss|lose some weight|lose \d+(\.\d+)? ?(kg|kgs|kilos?|pounds|lbs)|slim\w*|thin|thinner|heavy|deficit|portions?|reduce|cut for|weigh-?in|make weight|diet|calorie|calories|kcal|eat less|cut (his|her|their|down|back)|smaller portions?|fat|chubby|overweight|obese|too heavy|fewer meals|skip|reduce (his|her|their)|portion size|stop eating|less rice|less roti|70 ?percent|80 ?percent|fast(ing)? to lose|wazan|patla|mota|moti|motapa|dubla|dubli|kalori|calori|kam khila\w*|khana kam|kam khana)\b|(وزن|ڈائٹ|کیلوری|موٹا|موٹی|پتلا|کم کھا|کم کھلا)/iu;
 
 /**
  * Input classifier rule: the user asks to restrict a child's food, calories or weight (12 §13.2

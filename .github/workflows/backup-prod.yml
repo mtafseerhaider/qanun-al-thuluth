@@ -1,0 +1,70 @@
+name: Nightly offsite backup (prod)
+
+# S7-06 / 19 section 10.2 layer 2: logical dump of thuluth-prod, encrypted with age to the owner's
+# offline key, uploaded to a versioned, retention-locked GCS bucket (europe-west3) through workload
+# identity federation (no long-lived keys). Skips with a notice until the `production-backup`
+# environment is configured (docs/ops/backups-and-pitr.md), so the schedule stays green before launch.
+# SUPABASE_DB_URL here must be a READ-ONLY backup role, not the postgres password.
+
+on:
+  schedule:
+    - cron: '0 23 * * *' # 04:00 PKT, lowest traffic
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: backup-production
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production-backup
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+      GCP_BACKUP_SA: ${{ vars.GCP_BACKUP_SA }}
+      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET }}
+      BACKUP_AGE_PUBLIC_KEY: ${{ vars.BACKUP_AGE_PUBLIC_KEY }}
+    steps:
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$GCP_WIF_PROVIDER" ] || [ -z "$BACKUP_BUCKET" ] || [ -z "$BACKUP_AGE_PUBLIC_KEY" ]; then
+            echo "::notice::production-backup not configured yet; skipping (docs/ops/backups-and-pitr.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ready == 'true'
+      - uses: supabase/setup-cli@v1
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          version: 2.48.3
+      - uses: google-github-actions/auth@v2
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_BACKUP_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.cfg.outputs.ready == 'true'
+      - name: Dump, encrypt, upload
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null
+          STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          umask 077
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f roles.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f data.sql
+          tar czf "thuluth-prod-$STAMP.tgz" roles.sql schema.sql data.sql
+          age -r "$BACKUP_AGE_PUBLIC_KEY" -o "thuluth-prod-$STAMP.tgz.age" "thuluth-prod-$STAMP.tgz"
+          rm -f roles.sql schema.sql data.sql "thuluth-prod-$STAMP.tgz"
+          gcloud storage cp "thuluth-prod-$STAMP.tgz.age" "gs://$BACKUP_BUCKET/db/"
+          echo "### Backup thuluth-prod-$STAMP.tgz.age uploaded ($(stat -c %s "thuluth-prod-$STAMP.tgz.age") bytes)" >> "$GITHUB_STEP_SUMMARY"
+          rm -f "thuluth-prod-$STAMP.tgz.age"

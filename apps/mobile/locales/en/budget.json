@@ -70,7 +70,8 @@
     "title": "Spending",
     "empty": "Nothing recorded this month.",
     "fromGrocery": "from a shopping trip",
-    "delete": "Remove this entry"
+    "delete": "Remove this entry",
+    "deleteA11y": "Delete {{category}} entry, {{amount}}, {{date}}"
   },
   "footer": "Figures are what you recorded. Estimates on lists use local prices."
 }

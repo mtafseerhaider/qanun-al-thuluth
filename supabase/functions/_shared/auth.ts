@@ -1,3 +1,5 @@
+import { CLIENT_CAPS_HEADER, REAUTH_CLIENT_CAP } from '@thuluth/shared/contracts/errors.ts';
+
 import { HttpError } from './errors.ts';
 
 /** JWT `amr` entries: how and when the session was authenticated (11 §15.2). */
@@ -30,22 +32,35 @@ export async function requireUser(req: Request, verify: ClaimsVerifier): Promise
   };
 }
 
+/** True when the request lists `cap` in `x-thuluth-client-caps` (comma separated, case-insensitive). */
+export function clientHasCap(req: Request | undefined, cap: string): boolean {
+  const raw = req?.headers.get(CLIENT_CAPS_HEADER) ?? '';
+  return raw
+    .split(',')
+    .map((c) => c.trim().toLowerCase())
+    .includes(cap);
+}
+
 /**
  * Step-up re-auth for sensitive actions (11 §15): the newest `amr` timestamp must be at most
  * `maxAgeSec` old. Token refresh keeps `amr`, a fresh OTP or Apple/Google sign-in renews it.
- * Throws UNAUTHENTICATED with `details.reauth = true` (06 §4.12).
+ * Throws `REAUTH_REQUIRED` (401) for clients that send `x-thuluth-client-caps: reauth_required`
+ * (S7), otherwise UNAUTHENTICATED; both carry `details.reauth = true` (06 §4.12), so older app
+ * builds keep working. Pass `req` to enable the new code.
  */
 export function assertRecentAuth(
   auth: AuthContext,
   maxAgeSec: number,
   now: Date = new Date(),
+  req?: Request,
 ): void {
   const latest = Math.max(0, ...(auth.amr ?? []).map((a) => Number(a.timestamp) || 0));
   if (now.getTime() / 1000 - latest > maxAgeSec) {
-    throw new HttpError('UNAUTHENTICATED', 'Please confirm it is you to continue.', {
-      reauth: true,
-      max_age_seconds: maxAgeSec,
-    });
+    throw new HttpError(
+      clientHasCap(req, REAUTH_CLIENT_CAP) ? 'REAUTH_REQUIRED' : 'UNAUTHENTICATED',
+      'Please confirm it is you to continue.',
+      { reauth: true, max_age_seconds: maxAgeSec },
+    );
   }
 }
 

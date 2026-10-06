@@ -142,7 +142,7 @@ export function TodayBudgetLine({
         track('dashboard_section_tapped', { section: 'budget' });
         onOpen();
       }}
-      className="gap-1"
+      className="min-h-touch justify-center gap-1"
       testID="today.budget"
     >
       <Text variant="caption" tone="muted">

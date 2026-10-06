@@ -12,6 +12,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InlineMessage } from '@/components/ui/inline-message';
+import { LoadingRow } from '@/components/ui/query-states';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
@@ -78,9 +79,12 @@ export function MealDetailScreen() {
               onPress={() => void query.refetch()}
             />
           </View>
+        ) : query.isLoading ? (
+          <LoadingRow label={t('meals:loading')} testID="meal-detail.loading" />
         ) : (
-          <Card variant="filled" testID="meal-detail.loading">
-            <Text tone="muted">{t('meals:loading')}</Text>
+          // 24 S7-09: a meal removed by a plan change or swap used to show "Loading" forever.
+          <Card variant="filled" testID="meal-detail.unavailable">
+            <Text tone="muted">{t('meals:unavailable')}</Text>
           </Card>
         )}
       </Screen>

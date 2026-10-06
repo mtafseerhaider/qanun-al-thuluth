@@ -100,7 +100,9 @@
     "renameLabel": "Conversation name",
     "save": "Save",
     "search": "Search conversations",
-    "title": "Conversations"
+    "title": "Conversations",
+    "renameA11y": "Rename chat: {{title}}",
+    "deleteA11y": "Delete chat: {{title}}"
   },
   "stopped": "Stopped.",
   "thinking": "Thinking…",

@@ -38,6 +38,8 @@ jobs:
         run: deno check */index.ts
       - name: Test functions
         run: deno test --config supabase/functions/deno.json --allow-env supabase/tests/functions
+      - name: Analytics catalog seed is current
+        run: deno run --config supabase/functions/deno.json --allow-read tooling/scripts/gen-analytics-catalog.ts --check
 
   database:
     name: Migrations + pgTAP
@@ -50,13 +52,20 @@ jobs:
       - run: bash tooling/scripts/db-test.sh
 
   ai-evals:
-    name: AI eval smoke (fake provider)
+    name: AI safety release gate (fake provider)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # smoke + guardrail suites (child-restriction, fiqh, red-flags, urdu); 100 percent required
-      - run: pnpm --filter @thuluth/ai-core evals --suite all
+      # S7-10: every suite incl. the red team at 100 percent, plus zero child-restriction violations
+      # and zero ungrounded religious citations across all replies (docs/ai/s7-safety-gate.md).
+      - run: pnpm --filter @thuluth/ai-core evals --suite release --summary ai-eval-summary.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-eval-summary
+          path: packages/ai-core/ai-eval-summary.json
+          if-no-files-found: ignore
 
   secrets:
     name: Secret scan

@@ -79,6 +79,10 @@ export interface AccountExportStore extends Pick<
   ): Promise<Record<string, unknown>[] | null>;
   notify(row: NotificationRow): Promise<void>;
   userLocale(userId: string): Promise<string | null>;
+  /** Address, locale and zone for the "data ready" email; null when the user has no email. */
+  contact(
+    userId: string,
+  ): Promise<{ email: string; locale: string | null; timezone: string | null } | null>;
   audit(userId: string, exportId: string, diff: Record<string, unknown>): Promise<void>;
 }
 
@@ -160,6 +164,12 @@ export function supabaseAccountExportStore(admin: SupabaseClient): AccountExport
         locale: string | null;
       } | null;
       return r?.locale ?? null;
+    },
+    async contact(userId) {
+      const r = check(
+        await admin.from('users').select('email, locale, timezone').eq('id', userId).maybeSingle(),
+      ) as { email: string | null; locale: string | null; timezone: string | null } | null;
+      return r?.email ? { email: r.email, locale: r.locale, timezone: r.timezone } : null;
     },
     async audit(userId, exportId, diff) {
       check(

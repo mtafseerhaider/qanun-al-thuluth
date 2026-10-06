@@ -16,7 +16,7 @@ import { sha256Hex } from '../_shared/crypto.ts';
 import { consumeTierQuota, requirePremium, resolveEntitlement } from '../_shared/entitlements.ts';
 import type { EntitlementStore } from '../_shared/entitlements.ts';
 import { errorResponse, HttpError } from '../_shared/errors.ts';
-import { jsonHandler } from '../_shared/http.ts';
+import { jsonHandler, requestIdOf } from '../_shared/http.ts';
 import { notificationRow, routeFor } from '../_shared/notifications/templates.ts';
 import { countPdfPages, RendererError } from './renderer.ts';
 import type { PdfRenderer } from './renderer.ts';
@@ -333,7 +333,7 @@ export function createExportPdfHandler(deps: ExportPdfDeps) {
   }
 
   async function get(req: Request): Promise<Response> {
-    const requestId = req.headers.get('x-request-id') ?? crypto.randomUUID();
+    const requestId = requestIdOf(req);
     try {
       const user = await requireUser(req, deps.verify);
       const id = new URL(req.url).searchParams.get('export_id') ?? '';

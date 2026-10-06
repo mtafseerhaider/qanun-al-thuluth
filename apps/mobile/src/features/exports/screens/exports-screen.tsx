@@ -1,20 +1,23 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { AccessibilityInfo, View } from 'react-native';
 
 import { EXPORT_PDF_MVP_KINDS, type ExportPdfMvpKind } from '@shared/contracts';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InlineMessage } from '@/components/ui/inline-message';
+import { ErrorRetry, LoadingRow } from '@/components/ui/query-states';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { UpsellCard, usePremium } from '@/features/subscription';
+import { changedInto } from '@/hooks/use-announce';
 import { errorKeyFor } from '@/lib/supabase/error-mapping';
 import type { MoreScreenProps } from '@/navigation/types';
 import { useActiveHouseholdStore } from '@/stores/use-active-household-store';
 
 import { useExports, useShareExport } from '../hooks/use-exports';
-import { displayStatus, exportProblem } from '../utils/export-rules';
+import { displayStatus, exportProblem, type ExportRowStatus } from '../utils/export-rules';
 
 /**
  * Exports (02 §7.13.8, FR-EXP-01 to -04): past PDFs for the household and a button for a new one.
@@ -28,6 +31,25 @@ export function ExportsScreen({ navigation }: MoreScreenProps<'Exports'>) {
   const share = useShareExport();
   const now = Date.now();
   const problem = share.error ? exportProblem(share.error) : null;
+  const statuses = useRef<Map<string, ExportRowStatus>>(new Map());
+
+  // A11y audit gap 1 (24 S7-04): polling turns a row ready or failed while the screen is open.
+  useEffect(() => {
+    const next = new Map(
+      (list.data ?? []).map((r) => [r.id, displayStatus(r.status, r.expiresAt, Date.now())]),
+    );
+    for (const id of changedInto(statuses.current, next, ['ready', 'failed'])) {
+      const row = (list.data ?? []).find((r) => r.id === id);
+      if (!row) continue;
+      const kind = (EXPORT_PDF_MVP_KINDS as readonly string[]).includes(row.kind)
+        ? t(`kinds.${row.kind as ExportPdfMvpKind}`)
+        : row.kind;
+      AccessibilityInfo.announceForAccessibility(
+        t('announce', { kind, status: t(`status.${next.get(id) ?? 'processing'}`) }),
+      );
+    }
+    statuses.current = next;
+  }, [list.data, t]);
 
   return (
     <Screen
@@ -66,7 +88,17 @@ export function ExportsScreen({ navigation }: MoreScreenProps<'Exports'>) {
           }
         />
       ) : null}
-      {(list.data ?? []).length === 0 && !list.isLoading ? (
+      {list.isLoading ? <LoadingRow label={t('common:loading')} testID="exports.loading" /> : null}
+      {list.isError && !list.data ? (
+        <ErrorRetry
+          message={t(`errors:${errorKeyFor(list.error)}`)}
+          retryLabel={t('common:retry')}
+          onRetry={() => void list.refetch()}
+          retrying={list.isFetching}
+          testID="exports.error"
+        />
+      ) : null}
+      {(list.data ?? []).length === 0 && !list.isLoading && !list.isError ? (
         <Text tone="muted" testID="exports.empty">
           {t('empty')}
         </Text>

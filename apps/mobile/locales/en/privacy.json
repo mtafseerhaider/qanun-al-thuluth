@@ -8,7 +8,8 @@
     "inProgressTitle": "Your account is being deleted",
     "inProgressBody": "The grace period has ended and deletion has started. It can no longer be cancelled.",
     "tooLate": "Deletion has already started, so it can't be cancelled now.",
-    "cancel": "Cancel deletion"
+    "cancel": "Cancel deletion",
+    "cancelled": "Account deletion cancelled. Your account stays open."
   },
   "analytics": {
     "title": "Product analytics",

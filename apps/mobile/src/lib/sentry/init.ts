@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import * as Updates from 'expo-updates';
 
 import { scrubBreadcrumb, scrubEvent } from './scrub';
 
@@ -14,6 +15,21 @@ export function registerNavigationContainer(ref: unknown): void {
 }
 
 let enabled = false;
+
+/**
+ * Release tags for EAS Update (S7, 19 §6 rollback by channel pinning): which OTA bundle and channel
+ * an event came from. The embedded bundle reports `embedded`; a build without updates `none`.
+ */
+export function easUpdateTags(updates: {
+  updateId?: string | null;
+  channel?: string | null;
+  isEmbeddedLaunch?: boolean;
+}): { eas_update_id: string; eas_channel: string } {
+  return {
+    eas_update_id: updates.updateId ?? (updates.isEmbeddedLaunch ? 'embedded' : 'none'),
+    eas_channel: updates.channel ?? 'none',
+  };
+}
 
 export function isSentryEnabled(): boolean {
   return enabled;
@@ -42,6 +58,7 @@ export function initSentry({
     integrations: [navigationIntegration],
     beforeSend: (event) => scrubEvent(event),
     beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
+    initialScope: { tags: easUpdateTags(Updates) },
   });
   enabled = true;
 }
@@ -63,4 +80,10 @@ export { Sentry };
 export function setSentryUser(userId: string | null): void {
   if (!enabled) return;
   Sentry.setUser(userId ? { id: userId } : null);
+}
+
+/** Cold-start timings as a breadcrumb (numbers only, 24 S7-01). No-op when Sentry is disabled. */
+export function recordStartupTimings(data: Record<string, number | null>): void {
+  if (!enabled) return;
+  Sentry.addBreadcrumb({ category: 'perf.startup', level: 'info', data });
 }

@@ -266,8 +266,13 @@ export function BudgetDashboardScreen({ navigation, route }: MoreScreenProps<'Bu
               {canEdit && householdId ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={t('entries.delete')}
+                  accessibilityLabel={t('entries.deleteA11y', {
+                    category: categoryName(e.categoryId, 'other'),
+                    amount: fmt(e.amountMinor),
+                    date: e.spentOn,
+                  })}
                   hitSlop={8}
+                  className="min-h-touch min-w-11 items-center justify-center"
                   onPress={() => removeBudgetEntry(householdId, e)}
                   testID={`budget.entry-${i}.delete`}
                 >

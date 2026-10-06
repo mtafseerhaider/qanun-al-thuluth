@@ -13,6 +13,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { consumeTierQuota, requirePremium, resolveEntitlement } from '../_shared/entitlements.ts';
 import type { EntitlementStore } from '../_shared/entitlements.ts';
 import { errorResponse, HttpError } from '../_shared/errors.ts';
+import { requestIdOf } from '../_shared/http.ts';
 import type { PlatformStore } from '../_shared/platform.ts';
 
 export const SCOPE = 'ai-transcribe';
@@ -34,7 +35,7 @@ export interface TranscribeDeps {
  */
 export function createTranscribeHandler(deps: TranscribeDeps) {
   return async (req: Request): Promise<Response> => {
-    const requestId = req.headers.get('x-request-id') ?? crypto.randomUUID();
+    const requestId = requestIdOf(req);
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     try {
       if (req.method !== 'POST') throw new HttpError('NOT_FOUND', 'Not found');

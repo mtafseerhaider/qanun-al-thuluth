@@ -5,6 +5,7 @@ import { createAccountDeleteHandler } from '../../functions/account-delete/handl
 import type { AccountDeleteStore, ErasureResult } from '../../functions/account-delete/store.ts';
 import { assertRecentAuth } from '../../functions/_shared/auth.ts';
 import { fromPostgrestError, HttpError } from '../../functions/_shared/errors.ts';
+import type { AccountEmail } from '../../functions/_shared/integrations/account-emails.ts';
 import type { StorageAdmin, StoredObject } from '../../functions/_shared/storage.ts';
 
 const USER = '00000000-0000-4000-a000-000000000001';
@@ -18,8 +19,17 @@ const SECRET = 'cron-secret-for-tests';
 const NOW = new Date('2026-10-06T08:00:00Z');
 const nowSec = NOW.getTime() / 1000;
 
-function setup(o: { subscription?: boolean; blocked?: boolean; erasureFails?: boolean } = {}) {
+function setup(
+  o: {
+    subscription?: boolean;
+    blocked?: boolean;
+    erasureFails?: boolean;
+    revokeFails?: boolean;
+  } = {},
+) {
   const state = {
+    emails: [] as AccountEmail[],
+    revoked: [] as string[],
     scheduled: new Map<string, { at: string; reason: string | null }>(),
     authDeleted: [] as string[],
     erased: [] as string[],
@@ -128,6 +138,14 @@ function setup(o: { subscription?: boolean; blocked?: boolean; erasureFails?: bo
         ),
       ),
     referencedMealPhotos: async () => new Set([`${HH}/${MEMBER}/2026/09/a.jpg`]),
+    contact: async (user) =>
+      state.authDeleted.includes(user)
+        ? null
+        : { email: `${user.slice(-1)}@example.com`, locale: 'en', timezone: 'Asia/Karachi' },
+    revokeOtherSessions: async (jwt) => {
+      if (o.revokeFails) throw new Error('gotrue down');
+      state.revoked.push(jwt);
+    },
   };
   const storage: StorageAdmin = {
     listAll: async (bucket, prefix) =>
@@ -157,6 +175,10 @@ function setup(o: { subscription?: boolean; blocked?: boolean; erasureFails?: bo
       },
       async () => ({ done: false, reason: 'not_configured' }),
     ],
+    email: async (e) => {
+      state.emails.push(e);
+      return { sent: true };
+    },
     now: () => NOW,
   });
   return { handler, state };
@@ -192,6 +214,17 @@ Deno.test(
     assertEquals(body.scheduled_for, '2026-11-05T08:00:00.000Z');
     assertEquals(body.active_subscription_warning, true);
     assertEquals(state.scheduled.get(USER)?.reason, 'privacy');
+    // Other sessions are revoked with the caller's JWT ('others' scope), and the requested email goes out.
+    assertEquals(state.revoked, [`${USER}:60`]);
+    assertEquals(state.emails, [
+      {
+        kind: 'deletion_requested',
+        to: '1@example.com',
+        locale: 'en',
+        timezone: 'Asia/Karachi',
+        at: '2026-11-05T08:00:00.000Z',
+      },
+    ]);
     const again = await call(handler, { action: 'request', confirm: 'DELETE' });
     assertEquals((await again.json()).error.code, 'ACCOUNT_DELETION_PENDING');
   },
@@ -242,6 +275,10 @@ Deno.test('account-delete: cancel inside the grace period, then nothing to cance
   const res = await call(handler, { action: 'cancel' }, { jwt: `${USER}:99999` });
   assertEquals(await res.json(), { action: 'cancel', cancelled: true });
   assertEquals(state.scheduled.size, 0);
+  assertEquals(
+    state.emails.map((e) => e.kind),
+    ['deletion_requested', 'deletion_cancelled'],
+  );
   const again = await call(handler, { action: 'cancel' });
   const err = (await again.json()).error;
   assertEquals(err.code, 'CONFLICT');
@@ -260,6 +297,39 @@ Deno.test('account-delete: under-age decline erases immediately', async () => {
   assertEquals(body.scheduled_for, NOW.toISOString());
   assertEquals(state.erased, [USER]);
   assertEquals(state.authDeleted, [USER]);
+  // No grace period: no "requested" email and no revocation (the auth user is gone), only "completed".
+  assertEquals(
+    state.emails.map((e) => e.kind),
+    ['deletion_completed'],
+  );
+  assertEquals(state.revoked, []);
+});
+
+Deno.test('account-delete: revocation or email failures never fail the request', async () => {
+  const { handler, state } = setup({ revokeFails: true });
+  const res = await call(handler, { action: 'request', confirm: 'DELETE' });
+  assertEquals(res.status, 200);
+  assertEquals(state.emails.length, 1);
+});
+
+Deno.test('account-delete: REAUTH_REQUIRED for clients that declare the capability', async () => {
+  const { handler } = setup();
+  const res = await handler(
+    new Request('http://localhost/account-delete', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${USER}:301`,
+        'idempotency-key': crypto.randomUUID(),
+        'x-thuluth-client-caps': 'reauth_required',
+      },
+      body: JSON.stringify({ action: 'request', confirm: 'DELETE' }),
+    }),
+  );
+  assertEquals(res.status, 401);
+  const err = (await res.json()).error;
+  assertEquals(err.code, 'REAUTH_REQUIRED');
+  assertEquals(err.details.reauth, true);
 });
 
 Deno.test(
@@ -277,6 +347,10 @@ Deno.test(
     assertEquals(state.erased, [USER]);
     assertEquals(state.authDeleted, [USER]);
     assertEquals(state.processorCalls, [`rc:${USER}`]);
+    // The completed email uses the address read before erasure.
+    assertEquals(state.emails, [
+      { kind: 'deletion_completed', to: '1@example.com', locale: 'en', timezone: 'Asia/Karachi' },
+    ]);
     assert(!(state.objects.get('meal-photos') ?? []).some((o) => o.path.startsWith(`${HH}/`)));
     assert(state.scheduled.has(OTHER));
   },

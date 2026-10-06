@@ -1,3 +1,6 @@
 {
-  "CFBundleDisplayName": "ثُلُث"
+  "CFBundleDisplayName": "ثُلُث",
+  "NSCameraUsageDescription": "جب آپ کھانے کی تصویر لیتے ہیں تو Thuluth کیمرہ استعمال کرتا ہے تاکہ بتا سکے کہ پلیٹ میں کیا ہے۔",
+  "NSPhotoLibraryUsageDescription": "Thuluth آپ کی چنی ہوئی تصویر سے کھانا درج کرتا ہے اور بتاتا ہے کہ پلیٹ میں کیا ہے۔",
+  "NSMicrophoneUsageDescription": "جب آپ آواز سے سوال پوچھتے ہیں تو Thuluth مائیکروفون استعمال کرتا ہے۔ ریکارڈنگ کو متن میں بدلا جاتا ہے اور محفوظ نہیں رکھا جاتا۔"
 }

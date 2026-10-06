@@ -100,6 +100,7 @@ export function SourceCitationChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={t('openSourceHint')}
+      hitSlop={4}
       className="min-h-control-sm justify-center self-start rounded-full border border-primary px-3 py-1"
       {...(testID ? { testID } : {})}
     >

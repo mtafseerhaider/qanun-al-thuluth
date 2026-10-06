@@ -111,5 +111,6 @@
     "askAi": "Suggest a different meal",
     "useAi": "Use this meal",
     "aiRequest": "Swap {{title}} for a different meal that suits the whole family."
-  }
+  },
+  "unavailable": "This meal is no longer in your plan. It may have been swapped or the plan was replaced."
 }

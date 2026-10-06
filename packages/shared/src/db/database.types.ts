@@ -592,6 +592,39 @@ export type Database = {
           },
         ];
       };
+      analytics_event_catalog: {
+        Row: {
+          added_in: string | null;
+          allowed_props: string[];
+          created_at: string;
+          enabled: boolean;
+          event: string;
+          id: string;
+          owner: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          added_in?: string | null;
+          allowed_props?: string[];
+          created_at?: string;
+          enabled?: boolean;
+          event: string;
+          id?: string;
+          owner?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          added_in?: string | null;
+          allowed_props?: string[];
+          created_at?: string;
+          enabled?: boolean;
+          event?: string;
+          id?: string;
+          owner?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       analytics_events: {
         Row: {
           app_version: string | null;
@@ -5744,6 +5777,20 @@ export type Database = {
           },
         ];
       };
+      v_admin_activation_funnel_weekly: {
+        Row: {
+          activated_3d_week1: number | null;
+          cohort_week: string | null;
+          first_plan: number | null;
+          households_created: number | null;
+          households_past_week1: number | null;
+          median_minutes_to_first_plan: number | null;
+          onboarding_completed: number | null;
+          onboarding_completion_rate: number | null;
+          signups: number | null;
+        };
+        Relationships: [];
+      };
       v_admin_ai_cost_daily: {
         Row: {
           calls: number | null;
@@ -5752,6 +5799,26 @@ export type Database = {
           route_key: string | null;
           tier: string | null;
           users: number | null;
+        };
+        Relationships: [];
+      };
+      v_admin_ai_cost_per_active_user_weekly: {
+        Row: {
+          active_premium_users: number | null;
+          active_users: number | null;
+          ai_cost_usd: number | null;
+          cost_per_active_premium_user_usd: number | null;
+          cost_per_active_user_usd: number | null;
+          week: string | null;
+        };
+        Relationships: [];
+      };
+      v_admin_ai_cost_per_mau_monthly: {
+        Row: {
+          ai_cost_usd: number | null;
+          cost_per_mau_usd: number | null;
+          mau: number | null;
+          month: string | null;
         };
         Relationships: [];
       };
@@ -5775,6 +5842,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_admin_launch_kpis: {
+        Row: {
+          comparator: string | null;
+          gate: string | null;
+          metric: string | null;
+          status: string | null;
+          threshold: number | null;
+          value: number | null;
+        };
+        Relationships: [];
+      };
+      v_admin_notification_on_time_daily: {
+        Row: {
+          day: string | null;
+          due: number | null;
+          failed: number | null;
+          kind: string | null;
+          on_time: number | null;
+          on_time_rate: number | null;
+          p95_lag_seconds: number | null;
+          sent: number | null;
+        };
+        Relationships: [];
+      };
       v_admin_paywall_funnel_daily: {
         Row: {
           conversion: number | null;
@@ -5794,6 +5885,20 @@ export type Database = {
           mean_adherence: number | null;
           plans: number | null;
           week: string | null;
+        };
+        Relationships: [];
+      };
+      v_admin_plan_generation_daily: {
+        Row: {
+          ai_calls: number | null;
+          ai_error: number | null;
+          ai_fallback: number | null;
+          ai_ok: number | null;
+          day: string | null;
+          plans: number | null;
+          plans_failed: number | null;
+          plans_generating: number | null;
+          success_without_fallback_rate: number | null;
         };
         Relationships: [];
       };
@@ -5910,6 +6015,10 @@ export type Database = {
           remaining: number;
         }[];
       };
+      analytics_filter_props: {
+        Args: { p_event: string; p_props: Json };
+        Returns: Json;
+      };
       analytics_maintain_partitions: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -5990,6 +6099,10 @@ export type Database = {
         Args: { p_household_id: string };
         Returns: undefined;
       };
+      launch_kpis: {
+        Args: { p_since: string; p_until?: string };
+        Returns: Json;
+      };
       life_stage_for_dob: {
         Args: { p_dob: string; p_on?: string };
         Returns: Database['public']['Enums']['life_stage'];
@@ -6037,6 +6150,7 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: string[];
       };
+      ops_health: { Args: Record<PropertyKey, never>; Returns: Json };
       path_household_id: { Args: { p_name: string }; Returns: string };
       path_segment_uuid: {
         Args: { p_index: number; p_name: string };
@@ -6101,6 +6215,7 @@ export type Database = {
         Args: { p_immediate?: boolean; p_reason?: string; p_user_id: string };
         Returns: string;
       };
+      save_kpi_snapshots: { Args: { p_rows: Json }; Returns: number };
       search_islamic_sources: {
         Args: {
           p_kinds?: Database['public']['Enums']['source_kind'][];
@@ -6159,6 +6274,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      track_events: { Args: { p_events: Json }; Returns: number };
       transfer_household_ownership: {
         Args: { p_household_id: string; p_new_owner: string };
         Returns: undefined;

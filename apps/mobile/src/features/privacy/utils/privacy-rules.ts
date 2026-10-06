@@ -6,9 +6,14 @@ import { isAppError } from '@/lib/supabase/app-error';
  * Privacy and account deletion rules (FR-SET-05 to -07, 16 §7.4 to §7.5, 11 §15). Pure and tested.
  */
 
-/** account-delete and account-export answer UNAUTHENTICATED + details.reauth when the sign-in is stale. */
+/**
+ * account-delete and account-export answer `REAUTH_REQUIRED` when the sign-in is stale (this build
+ * sends the client-caps header); older servers or paths answer UNAUTHENTICATED + details.reauth.
+ */
 export function needsReauth(error: unknown): boolean {
-  if (!isAppError(error) || error.code !== 'UNAUTHENTICATED') return false;
+  if (!isAppError(error)) return false;
+  if (error.code === 'REAUTH_REQUIRED') return true;
+  if (error.code !== 'UNAUTHENTICATED') return false;
   const details = (error.details ?? {}) as Record<string, unknown>;
   return details.reauth === true;
 }

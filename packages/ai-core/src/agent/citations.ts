@@ -72,6 +72,37 @@ const QUOTE = /["“”«»]|(^|\s)'[^']{12,}'/u;
 const REFERENCE_NUMBER =
   /\b(bukhari|muslim|tirmidhi|abu dawud|ibn majah|nasa'?i|ahmad|muwatta|al-kafi|kafi|bihar(?: al-anwar)?)\s*(no\.?|#|hadith)?\s*\d{1,5}\b|\b(qur'?an|surah?|sura|ayah|verse)\D{0,25}\d{1,3}\s*[:.]\s*\d{1,3}\b|\(\s*\d{1,3}\s*:\s*\d{1,3}\s*\)/iu;
 
+/**
+ * Speech or teaching attributed to the Prophet (peace be upon him), an Imam, a hadith or the Qur'an
+ * (S7-10 red team: "there is a hadith that says ..." without quotes or numbers). Without a resolved
+ * card this is an ungrounded religious citation, so the sentence is removed like a quote.
+ */
+const ATTRIBUTION =
+  /\b(the (holy )?prophet|prophet muhammad|rasul ?allah|rasulullah|messenger of allah|nabi (pak|kareem|karim)|huzoor|imam (ali|ja'?far|sadiq|al-sadiq|reza|rida|baqir|al-baqir))\b[^.!?]{0,60}\b(said|says|stated|states|taught|teaches|told|commanded|ordered|advised|recommended|forbade|prohibited|instructed|used to (say|eat|drink)|farmaya|farmatay|farmate)\b|\b(a|one|there is a|there's a|there is an authentic|an authentic|the|famous|well-known) (hadith|hadees|hadis|narration|riwayat|riwayah)\b[^.!?]{0,40}\b(says?|states?|mentions?|tells?|teaches|that|ke mutabiq|mein hai)\b|\b(narrated by|reported by|related by|in (sahih|sunan|jami|musnad|al-kafi)|according to (a |the |one )?(hadith|hadees|narration|sunnah))\b|\b(allah (says|said|tells us)|the qur'?an (says|tells us|states|commands)|it is (written|mentioned|stated) in the qur'?an)\b|\b(hadees|hadis|hadith) (mein|me|main) (hai|aya|aata|likha)|\bnabi (pak |kareem |karim )?(ne|nay) farmaya|\bquran (mein|me) (hai|likha|aya)|\ballah (farmata|farmate)\b|(حدیث (شریف )?میں (ہے|آیا)|(نبی کریم|رسول اللہ|آپ|حضور)\s*(ﷺ|صلی اللہ علیہ وسلم)?\s*نے فرمایا|قرآن (مجید |پاک )?میں (ہے|آیا)|اللہ تعالیٰ (فرماتے|نے فرمایا)|ارشادِ? (باری|نبوی))/iu;
+
+/** True when a sentence quotes, numbers or attributes scripture (the resolver's removal rule). */
+export function referencesScripture(sentence: string): boolean {
+  return (
+    REFERENCE_NUMBER.test(sentence) ||
+    ATTRIBUTION.test(sentence) ||
+    (SCRIPTURE_WORD.test(sentence) && QUOTE.test(sentence))
+  );
+}
+
+/**
+ * Release-gate check (S7-10): sentences of a final reply that reference scripture without a
+ * citation marker. Must be empty for every reply that reaches a user.
+ */
+export function findUngroundedScripture(text: string): string[] {
+  const out: string[] = [];
+  for (const line of text.split('\n')) {
+    for (const s of sentences(line)) {
+      if (!/\[\d{1,3}\]/u.test(s) && referencesScripture(s)) out.push(s);
+    }
+  }
+  return out;
+}
+
 export interface CitationResult {
   text: string;
   citations: ResolvedCitation[];
@@ -122,7 +153,7 @@ export function resolveCitations(draft: string, registry: CitationRegistry): Cit
       const out: string[] = [];
       for (const s of sentences(line)) {
         const cited = /\uE000\d+\uE000/u.test(s);
-        const scripture = REFERENCE_NUMBER.test(s) || (SCRIPTURE_WORD.test(s) && QUOTE.test(s));
+        const scripture = referencesScripture(s);
         if (scripture && !cited) {
           removed.push(s);
           continue;

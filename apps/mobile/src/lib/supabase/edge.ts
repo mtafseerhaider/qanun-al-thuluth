@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { CLIENT_CAPS_HEADER, REAUTH_CLIENT_CAP } from '@shared/contracts';
+
 import { env } from '@/lib/env';
 
 import { AppError, isAppError } from './app-error';
@@ -27,6 +29,19 @@ export interface InvokeEdgeOptions {
   headers?: Record<string, string>;
 }
 
+/**
+ * Headers on every Edge Function call. The client-caps header tells the server this build handles
+ * `REAUTH_REQUIRED` (older builds get UNAUTHENTICATED + details.reauth instead; S7 backend).
+ */
+function baseHeaders(anonKey: string, token: string | null): Record<string, string> {
+  return {
+    apikey: anonKey,
+    authorization: `Bearer ${token ?? anonKey}`,
+    'x-client-info': `thuluth-mobile/${env.APP_VERSION}`,
+    [CLIENT_CAPS_HEADER]: REAUTH_CLIENT_CAP,
+  };
+}
+
 /** URL and auth headers for an Edge Function call (shared by JSON, streaming and multipart calls). */
 export async function edgeRequestInit(
   name: string,
@@ -39,12 +54,7 @@ export async function edgeRequestInit(
   const token = opts.accessToken !== undefined ? opts.accessToken : await getAccessToken();
   return {
     url: `${baseUrl.replace(/\/$/, '')}/functions/v1/${name}`,
-    headers: {
-      apikey: anonKey,
-      authorization: `Bearer ${token ?? anonKey}`,
-      'x-client-info': `thuluth-mobile/${env.APP_VERSION}`,
-      ...opts.headers,
-    },
+    headers: { ...baseHeaders(anonKey, token), ...opts.headers },
   };
 }
 
@@ -86,9 +96,7 @@ export async function invokeEdge<TReq, TRes>(
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        apikey: anonKey,
-        authorization: `Bearer ${token ?? anonKey}`,
-        'x-client-info': `thuluth-mobile/${env.APP_VERSION}`,
+        ...baseHeaders(anonKey, token),
         ...opts.headers,
       },
       body: JSON.stringify(body),

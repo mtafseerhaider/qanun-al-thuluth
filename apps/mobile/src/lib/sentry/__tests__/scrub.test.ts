@@ -1,5 +1,6 @@
 import type { ErrorEvent } from '@sentry/react-native';
 
+import { easUpdateTags } from '../init';
 import { REDACTED, scrubBreadcrumb, scrubEvent, scrubString } from '../scrub';
 
 const baseEvent = (overrides: Partial<ErrorEvent>): ErrorEvent =>
@@ -94,5 +95,19 @@ describe('Sentry PII scrubber', () => {
       data: { url: '/rest/v1/x', request_body: '{}', response_body: '{}' },
     });
     expect(crumb.data).toEqual({ url: '/rest/v1/x' });
+  });
+});
+
+describe('EAS Update tags (S7)', () => {
+  it('tags the OTA update id and channel, or embedded / none', () => {
+    expect(easUpdateTags({ updateId: 'u-1', channel: 'production' })).toEqual({
+      eas_update_id: 'u-1',
+      eas_channel: 'production',
+    });
+    expect(easUpdateTags({ updateId: null, channel: null, isEmbeddedLaunch: true })).toEqual({
+      eas_update_id: 'embedded',
+      eas_channel: 'none',
+    });
+    expect(easUpdateTags({})).toEqual({ eas_update_id: 'none', eas_channel: 'none' });
   });
 });

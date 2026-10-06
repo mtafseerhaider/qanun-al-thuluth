@@ -23,6 +23,12 @@ export interface InviteStore {
   memberCount(householdId: string): Promise<number>;
   invitesCreatedSince(userId: string, since: Date): Promise<number>;
   hasPremium(userId: string): Promise<boolean>;
+  /** `consume_rate_limit` (06 §2.7 burst window). */
+  consumeRateLimit(
+    key: string,
+    limit: number,
+    windowSeconds: number,
+  ): Promise<{ allowed: boolean; remaining: number; reset_at: string }>;
   userProfile(userId: string): Promise<{ display_name: string; locale: string } | null>;
   pendingInvite(householdId: string, email: string): Promise<Invitation | null>;
   inviteById(id: string): Promise<Invitation | null>;
@@ -106,6 +112,18 @@ export function supabaseInviteStore(admin: SupabaseClient): InviteStore {
     },
     async hasPremium(userId) {
       return check(await admin.rpc('has_premium', { p_user_id: userId })) === true;
+    },
+    async consumeRateLimit(key, limit, windowSeconds) {
+      const rows = check(
+        await admin.rpc('consume_rate_limit', {
+          p_key: key,
+          p_limit: limit,
+          p_window_seconds: windowSeconds,
+        }),
+      ) as { allowed: boolean; remaining: number; reset_at: string }[];
+      const row = rows[0];
+      if (!row) throw new Error('consume_rate_limit returned no row');
+      return row;
     },
     async userProfile(userId) {
       return check(

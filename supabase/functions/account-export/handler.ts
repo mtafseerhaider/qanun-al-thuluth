@@ -12,6 +12,8 @@ import { sha256Hex } from '../_shared/crypto.ts';
 import { consumeTierQuota } from '../_shared/entitlements.ts';
 import { HttpError } from '../_shared/errors.ts';
 import { jsonHandler } from '../_shared/http.ts';
+import { emailLocale } from '../_shared/integrations/account-emails.ts';
+import type { AccountEmailSender } from '../_shared/integrations/account-emails.ts';
 import { notificationRow, routeFor } from '../_shared/notifications/templates.ts';
 import type { StorageAdmin } from '../_shared/storage.ts';
 import { zip } from '../_shared/zip.ts';
@@ -36,6 +38,8 @@ export interface AccountExportDeps {
   /** Meal plan and growth report PDFs per household (`include_pdfs`); null when no renderer is configured. */
   pdfs: ((householdId: string, locale: 'en' | 'ur') => Promise<PdfAttachment[]>) | null;
   kick: (run: () => Promise<unknown>) => void;
+  /** "Your data is ready" email (06 §4.12); no-op without POSTMARK_SERVER_TOKEN. */
+  email?: AccountEmailSender;
   now?: () => Date;
 }
 
@@ -74,7 +78,7 @@ export function createAccountExportHandler(deps: AccountExportDeps) {
 
   return jsonHandler(AccountExportRequest, async ({ req, input, requestId }) => {
     const user = await requireUser(req, deps.verify);
-    assertRecentAuth(user, ACCOUNT_DELETION_REAUTH_MAX_AGE_SEC, now());
+    assertRecentAuth(user, ACCOUNT_DELETION_REAUTH_MAX_AGE_SEC, now(), req);
     const key = req.headers.get('idempotency-key')?.trim() ?? '';
     if (key.length < 8 || key.length > 128)
       throw new HttpError('VALIDATION_FAILED', 'Idempotency-Key header is required.', {
@@ -234,6 +238,29 @@ export function createAccountExportHandler(deps: AccountExportDeps) {
           data: { export_id: a.exportId },
         }),
       );
+      if (deps.email) {
+        const contact = await store.contact(a.userId).catch(() => null);
+        if (contact)
+          await deps
+            .email({
+              kind: 'export_ready',
+              to: contact.email,
+              locale: emailLocale(contact.locale),
+              ...(contact.timezone ? { timezone: contact.timezone } : {}),
+              at: expiresAt,
+            })
+            .catch((err) =>
+              console.warn(
+                JSON.stringify({
+                  level: 'warn',
+                  scope: SCOPE,
+                  request_id: a.requestId,
+                  msg: 'email_failed',
+                  error: String(err),
+                }),
+              ),
+            );
+      }
       console.log(
         JSON.stringify({
           level: 'info',

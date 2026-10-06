@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { flushPendingNotification } from '@/features/notifications';
+import { markStartup } from '@/lib/perf/startup';
 import { registerNavigationContainer, Sentry } from '@/lib/sentry/init';
 import { linking } from '@/navigation/linking';
 import { navigationRef } from '@/navigation/navigation-ref';
@@ -60,6 +61,7 @@ function Navigation() {
       linking={linking}
       theme={theme}
       onReady={() => {
+        markStartup('nav_ready');
         registerNavigationContainer(navigationRef);
         trackScreenChange(navigationRef);
         setReady(true);

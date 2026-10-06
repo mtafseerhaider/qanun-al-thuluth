@@ -14,6 +14,17 @@ export interface AnalyticsStore {
   aiCostUsdSince(since: string): Promise<number>;
   /** Push notifications still pending more than `minutes` after they were due. */
   stalePushes(before: string): Promise<number>;
+  /** `launch_kpis(since, until)` (S7-12): KPI values for the window, null where there is no data. */
+  launchKpis(since: string, until: string): Promise<Record<string, number | null>>;
+  /** Upserts daily KPI rows into `analytics.metric_snapshots` (non-personal aggregates). */
+  saveSnapshots(rows: KpiSnapshot[]): Promise<void>;
+}
+
+export interface KpiSnapshot {
+  metric: string;
+  period_start: string;
+  period_end: string;
+  value: number;
 }
 
 export function supabaseAnalyticsStore(admin: SupabaseClient): AnalyticsStore {
@@ -53,6 +64,20 @@ export function supabaseAnalyticsStore(admin: SupabaseClient): AnalyticsStore {
         if (rows.length < 1000) break;
       }
       return total / 1e6;
+    },
+    async launchKpis(since, until) {
+      const raw = check(
+        await admin.rpc('launch_kpis', { p_since: since, p_until: until }),
+      ) as Record<string, unknown> | null;
+      const out: Record<string, number | null> = {};
+      for (const [k, v] of Object.entries(raw ?? {}))
+        out[k] = v === null || v === undefined ? null : Number(v);
+      return out;
+    },
+    async saveSnapshots(rows) {
+      if (!rows.length) return;
+      // schema analytics is not exposed through PostgREST, so the write goes through an RPC.
+      check(await admin.rpc('save_kpi_snapshots', { p_rows: rows }));
     },
     async stalePushes(before) {
       const { count, error } = await admin

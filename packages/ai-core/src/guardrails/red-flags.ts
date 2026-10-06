@@ -271,7 +271,7 @@ const ESCALATION_TEXT: Record<Locale, Record<EscalationReason, string>> = {
     eating_disorder_signals:
       'Some answers suggest eating has been difficult. We will not set any weight goal for now. Please talk with your doctor, who can help in a kind and private way.',
     rapid_child_weight_loss:
-      'Losing weight quickly is not expected for a growing child. Please see your paediatrician soon. Until then, keep offering normal family meals and do not reduce food.',
+      'Weight dropping quickly is not expected for a growing child. Please see your paediatrician soon. Until then, keep offering normal family meals and do not reduce food.',
     faltering_growth:
       'The growth measurements are worth checking with your paediatrician. Keep offering normal family meals in the meantime.',
     dehydration_signs:
@@ -325,15 +325,15 @@ export function escalationFor(
 export type TextSafety = 'ok' | 'red_flag' | 'emergency';
 
 const EMERGENCY =
-  /\b(can'?t breathe|cannot breathe|trouble breathing|not breathing|struggling to breathe|throat (is )?(closing|swelling)|lips? (are |is )?swell|swollen (lips|tongue|throat)|unconscious|unresponsive|passed out and|won'?t wake|seizure|fitting|overdose|heavy bleeding|bleeding heavily|kill myself|end my life|suicid|self[- ]harm|hurt myself|saans nahi|behosh)|(خون بہہ|بے ہوش|سانس نہیں|خودکشی)/iu;
+  /\b(can'?t breathe|cannot breathe|trouble breathing|not breathing|struggling to breathe|throat (is )?(closing|swelling)|lips? (are |is )?swell|swollen (lips|tongue|throat)|unconscious|unresponsive|passed out and|won'?t wake|seizure|fitting|overdose|heavy bleeding|bleeding heavily|kill myself|end my life|suicid|self[- ]harm|hurt myself|saans nahi|behosh|saans (nahi|nahin|nai) (aa|le|li|ayi|aa rahi|aa raha)|saans lene (mein|me|main) (mushkil|taklif|takleef)|(honth|hont|zuban|zaban|gala|chehra) (sooj|suj|phool)\w*|gala band ho|hosh (nahi|nahin|mein nahi)|jhatke (aa|lag)|daura (para|pada|par gaya)|khoon (beh|bah) raha|bohat khoon|khud ?kushi|khud ko (nuqsan|nuksan|maar|khatam)|apni jaan (le|lena)|mar jana (chahta|chahti)|zeh?a?r (kha|pi) (li|liya))|(خون بہہ|بے ہوش|سانس نہیں|خودکشی|ہونٹ سوج|گلا بند|دورہ پڑ|اپنی جان)/iu;
 
 const RED_FLAG_TEXT: ReadonlyArray<[RegExp, string]> = [
   [
-    /\b(mak(e|ing) (myself|herself|himself) (sick|vomit|throw up)|throw(ing)? up after (eating|meals)|haven'?t eaten in (\d+|two|three|several) days|starv(e|ing) (myself|herself|himself)|laxatives to lose|purg(e|ing)|thinks? (she|he|i) (is|am|'s|'m) (fat|too fat) and (skips|won't eat|refuses)|scared to eat|afraid to eat|fear of eating|exercise to burn off everything)\b|(الٹی کر دیتی|کھانا چھوڑ دیا ہے کہ موٹی)/iu,
+    /\b(mak(e|es|ing) (myself|herself|himself) (sick|vomit|throw up)|throw(ing)? up after (eating|meals)|haven'?t eaten in (\d+|two|three|several) days|starv(e|ing) (myself|herself|himself)|laxatives to lose|purg(e|ing)|thinks? (she|he|i) (is|am|'s|'m) (fat|too fat) and (skips|won't eat|refuses)|scared to eat|afraid to eat|fear of eating|exercise to burn off everything|kha ?kar ulti kar (deti|deta|dete|leti|leta)|jaan boojh kar ulti|khana (chhor|chor) (diya|dia|rakha) (hai )?(ke|kyunke|taake|ta ke) (mot|wazan)|mot(a|i) hone (ka|se) (dar|darr|darti|darta)|khane se (darti|darta|dar lagta)|kai din se (kuch )?(nahi|nahin) khaya|wazan kam karne ke liye (ulti|bhooki|bhooka|khana chhor))\b|(الٹی کر دیتی|کھانا چھوڑ دیا ہے کہ موٹی|موٹی ہونے کے ڈر|کئی دن سے کچھ نہیں کھایا)/iu,
     'eating_disorder_signals',
   ],
   [
-    /\b(dark (yellow )?urine|very dark pee|no urine|hasn'?t (peed|urinated|weed)|not (peed|passed urine)|fewer wet (nappies|diapers)|no wet (nappies|diapers)|sunken eyes|dizzy (while|during|when) fasting|faint(ed|ing)? (while|during|when) fasting|fainted during (roza|the fast))\b|(پیشاب کا رنگ گہرا|پیشاب نہیں آیا|روزے میں چکر)/iu,
+    /\b(dark (yellow )?urine|very dark pee|no urine|hasn'?t (peed|urinated|weed)|not (peed|passed urine)|fewer wet (nappies|diapers)|no wet (nappies|diapers)|sunken eyes|dizzy (while|during|when) fasting|faint(ed|ing)? (while|during|when) fasting|fainted during (roza|the fast)|peshab (nahi|nahin) (aya|aaya|kiya)|peshab ka rang (gehra|dark|kala)|roze (mein|me|main) chakkar|roza (mein|me) behosh)\b|(پیشاب کا رنگ گہرا|پیشاب نہیں آیا|روزے میں چکر)/iu,
     'dehydration_signs',
   ],
   [
@@ -349,7 +349,7 @@ const RED_FLAG_TEXT: ReadonlyArray<[RegExp, string]> = [
     'insulin_or_sulfonylurea_fasting',
   ],
   [
-    /\b(son|daughter|child|kid|boy|girl|baby|toddler|\d{1,2}[- ]?(year|yr)s?[- ]?old)\b.{0,60}\b(lost|losing|dropped) (\d+(\.\d+)? ?kg|weight|a lot of weight)\b|\b(lost|losing) weight\b.{0,60}\b(son|daughter|child|kid|boy|girl|toddler)\b/iu,
+    /\b(son|daughter|child|kid|boy|girl|baby|toddler|\d{1,2}[- ]?(year|yr)s?[- ]?old)\b.{0,60}\b(lost|losing|dropped) (\d+(\.\d+)? ?kg|weight|a lot of weight)\b|\b(lost|losing) weight\b.{0,60}\b(son|daughter|child|kid|boy|girl|toddler)\b|\b(beta|bete|beti|bacha|bachay|bachi|bachche|bachchi)\b.{0,60}\bwazan (tezi se |bohat |bahut )?(gir|kam ho|ghat) (raha|rahi|gaya|gayi|chuka)\b/iu,
     'rapid_child_weight_loss',
   ],
 ];

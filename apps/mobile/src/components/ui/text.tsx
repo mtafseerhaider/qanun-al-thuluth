@@ -59,6 +59,16 @@ const TONE_CLASS: Record<NonNullable<TextProps['tone']>, string> = {
   inverse: 'text-on-primary',
 };
 
+/**
+ * WCAG 1.4.4 / 01 §9.3 (24 S7-04): text under 18 pt must reach 200 percent of its size, so its
+ * cap is at least 2. Larger text (headings, titles, display) keeps the 03 §5 cap: it is already
+ * large and uncapped growth would push content off small screens.
+ */
+export const MIN_BODY_FONT_SCALE = 2;
+export function fontScaleCap(spec: { size: number; maxMultiplier: number }): number {
+  return spec.size < 18 ? Math.max(spec.maxMultiplier, MIN_BODY_FONT_SCALE) : spec.maxMultiplier;
+}
+
 export function Text({
   children,
   variant = 'body',
@@ -101,12 +111,17 @@ export function Text({
     <RNText
       className={cn(scriptClass, TONE_CLASS[tone], className)}
       style={style}
-      maxFontSizeMultiplier={maxFontSizeMultiplier ?? spec.maxMultiplier}
+      maxFontSizeMultiplier={maxFontSizeMultiplier ?? fontScaleCap(spec)}
       {...(lines !== undefined ? { numberOfLines: lines } : {})}
       {...(selectable !== undefined ? { selectable } : {})}
       {...(accessibilityRole ? { accessibilityRole } : {})}
       {...(accessibilityLabel ? { accessibilityLabel } : {})}
-      {...(script === 'arabic' || script === 'quran' ? { accessibilityLanguage: 'ar' } : {})}
+      {...(script === 'arabic' || script === 'quran'
+        ? { accessibilityLanguage: 'ar' }
+        : uiScript === 'urdu'
+          ? // iOS VoiceOver picks an Urdu voice even when the device language is English (24 S7-04).
+            { accessibilityLanguage: 'ur' }
+          : {})}
       {...(testID ? { testID } : {})}
     >
       {children}

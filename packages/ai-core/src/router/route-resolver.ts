@@ -28,8 +28,11 @@ function num(v: unknown): number | undefined {
 }
 
 /** Accepts both the camelCase keys in 12 §5.3 and the snake_case keys in 05 §10.6. */
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+const THINKING = ['adaptive', 'between_tools'] as const;
+
 export function normalizeParams(raw: Record<string, unknown> | null): ModelParams {
-  const p = raw ?? {};
+  const { effort, thinking, ...p } = raw ?? {};
   const params: ModelParams = {
     ...p,
     timeoutMs: num(p.timeoutMs) ?? num(p.timeout_ms) ?? DEFAULT_TIMEOUT_MS,
@@ -44,6 +47,11 @@ export function normalizeParams(raw: Record<string, unknown> | null): ModelParam
   if (cacheRead !== undefined) params.priceCacheReadPerMTokUsd = cacheRead;
   const cacheWrite = num(p.priceCacheWritePerMTokUsd) ?? num(p.price_cache_write_per_mtok_usd);
   if (cacheWrite !== undefined) params.priceCacheWritePerMTokUsd = cacheWrite;
+  // Unknown values are dropped rather than sent: a bad admin edit must not 400 every call.
+  const e = EFFORTS.find((x) => x === effort);
+  if (e) params.effort = e;
+  const t = THINKING.find((x) => x === thinking);
+  if (t) params.thinking = t;
   return params;
 }
 

@@ -8,7 +8,7 @@ project_id = "thuluth"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "graphql_public"]   # "private" is never exposed
+schemas = ["public"]   # "private"/"analytics" are never exposed; graphql_public removed (S7-SEC-13, the app does not use GraphQL)
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -152,3 +152,5 @@ verify_jwt = true           # S6-10 account data export, async (06 section 4.12)
 verify_jwt = false          # S6-10 dual mode: user JWT verified in code; /execute and action sweep_orphans need x-internal-secret (crons)
 [functions.analytics-rollup]
 verify_jwt = false          # S6-13 cron hourly and nightly; x-internal-secret checked in code
+[functions.health]
+verify_jwt = false          # S7-06 public status check (GET, no JWT); returns coarse status only, no data

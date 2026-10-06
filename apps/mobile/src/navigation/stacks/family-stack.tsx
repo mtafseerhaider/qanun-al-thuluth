@@ -21,81 +21,83 @@ import {
 } from '@/features/picky';
 
 import type { FamilyStackParamList } from '../types';
+import { useStackMotion } from '../motion';
 
 const Stack = createNativeStackNavigator<FamilyStackParamList>();
 
 export function FamilyStack() {
+  const motion = useStackMotion();
   const { t } = useTranslation('navigation');
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={motion}>
       <Stack.Screen
         name="FamilyManagement"
-        component={FamilyManagementScreen}
+        getComponent={() => FamilyManagementScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Caregivers"
-        component={CaregiversScreen}
+        getComponent={() => CaregiversScreen}
         options={{ title: t('screens.caregivers') }}
       />
       <Stack.Screen
         name="GrowthDashboard"
-        component={GrowthDashboardScreen}
+        getComponent={() => GrowthDashboardScreen}
         options={{ title: t('screens.growth') }}
       />
       <Stack.Screen
         name="PickyEaterHub"
-        component={PickyEaterHubScreen}
+        getComponent={() => PickyEaterHubScreen}
         options={{ title: t('screens.pickyHub') }}
       />
       <Stack.Screen
         name="DivisionOfResponsibility"
-        component={DivisionOfResponsibilityScreen}
+        getComponent={() => DivisionOfResponsibilityScreen}
         options={{ title: t('screens.dor') }}
       />
       <Stack.Screen
         name="ExposureLog"
-        component={ExposureLogScreen}
+        getComponent={() => ExposureLogScreen}
         options={{ title: t('screens.exposureLog') }}
       />
       <Stack.Screen
         name="AcceptanceAnalytics"
-        component={AcceptanceAnalyticsScreen}
+        getComponent={() => AcceptanceAnalyticsScreen}
         options={{ title: t('screens.acceptanceAnalytics') }}
       />
       <Stack.Screen
         name="AutismHub"
-        component={AutismHubScreen}
+        getComponent={() => AutismHubScreen}
         options={{ title: t('screens.autismHub') }}
       />
       <Stack.Screen
         name="SafeFoods"
-        component={SafeFoodsScreen}
+        getComponent={() => SafeFoodsScreen}
         options={{ title: t('screens.safeFoods') }}
       />
       <Stack.Screen
         name="SensoryProfile"
-        component={SensoryProfileScreen}
+        getComponent={() => SensoryProfileScreen}
         options={{ title: t('screens.sensoryProfile') }}
       />
       <Stack.Screen
         name="ExposureLadders"
-        component={ExposureLaddersScreen}
+        getComponent={() => ExposureLaddersScreen}
         options={{ title: t('screens.exposureLadders') }}
       />
       <Stack.Screen
         name="ExposureLadderDetail"
-        component={ExposureLadderDetailScreen}
+        getComponent={() => ExposureLadderDetailScreen}
         options={{ title: t('screens.exposureLadder') }}
       />
       <Stack.Screen
         name="FoodChaining"
-        component={FoodChainingScreen}
+        getComponent={() => FoodChainingScreen}
         options={{ title: t('screens.ladderEditor') }}
       />
       <Stack.Screen
         name="FirstThen"
-        component={FirstThenScreen}
+        getComponent={() => FirstThenScreen}
         options={{ title: t('screens.firstThen') }}
       />
     </Stack.Navigator>
