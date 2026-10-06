@@ -17,3 +17,6 @@ export * from './calculators/index.ts';
 export * from './guardrails/index.ts';
 export * from './knowledge/index.ts';
 export * from './planning/index.ts';
+export * from './agent/index.ts';
+export * from './vision/meal.ts';
+export * from './speech/transcribe.ts';

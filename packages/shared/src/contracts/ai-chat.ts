@@ -56,6 +56,8 @@ export const ChatToolName = z.enum([
   'search_islamic_sources',
   'get_growth_status',
   'log_meal',
+  'log_hydration',
+  'log_fasting',
   'create_exposure_ladder',
   'plan_ramadan',
   'analyze_meal_photo',

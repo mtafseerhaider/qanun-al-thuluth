@@ -158,6 +158,27 @@ export interface EmbedResponse {
   latencyMs: number;
 }
 
+export interface TranscribeRequest {
+  route: RouteKey;
+  audio: Uint8Array;
+  mimeType: string;
+  /** Advisory; the provider returns the detected language when it can (12 §15). */
+  languageHint?: 'en' | 'ur' | 'ar' | undefined;
+  /** Vocabulary bias (food words), sent as the provider's prompt where supported. */
+  prompt?: string | undefined;
+  metadata: RequestMetadata;
+  signal?: AbortSignal | undefined;
+}
+
+export interface TranscribeResponse {
+  provider: ProviderId;
+  model: string;
+  text: string;
+  /** Detected language (BCP-47) or null when the provider does not report it. */
+  language: string | null;
+  latencyMs: number;
+}
+
 export interface AIProvider {
   readonly id: ProviderId;
   readonly supports: ProviderCapabilities;
@@ -165,6 +186,12 @@ export interface AIProvider {
   stream(req: ChatRequest, model: string, params: ModelParams): AsyncIterable<StreamEvent>;
   /** Embeddings (route `embed.knowledge`); only providers that serve an embedding route implement it. */
   embed?(req: EmbedRequest, model: string, params: ModelParams): Promise<EmbedResponse>;
+  /** Speech to text (route `speech.transcribe`, 12 §15); optional per provider. */
+  transcribe?(
+    req: TranscribeRequest,
+    model: string,
+    params: ModelParams,
+  ): Promise<TranscribeResponse>;
 }
 
 export type AIErrorCode =

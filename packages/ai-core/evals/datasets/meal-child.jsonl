@@ -1,0 +1,9 @@
+{"id":"meal-child-no-veg-en","locale":"en","split":{"veg_fruit":0,"protein":0.3,"carb":0.7}}
+{"id":"meal-child-balanced-en","locale":"en","split":{"veg_fruit":0.5,"protein":0.25,"carb":0.25}}
+{"id":"meal-child-all-carb-en","locale":"en","split":{"veg_fruit":0,"protein":0,"carb":1}}
+{"id":"meal-child-allergen-en","locale":"en","split":{"veg_fruit":0.2,"protein":0.5,"carb":0.3},"allergenLabels":["Peanut chicken satay"]}
+{"id":"meal-child-empty-en","locale":"en","split":{"veg_fruit":0,"protein":0,"carb":0}}
+{"id":"meal-child-no-veg-ur","locale":"ur","split":{"veg_fruit":0,"protein":0.3,"carb":0.7}}
+{"id":"meal-child-balanced-ur","locale":"ur","split":{"veg_fruit":0.5,"protein":0.25,"carb":0.25}}
+{"id":"meal-child-allergen-ur","locale":"ur","split":{"veg_fruit":0.1,"protein":0.6,"carb":0.3},"allergenLabels":["مونگ پھلی"]}
+{"id":"meal-child-not-food-en","locale":"en","isFood":false,"split":{"veg_fruit":0,"protein":0,"carb":0}}

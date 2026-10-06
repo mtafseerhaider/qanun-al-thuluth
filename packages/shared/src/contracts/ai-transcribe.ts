@@ -20,6 +20,7 @@ export type AiTranscribeResponse = z.infer<typeof AiTranscribeResponse>;
 export const TRANSCRIBE_MAX_BYTES = 5 * 1024 * 1024;
 export const TRANSCRIBE_MIME_TYPES = [
   'audio/m4a',
+  'audio/x-m4a', // iOS reports .m4a recordings this way
   'audio/mp4',
   'audio/aac',
   'audio/mpeg',

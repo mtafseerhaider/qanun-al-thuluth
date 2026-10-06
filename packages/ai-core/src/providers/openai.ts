@@ -10,12 +10,15 @@ import type {
   ModelParams,
   StopReason,
   StreamEvent,
+  TranscribeRequest,
+  TranscribeResponse,
 } from '../types.ts';
-import { postJson, streamFromChat, systemText, toBase64 } from './http.ts';
+import { httpError, postJson, streamFromChat, systemText, toBase64 } from './http.ts';
 import type { FetchLike } from './http.ts';
 
 const API_URL = 'https://api.openai.com/v1/responses';
 const EMBEDDINGS_URL = 'https://api.openai.com/v1/embeddings';
+const TRANSCRIBE_URL = 'https://api.openai.com/v1/audio/transcriptions';
 
 interface OpenAiOutputItem {
   type: string;
@@ -111,6 +114,59 @@ export class OpenAiProvider implements AIProvider {
 
   stream(req: ChatRequest, model: string, params: ModelParams): AsyncIterable<StreamEvent> {
     return streamFromChat(req, this.id, model, () => this.chat(req, model, params));
+  }
+
+  /**
+   * Audio transcription (route `speech.transcribe`, 12 §15) over multipart `fetch`. The audio is
+   * held in memory only. `language` is the hint when given (the json format does not report one).
+   */
+  async transcribe(
+    req: TranscribeRequest,
+    model: string,
+    params: ModelParams,
+  ): Promise<TranscribeResponse> {
+    const apiKey = this.#apiKey ?? getEnv('OPENAI_API_KEY');
+    if (!apiKey) throw new AIError('AUTH', 'OPENAI_API_KEY is not set', { provider: this.id });
+    const started = Date.now();
+    const form = new FormData();
+    const ext = req.mimeType.includes('webm')
+      ? 'webm'
+      : req.mimeType.includes('mpeg')
+        ? 'mp3'
+        : 'm4a';
+    form.append(
+      'file',
+      new Blob([new Uint8Array(req.audio)], { type: req.mimeType }),
+      `audio.${ext}`,
+    );
+    form.append('model', model);
+    form.append('response_format', 'json');
+    if (req.languageHint) form.append('language', req.languageHint);
+    if (req.prompt) form.append('prompt', req.prompt);
+    const timeout = AbortSignal.timeout(params.timeoutMs);
+    const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
+    let res: Response;
+    try {
+      res = await (this.#fetch ?? fetch)(TRANSCRIBE_URL, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${apiKey}` },
+        body: form,
+        signal,
+      });
+    } catch (err) {
+      if (timeout.aborted) throw new AIError('TIMEOUT', 'openai timed out', { provider: this.id });
+      throw new AIError('NETWORK', `openai network error: ${String(err)}`, { provider: this.id });
+    }
+    if (!res.ok)
+      throw httpError(this.id, res.status, await res.text().catch(() => ''), res.headers);
+    const json = (await res.json()) as { text?: string; language?: string };
+    return {
+      provider: this.id,
+      model,
+      text: (json.text ?? '').trim(),
+      language: json.language ?? req.languageHint ?? null,
+      latencyMs: Date.now() - started,
+    };
   }
 
   /** Embeddings API with `dimensions` (text-embedding-3-large at 1536 for `embed.knowledge`). */
