@@ -28,6 +28,9 @@ export interface UsageRecord {
   latencyMs: number;
   status: UsageStatus;
   params: ModelParams;
+  /** `prompt_templates` key and version that produced the call (12 §19 A/B attribution). */
+  promptKey?: string | undefined;
+  promptVersion?: number | undefined;
 }
 
 /** The `ai_usage` insert shape (05 §10.5). */
@@ -43,6 +46,11 @@ export interface AiUsageInsert {
   latency_ms: number;
   status: UsageStatus;
   request_id: string;
+  /** Cache economics (12 §5.6, §16.2 cache read ratio); columns from migration 0018. */
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  prompt_key: string | null;
+  prompt_version: number | null;
 }
 
 export function toUsageRow(u: UsageRecord): AiUsageInsert {
@@ -58,6 +66,10 @@ export function toUsageRow(u: UsageRecord): AiUsageInsert {
     latency_ms: Math.max(0, Math.round(u.latencyMs)),
     status: u.status,
     request_id: u.requestId,
+    cache_read_tokens: Math.max(0, u.usage.cacheReadTokens),
+    cache_write_tokens: Math.max(0, u.usage.cacheWriteTokens),
+    prompt_key: u.promptKey ?? null,
+    prompt_version: u.promptVersion ?? null,
   };
 }
 

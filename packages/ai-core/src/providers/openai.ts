@@ -1,5 +1,5 @@
 import { getEnv } from '../runtime/env.ts';
-import { AIError } from '../types.ts';
+import { AIError, effectiveMaxOutputTokens, promptCacheKey } from '../types.ts';
 import type {
   AIProvider,
   ChatRequest,
@@ -223,6 +223,8 @@ export function toOpenAiBody(
           call_id: part.toolCallId,
           output: part.content,
         });
+      } else if (part.type === 'opaque') {
+        continue; // another provider's block (Anthropic thinking): never sent here
       } else if (part.type === 'text') {
         parts.push({
           type: m.role === 'assistant' ? 'output_text' : 'input_text',
@@ -245,12 +247,16 @@ export function toOpenAiBody(
     model,
     instructions: systemText(req),
     input,
-    max_output_tokens: params.maxOutputTokens ?? req.maxOutputTokens,
+    max_output_tokens: effectiveMaxOutputTokens(req, params),
     store: false,
+    // Automatic prefix caching: a stable key per route and prompt version keeps requests that share
+    // the tools + instructions prefix on the same cache shard (S7-02).
+    prompt_cache_key: promptCacheKey(req),
   };
   const temperature = req.temperature ?? params.temperature;
   if (temperature !== undefined) body.temperature = temperature;
-  if (req.tools?.length && req.toolChoice !== 'none') {
+  if (req.tools?.length) {
+    // Tools stay in the request with tool_choice none so the cached prefix is unchanged.
     body.tools = req.tools.map((t) => ({
       type: 'function',
       name: t.name,
@@ -258,7 +264,8 @@ export function toOpenAiBody(
       parameters: t.inputSchema,
       strict: true,
     }));
-    if (req.toolChoice && typeof req.toolChoice === 'object') {
+    if (req.toolChoice === 'none') body.tool_choice = 'none';
+    else if (req.toolChoice && typeof req.toolChoice === 'object') {
       body.tool_choice = { type: 'function', name: req.toolChoice.name };
     }
   }

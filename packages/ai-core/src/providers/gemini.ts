@@ -1,5 +1,5 @@
 import { getEnv } from '../runtime/env.ts';
-import { AIError } from '../types.ts';
+import { AIError, effectiveMaxOutputTokens } from '../types.ts';
 import type {
   AIProvider,
   ChatRequest,
@@ -113,32 +113,35 @@ function stripUnsupported(schema: unknown): unknown {
 
 export function toGeminiBody(req: ChatRequest, params: ModelParams): Record<string, unknown> {
   const toolNames = new Map<string, string>();
-  const contents = req.messages.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: m.content.map((part) => {
-      switch (part.type) {
-        case 'text':
-          return { text: part.text };
-        case 'image':
-          if (!(part.data instanceof Uint8Array)) {
-            return { fileData: { mimeType: part.mediaType, fileUri: part.data.url } };
-          }
-          return { inlineData: { mimeType: part.mediaType, data: toBase64(part.data) } };
-        case 'tool_call':
-          toolNames.set(part.id, part.name);
-          return { functionCall: { name: part.name, args: part.input } };
-        case 'tool_result':
-          return {
-            functionResponse: {
-              name: toolNames.get(part.toolCallId) ?? part.toolCallId,
-              response: { content: part.content },
-            },
-          };
-      }
-    }),
-  }));
+  const contents = req.messages
+    .map((m) => ({ ...m, content: m.content.filter((p) => p.type !== 'opaque') }))
+    .filter((m) => m.content.length > 0)
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: m.content.map((part) => {
+        switch (part.type) {
+          case 'text':
+            return { text: part.text };
+          case 'image':
+            if (!(part.data instanceof Uint8Array)) {
+              return { fileData: { mimeType: part.mediaType, fileUri: part.data.url } };
+            }
+            return { inlineData: { mimeType: part.mediaType, data: toBase64(part.data) } };
+          case 'tool_call':
+            toolNames.set(part.id, part.name);
+            return { functionCall: { name: part.name, args: part.input } };
+          case 'tool_result':
+            return {
+              functionResponse: {
+                name: toolNames.get(part.toolCallId) ?? part.toolCallId,
+                response: { content: part.content },
+              },
+            };
+        }
+      }),
+    }));
   const generationConfig: Record<string, unknown> = {
-    maxOutputTokens: params.maxOutputTokens ?? req.maxOutputTokens,
+    maxOutputTokens: effectiveMaxOutputTokens(req, params),
   };
   const temperature = req.temperature ?? params.temperature;
   if (temperature !== undefined) generationConfig.temperature = temperature;
@@ -147,7 +150,8 @@ export function toGeminiBody(req: ChatRequest, params: ModelParams): Record<stri
   const body: Record<string, unknown> = { contents, generationConfig };
   const system = systemText(req);
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  if (req.tools?.length && req.toolChoice !== 'none') {
+  if (req.tools?.length) {
+    if (req.toolChoice === 'none') body.toolConfig = { functionCallingConfig: { mode: 'NONE' } };
     body.tools = [
       {
         functionDeclarations: req.tools.map((t) => ({

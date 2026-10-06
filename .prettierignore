@@ -7,3 +7,4 @@ supabase/tests/database/
 apps/mobile/assets/
 apps/mobile/global.css
 **/*.lock
+ai-eval-summary.json

@@ -47,6 +47,8 @@ export async function chatMetered(
         latencyMs: response?.latencyMs ?? 0,
         status,
         params: route.params,
+        promptKey: metadata.promptKey,
+        promptVersion: metadata.promptVersion,
       },
       deps.onUsageError,
     );

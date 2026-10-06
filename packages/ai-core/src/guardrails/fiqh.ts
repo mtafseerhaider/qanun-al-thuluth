@@ -11,7 +11,7 @@ const FIQH_QUESTION_EN =
   /\b(is (it|this|that|\w+( \w+)?) (halal|haram|permissible|permitted|allowed|forbidden|makruh|makrooh|sunnah|wajib|fard|obligatory|mandatory|sinful|a sin)|(halal|haram|permissible|makruh|makrooh|jaiz|najaiz) (or|to|for)|allowed in islam|(does|will|would|can) .{0,40}\b(break|invalidate|nullify|spoil) (my|the|his|her|our|a) fast|is (my|his|her|our) fast (valid|invalid|broken|accepted|ok)|(must|do|should|does|have to) (i|we|he|she|they|my \w+) (fast|make up|pay|give) |(qada|qaza) or (fidya|fidyah|kaffarah|kaffara)|kaffara|kaffarah|fidya|fidyah|fatwa|ruling on|is it a sin|exempt from fasting|obligat\w+ to fast|(can|may) (i|we|she|he) (skip|not keep|break) (the |my |her |his )?fast|is .{0,30}(zabiha|zabihah|dhabiha|mashbooh))/i;
 
 const FIQH_QUESTION_UR =
-  /(حلال|حرام|جائز|ناجائز|مکروہ|فتویٰ|فتوی|روزہ ٹوٹ|روزہ ٹوٹتا|روزہ ٹوٹے|روزہ رکھنا فرض|قضا|فدیہ|کفارہ|گناہ|\bhalal\b|\bharam\b|\bjaiz\b|\bnajaiz\b|roza toot|roza tut|roza toot|fatwa)/iu;
+  /(حلال|حرام|جائز|ناجائز|مکروہ|فتویٰ|فتوی|روزہ ٹوٹ|روزہ ٹوٹتا|روزہ ٹوٹے|روزہ رکھنا فرض|قضا|فدیہ|کفارہ|گناہ|\bhalal\b|\bharam\b|\bjaiz\b|\bnajaiz\b|roza toot|roza tut|roza toot|fatwa|\bmakrooh\b|\bfidya\b|\bkaffara\b|\bqaza\b|roza (rakhna|rakhna zaroori|farz)|roza (toot|tut) (jata|jaye|jayega|gaya))/iu;
 
 /** Question forms: "Is vanilla extract with alcohol permissible?", "Is blood donation going to break my fast?". */
 const FIQH_QUESTION_FORM =
@@ -50,7 +50,16 @@ const RULING_PATTERNS: readonly Pattern[] = [
     re: /(حلال ہے|حرام ہے|جائز ہے|ناجائز ہے|مکروہ ہے|روزہ ٹوٹ جاتا|روزہ نہیں ٹوٹتا|روزہ ٹوٹ گیا|روزہ درست ہے|روزہ رکھنا فرض ہے|قضا (کرنی|ضروری)|فدیہ (دینا|ادا))/u,
     ignoreNegation: true,
   },
-  { code: 'ruling_asserted', re: /\b(halal hai|haram hai|jaiz hai|najaiz hai|roza toot jata)\b/i },
+  {
+    code: 'ruling_asserted',
+    re: /\b(halal hai|haram hai|jaiz hai|najaiz hai|makrooh hai|roza toot jata|roza (sahi|durust|theek) (hai|raha)|roza rakhna farz hai|qaza (zaroori|karni) hai|fidya (dena|dein))\b/i,
+  },
+  {
+    // "roza nahi toot ta" is itself a ruling: the negation is the assertion.
+    code: 'fasting_ruling',
+    re: /\broza (nahi|nahin) (toot|tut)(ta|ega|e ga|e gaa)?\b/i,
+    ignoreNegation: true,
+  },
 ];
 
 export function findRulingAssertions(text: string): PatternHit[] {

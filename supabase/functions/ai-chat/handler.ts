@@ -9,6 +9,7 @@ import {
   renderMemories,
   runChatTurn,
   toolsForTier,
+  TURN_BUDGETS,
   vectorLiteral,
 } from '@thuluth/ai-core';
 import type {
@@ -35,7 +36,7 @@ import { HttpError } from '../_shared/errors.ts';
 import { jsonHandler } from '../_shared/http.ts';
 import type { PlatformStore } from '../_shared/platform.ts';
 import { localDate } from '../_shared/plan/pipeline.ts';
-import { buildContext, isMinor, renderSnapshot, snapshotNumbers } from './context.ts';
+import { ageMonthsOf, buildContext, isMinor, renderSnapshot, snapshotNumbers } from './context.ts';
 import type { ChatContext } from './context.ts';
 import type { ChatMessageRow, ChatSessionRow, ChatStore } from './store.ts';
 import { chatToolExecutor } from './tools.ts';
@@ -82,6 +83,10 @@ export interface ChatDeps {
   classifyWithModel?: boolean;
   /** Run `classify.output` on drafts that pass the deterministic validators (default false). */
   modelOutputCheck?: boolean;
+  /** S7-02: route light turns (greetings, short general questions) to `chat.free` (default true). */
+  intentRouting?: boolean;
+  /** S7-02: start the first model step while `classify.safety` runs (default true). */
+  speculativeFirstStep?: boolean;
   pingMs?: number;
   now?: () => Date;
 }
@@ -183,8 +188,18 @@ export function createChatHandler(deps: ChatDeps) {
         feature: 'chat.attachments',
       });
     }
+    // S7-03: chat-attachments are private to the session owner (storage policy), so a photo must sit
+    // under this user's own session ({household_id}/{session_id}/...). The session's owner is checked
+    // below; a household prefix alone would let a member reference another member's private photo.
+    const attachmentPrefix = input.session_id
+      ? `${householdId}/${input.session_id}/`.toLowerCase()
+      : null;
     for (const a of images) {
-      if (a.kind === 'image' && !a.storage_path.toLowerCase().startsWith(`${householdId}/`)) {
+      const path = a.kind === 'image' ? a.storage_path.toLowerCase() : '';
+      if (
+        a.kind === 'image' &&
+        (!attachmentPrefix || !path.startsWith(attachmentPrefix) || path.split('/').includes('..'))
+      ) {
         throw new HttpError('VALIDATION_FAILED', 'The photo is not in this household.', {
           field: 'message.attachments',
         });
@@ -536,7 +551,15 @@ export function createChatHandler(deps: ChatDeps) {
             executeTool: chatToolExecutor({ store: deps.store, ctx, retriever, metadata }),
             groundedNumbers: snapshotNumbers(ctx),
             minorNames: minors.map((m) => m.name),
+            youngChildNames: minors.filter((m) => ageMonthsOf(ctx, m) < 84).map((m) => m.name),
+            memberNames: members.map((m) => m.name),
             focusIsMinor: minors.some((m) => m.id === input.focus_family_member_id),
+            // S7-02 cost and latency: light turns on chat.free, trimmed history, speculation.
+            ...(deps.intentRouting === false
+              ? {}
+              : { intentRouting: { budget: TURN_BUDGETS[tier] } }),
+            historyTokenBudget: TURN_BUDGETS[tier].historyTokens,
+            speculativeFirstStep: deps.speculativeFirstStep ?? true,
             isRamadan: ctx.isRamadan,
             onEscalation: async (e) => {
               await deps.store.insertSafetyEvent({

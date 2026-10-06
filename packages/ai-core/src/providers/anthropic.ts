@@ -1,5 +1,5 @@
 import { getEnv } from '../runtime/env.ts';
-import { AIError } from '../types.ts';
+import { AIError, effectiveMaxOutputTokens } from '../types.ts';
 import type {
   AIProvider,
   ChatRequest,
@@ -21,6 +21,7 @@ interface AnthropicBlock {
   id?: string;
   name?: string;
   input?: unknown;
+  [k: string]: unknown;
 }
 
 interface AnthropicResponse {
@@ -71,7 +72,7 @@ export class AnthropicProvider implements AIProvider {
     return {
       provider: this.id,
       model,
-      content: json.content.flatMap(fromAnthropicBlock),
+      content: json.content.flatMap((b) => fromAnthropicBlock(b, model)),
       stopReason: mapStopReason(json.stop_reason),
       usage: {
         inputTokens:
@@ -91,72 +92,129 @@ export class AnthropicProvider implements AIProvider {
   }
 }
 
+/**
+ * Models that reject sampling parameters (`temperature`, `top_p`): a non-default value is a 400 on
+ * Claude Opus 4.7+, Opus 5.x, Sonnet 5.x, Fable and Mythos. Routes keep `temperature` in params for
+ * the other providers; this adapter drops it for these models instead of failing the call.
+ */
+export function anthropicAcceptsSampling(model: string): boolean {
+  return !/^claude-(opus-(4-[789]|5)|sonnet-5|fable|mythos)/.test(model);
+}
+
+/** `output_config.effort` is accepted on Opus 4.5+, Sonnet 4.6+/5.x, Fable and Mythos, not Haiku. */
+function acceptsEffort(model: string): boolean {
+  return /^claude-(opus-(4-[5-9]|5)|sonnet-(4-6|5)|fable|mythos)/.test(model);
+}
+
+/** Max four `cache_control` breakpoints per request (Anthropic prompt caching). */
+const MAX_BREAKPOINTS = 4;
+
 export function toAnthropicBody(
   req: ChatRequest,
   model: string,
   params: ModelParams,
 ): Record<string, unknown> {
+  let breakpoints = 0;
+  // The conversation-tail marker keeps a slot: it is the one later steps and turns read from.
+  const reserved = req.cacheTail ? 1 : 0;
+  const mark = (tail = false) =>
+    breakpoints < MAX_BREAKPOINTS - (tail ? 0 : reserved) ? (breakpoints++, true) : false;
+  // Tools render first, then system, then messages (prompt-cache prefix order). Tools are kept even
+  // when `toolChoice` is 'none' (sent as tool_choice none): dropping them would change the prefix
+  // and miss the tools + system cache on the final step of every tool loop (S7-02).
+  const tools = req.tools?.length
+    ? req.tools.map((t, i, all) => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.inputSchema,
+        ...(i === all.length - 1 && mark() ? { cache_control: { type: 'ephemeral' } } : {}),
+      }))
+    : undefined;
+  const system = req.system
+    .filter((p): p is Extract<ContentPart, { type: 'text' }> => p.type === 'text')
+    .map((p) => ({
+      type: 'text',
+      text: p.text,
+      ...(p.cache && mark() ? { cache_control: { type: 'ephemeral' } } : {}),
+    }));
+  const messages = req.messages
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content.flatMap((part) => toAnthropicBlock(part, model)),
+    }))
+    .filter((m) => m.content.length > 0);
+  if (req.cacheTail && mark(true)) {
+    const last = messages[messages.length - 1]?.content;
+    const block = last?.[last.length - 1];
+    if (block && block.type !== 'thinking' && block.type !== 'redacted_thinking') {
+      block.cache_control = { type: 'ephemeral' };
+    }
+  }
   const body: Record<string, unknown> = {
     model,
-    max_tokens: params.maxOutputTokens ?? req.maxOutputTokens,
-    system: req.system
-      .filter((p) => p.type === 'text')
-      .map((p) => ({
-        type: 'text',
-        text: p.text,
-        ...(p.cache ? { cache_control: { type: 'ephemeral' } } : {}),
-      })),
-    messages: req.messages.map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content.map(toAnthropicBlock),
-    })),
+    max_tokens: effectiveMaxOutputTokens(req, params),
+    system,
+    messages,
   };
   const temperature = req.temperature ?? params.temperature;
-  if (temperature !== undefined) body.temperature = temperature;
+  if (temperature !== undefined && anthropicAcceptsSampling(model)) body.temperature = temperature;
   if (req.stopSequences?.length) body.stop_sequences = req.stopSequences;
-  if (req.tools?.length && req.toolChoice !== 'none') {
-    body.tools = req.tools.map((t, i, all) => ({
-      name: t.name,
-      description: t.description,
-      input_schema: t.inputSchema,
-      ...(i === all.length - 1 ? { cache_control: { type: 'ephemeral' } } : {}),
-    }));
-    if (req.toolChoice && typeof req.toolChoice === 'object') {
+  if (params.effort && acceptsEffort(model)) body.output_config = { effort: params.effort };
+  if (params.thinking === 'between_tools' && /^claude-sonnet-5-5/.test(model)) {
+    body.thinking = { type: 'between_tools' };
+  } else if (params.thinking === 'adaptive' && acceptsEffort(model)) {
+    body.thinking = { type: 'adaptive' };
+  }
+  if (tools) {
+    body.tools = tools;
+    if (req.toolChoice === 'none') body.tool_choice = { type: 'none' };
+    else if (req.toolChoice && typeof req.toolChoice === 'object') {
       body.tool_choice = { type: 'tool', name: req.toolChoice.name };
     }
   }
   return body;
 }
 
-function toAnthropicBlock(part: ContentPart): Record<string, unknown> {
+function toAnthropicBlock(part: ContentPart, model: string): Record<string, unknown>[] {
   switch (part.type) {
     case 'text':
-      return { type: 'text', text: part.text };
+      return [{ type: 'text', text: part.text }];
     case 'image':
-      return {
-        type: 'image',
-        source:
-          part.data instanceof Uint8Array
-            ? { type: 'base64', media_type: part.mediaType, data: toBase64(part.data) }
-            : { type: 'url', url: part.data.url },
-      };
+      return [
+        {
+          type: 'image',
+          source:
+            part.data instanceof Uint8Array
+              ? { type: 'base64', media_type: part.mediaType, data: toBase64(part.data) }
+              : { type: 'url', url: part.data.url },
+        },
+      ];
     case 'tool_call':
-      return { type: 'tool_use', id: part.id, name: part.name, input: part.input };
+      return [{ type: 'tool_use', id: part.id, name: part.name, input: part.input }];
     case 'tool_result':
-      return {
-        type: 'tool_result',
-        tool_use_id: part.toolCallId,
-        content: part.content,
-        ...(part.isError ? { is_error: true } : {}),
-      };
+      return [
+        {
+          type: 'tool_result',
+          tool_use_id: part.toolCallId,
+          content: part.content,
+          ...(part.isError ? { is_error: true } : {}),
+        },
+      ];
+    case 'opaque':
+      // Thinking blocks are replayed unchanged, and only to the model that wrote them.
+      return part.provider === 'anthropic' && part.model === model ? [{ ...part.block }] : [];
   }
 }
 
-function fromAnthropicBlock(block: AnthropicBlock): ContentPart[] {
+function fromAnthropicBlock(block: AnthropicBlock, model: string): ContentPart[] {
   if (block.type === 'text' && typeof block.text === 'string')
     return [{ type: 'text', text: block.text }];
   if (block.type === 'tool_use' && block.id && block.name) {
     return [{ type: 'tool_call', id: block.id, name: block.name, input: block.input ?? {} }];
+  }
+  if (block.type === 'thinking' || block.type === 'redacted_thinking') {
+    // Must go back unchanged with the assistant turn in a tool loop (adaptive / between_tools).
+    return [{ type: 'opaque', provider: 'anthropic', model, block: { ...block } }];
   }
   return [];
 }

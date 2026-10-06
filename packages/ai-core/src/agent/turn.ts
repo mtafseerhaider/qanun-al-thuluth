@@ -1,5 +1,10 @@
+import { detectYoungChildFastingRequest } from '../guardrails/child-fasting.ts';
 import { mentionsChild } from '../guardrails/child-restriction.ts';
-import { classifyInput, classifyOutputWithModel } from '../guardrails/classify.ts';
+import {
+  classifyInput,
+  classifyInputRules,
+  classifyOutputWithModel,
+} from '../guardrails/classify.ts';
 import type { Classified, ClassifyDeps } from '../guardrails/classify.ts';
 import { DISCLAIMER_TEXT, hasDisclaimer } from '../guardrails/disclaimer.ts';
 import { guardOutput, instructionFor } from '../guardrails/guard.ts';
@@ -15,7 +20,7 @@ import { RED_FLAG_REFERRAL, SCHOLAR_REFERRAL } from '../guardrails/templates.ts'
 import { sentences } from '../guardrails/text.ts';
 import type { Locale } from '../guardrails/text.ts';
 import { chatMetered } from '../router/metered.ts';
-import type { MeteredDeps } from '../router/metered.ts';
+import type { MeteredDeps, MeteredResult } from '../router/metered.ts';
 import type {
   ChatMessage,
   ContentPart,
@@ -29,6 +34,8 @@ import type { ResolvedCitation } from './citations.ts';
 import { contactsFor, crisisKindOf, crisisTemplate } from './crisis.ts';
 import type { EmergencyContact } from './crisis.ts';
 import { followUps, followUpTopic } from './follow-ups.ts';
+import { intentRules, routeIntent, trimHistory } from './intent.ts';
+import type { IntentDecision, IntentInput, TurnBudget } from './intent.ts';
 import { CHAT_SYSTEM_PROMPT_KEY, CHAT_SYSTEM_PROMPT_VERSION } from './prompt.ts';
 import { isAgentTool, TOOL_INPUTS, toolMeta } from './tools.ts';
 import type { AgentToolName, ToolResult } from './tools.ts';
@@ -116,6 +123,10 @@ export interface TurnArgs {
   minorNames?: readonly string[] | undefined;
   /** The chat is focused on a member under 18. */
   focusIsMinor?: boolean | undefined;
+  /** Names of members under 7 (no fasting at all, S7-10). */
+  youngChildNames?: readonly string[] | undefined;
+  /** Every household member's name (intent routing: naming a member makes a turn full). */
+  memberNames?: readonly string[] | undefined;
   isRamadan?: boolean | undefined;
   onEscalation?: ((e: EscalationRecord) => Promise<void>) | undefined;
   metadata: RequestMetadata;
@@ -126,6 +137,20 @@ export interface TurnArgs {
   modelOutputCheck?: boolean | undefined;
   signal?: AbortSignal | undefined;
   overallDeadlineMs?: number | undefined;
+  /**
+   * S7-02 intent routing. When set, a `light` turn (greeting, thanks, short general question with
+   * no safety, child, fiqh, Islamic, household or numeric signal) runs on `budget.lightRoute` with
+   * no tools, one step and `budget.lightMaxOutputTokens`. `withModel` consults `classify.intent`
+   * for ambiguous messages (in parallel with `classify.safety`).
+   */
+  intentRouting?: { budget: TurnBudget; withModel?: boolean | undefined } | undefined;
+  /** Token budget for prior history on a full turn (default: no trimming). */
+  historyTokenBudget?: number | undefined;
+  /**
+   * Start the first model step on the rules verdict while `classify.safety` runs; the response is
+   * used only when the model classifier agrees, otherwise it is aborted and the step re-runs.
+   */
+  speculativeFirstStep?: boolean | undefined;
 }
 
 export interface TurnToolCall {
@@ -150,6 +175,128 @@ export interface TurnOutcome {
   followUps: string[];
   /** The main model was not called (crisis or red-flag template). */
   bypassedModel: boolean;
+  /** S7-02 routing verdict (null when intent routing is off). */
+  intent: IntentDecision | null;
+  /** The route the main model steps used. */
+  routeKey: RouteKey;
+  /** Whether a speculative first step was used, discarded, or not attempted. */
+  speculation: 'used' | 'discarded' | 'none';
+}
+
+/** The per-turn execution plan derived from the classification and intent. */
+interface TurnPlan {
+  routeKey: RouteKey;
+  maxSteps: number;
+  maxOutputTokens: number;
+  tools: ToolDefinition[];
+  history: ChatMessage[];
+  instruction: string | null;
+}
+
+interface Speculation {
+  plan: TurnPlan;
+  messages: ChatMessage[];
+  promise: Promise<MeteredResult>;
+  abort: AbortController;
+  key: string;
+  intent: IntentDecision['intent'] | null;
+}
+
+/** The parts of a classification that change how the turn runs. */
+function decisionKey(c: Classified): string {
+  return `${c.safety}|${c.child_weight_request}|${c.fiqh_question}`;
+}
+
+function planFor(
+  args: TurnArgs,
+  c: Classified,
+  intent: Pick<IntentDecision, 'intent'> | null,
+  locale: Locale,
+): TurnPlan {
+  const budget = args.intentRouting?.budget;
+  const light = !!budget && intent?.intent === 'light';
+  const historyBudget = light ? budget.lightHistoryTokens : args.historyTokenBudget;
+  return {
+    routeKey: light ? budget.lightRoute : args.routeKey,
+    maxSteps: light ? 1 : args.maxSteps,
+    maxOutputTokens: light
+      ? Math.min(args.maxOutputTokens, budget.lightMaxOutputTokens)
+      : args.maxOutputTokens,
+    tools: light ? [] : args.tools,
+    history: historyBudget === undefined ? args.history : trimHistory(args.history, historyBudget),
+    instruction: instructionFor(c, locale, {
+      youngChildFasting: detectYoungChildFastingRequest(args.text, {
+        youngNames: args.youngChildNames,
+      }),
+    }),
+  };
+}
+
+/**
+ * System blocks ordered for prompt caching (12 §5.7): the rendered `chat.system` prompt and the
+ * household snapshot carry cache markers; memories and the per-turn instruction come after them.
+ */
+function buildSystem(args: TurnArgs, plan: TurnPlan): ContentPart[] {
+  return [
+    { type: 'text', text: args.system, cache: true },
+    ...args.contextBlocks.map((t, i) => ({
+      type: 'text' as const,
+      text: t,
+      ...(i === 0 ? { cache: true } : {}),
+    })),
+    ...(plan.instruction ? [{ type: 'text' as const, text: plan.instruction }] : []),
+  ];
+}
+
+function firstMessages(args: TurnArgs, plan: TurnPlan): ChatMessage[] {
+  return [
+    ...plan.history,
+    { role: 'user', content: args.userContent ?? [{ type: 'text', text: args.text }] },
+  ];
+}
+
+function callStep(
+  args: TurnArgs,
+  plan: TurnPlan,
+  system: ContentPart[],
+  messages: ChatMessage[],
+  last: boolean,
+  escalated: boolean,
+  signal: AbortSignal | undefined,
+  metadata: RequestMetadata,
+): Promise<MeteredResult> {
+  return chatMetered(
+    plan.routeKey,
+    (route) => ({
+      system,
+      messages,
+      tools: plan.tools,
+      toolChoice: last || escalated ? 'none' : 'auto',
+      maxOutputTokens: Math.min(
+        route.params.maxOutputTokens ?? plan.maxOutputTokens,
+        plan.maxOutputTokens,
+      ),
+      ...(route.params.temperature !== undefined ? { temperature: route.params.temperature } : {}),
+      // The conversation prefix is cached for the next step of the loop and the next turn.
+      cacheTail: true,
+      ...(signal ? { signal } : {}),
+    }),
+    metadata,
+    { overallDeadlineMs: args.overallDeadlineMs ?? 60_000 },
+    args.deps,
+  );
+}
+
+/** `AbortSignal.any` where available; a manual fan-in otherwise. */
+function anySignal(signals: AbortSignal[]): AbortSignal {
+  const any = (AbortSignal as unknown as { any?: (s: AbortSignal[]) => AbortSignal }).any;
+  if (any) return any(signals);
+  const c = new AbortController();
+  for (const s of signals) {
+    if (s.aborted) c.abort();
+    else s.addEventListener('abort', () => c.abort(), { once: true });
+  }
+  return c.signal;
 }
 
 const MAX_TOOL_CALLS_PER_STEP = 4;
@@ -310,25 +457,99 @@ export async function runChatTurn(
     promptVersion: CHAT_SYSTEM_PROMPT_VERSION,
   };
   const classifyDeps: ClassifyDeps = { ...args.deps, metadata: args.metadata };
-  const classification = await classifyInput(
-    args.text,
-    args.classifyWithModel ? classifyDeps : undefined,
-  );
   const contacts = contactsFor(args.countryCode, args.emergencyContacts);
 
   const minorMentioned = (s: string) =>
     (args.minorNames ?? []).some((n) => n && new RegExp(`\\b${escapeRe(n)}\\b`, 'iu').test(s));
-  const aboutMinorInput =
+  const aboutMinorOf = (c: Classified) =>
     !!args.focusIsMinor ||
-    classification.child_weight_request ||
+    c.child_weight_request ||
     minorMentioned(args.text) ||
     mentionsChild(args.text);
+  const hasImages = (args.userContent ?? []).some((p) => p.type === 'image');
+  const intentInput = (c: Classified): IntentInput => ({
+    text: args.text,
+    classification: c,
+    aboutMinor: aboutMinorOf(c),
+    hasImages,
+    hasHistory: args.history.length > 0,
+    memberNames: [...(args.memberNames ?? []), ...(args.minorNames ?? [])],
+  });
+
+  // 0. Rules first (instant); classify.safety and the optional classify.intent run in parallel.
+  //    With speculation on, the first model step starts now on the rules verdict and is kept only
+  //    if the model classifier reaches the same decision (S7-02 latency: hides the classifier).
+  const rules = classifyInputRules(args.text);
+  const routing = args.intentRouting;
+  const rulesIntent = routing ? intentRules(intentInput(rules)) : null;
+  // A bare greeting or thanks (strict whole-message match) needs no model classifier (S7-02).
+  const classifyModel =
+    !!args.classifyWithModel &&
+    !(rulesIntent?.intent === 'light' && rulesIntent.reason === 'smalltalk');
+  let spec: Speculation | null = null;
+  if (
+    args.speculativeFirstStep &&
+    classifyModel &&
+    rules.safety === 'ok' &&
+    !(rulesIntent?.ambiguous && routing?.withModel)
+  ) {
+    const plan = planFor(args, rules, rulesIntent, locale);
+    const abort = new AbortController();
+    const signal = args.signal ? anySignal([args.signal, abort.signal]) : abort.signal;
+    const messages = firstMessages(args, plan);
+    const promise = callStep(
+      args,
+      plan,
+      buildSystem(args, plan),
+      messages,
+      plan.maxSteps === 1,
+      false,
+      signal,
+      metadata,
+    );
+    promise.catch(() => {}); // a discarded speculation must not surface as unhandled
+    spec = {
+      plan,
+      messages,
+      promise,
+      abort,
+      key: decisionKey(rules),
+      intent: rulesIntent?.intent ?? null,
+    };
+  }
+  const [classification, routed] = await Promise.all([
+    classifyModel ? classifyInput(args.text, classifyDeps) : Promise.resolve(rules),
+    routing
+      ? routeIntent(intentInput(rules), routing.withModel ? classifyDeps : undefined)
+      : Promise.resolve(null),
+  ]);
+  let intent: IntentDecision | null = routed;
+  if (routing && decisionKey(classification) !== decisionKey(rules)) {
+    // The model raised a flag the rules did not: re-decide on the merged verdict (always full).
+    const { ambiguous: _a, ...d } = intentRules(intentInput(classification));
+    intent = d;
+  }
+  let speculation: TurnOutcome['speculation'] = 'none';
+  if (spec) {
+    if (spec.key === decisionKey(classification) && spec.intent === (intent?.intent ?? null)) {
+      speculation = 'used';
+    } else {
+      spec.abort.abort();
+      spec = null;
+      speculation = 'discarded';
+    }
+  }
+  const plan = spec?.plan ?? planFor(args, classification, intent, locale);
+  const aboutMinorInput = aboutMinorOf(classification);
 
   const base = {
     classification,
     toolCalls: [] as TurnToolCall[],
     usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
     model: null as string | null,
+    intent,
+    routeKey: plan.routeKey,
+    speculation,
   };
 
   const finishTemplate = async (
@@ -337,6 +558,8 @@ export async function runChatTurn(
     record: EscalationRecord,
     flag: string,
   ): Promise<TurnOutcome> => {
+    spec?.abort.abort();
+    base.speculation = spec ? 'discarded' : base.speculation;
     await args.onEscalation?.(record);
     for (const chunk of deltaChunks(text)) await emit({ type: 'delta', text: chunk });
     await emit({ type: 'safety', action: 'escalate', escalation });
@@ -383,9 +606,14 @@ export async function runChatTurn(
   }
 
   // 2. Hard red flags: stop planning, explain, recommend a clinician; no model call.
-  if (classification.safety === 'red_flag' && !classification.child_weight_request) {
-    const reason =
-      classification.categories.map((c) => CATEGORY_REASON[c]).find(Boolean) ?? 'other_clinical';
+  //    A request to restrict a child normally gets the growth-first reply instead, but a known red
+  //    flag (an eating-disorder sign, rapid weight loss in a child) still escalates (S7-10).
+  const hardReason = classification.categories.map((c) => CATEGORY_REASON[c]).find(Boolean);
+  if (
+    classification.safety === 'red_flag' &&
+    (!classification.child_weight_request || hardReason)
+  ) {
+    const reason = hardReason ?? 'other_clinical';
     const escalation = escalationFor([hardFlag(reason)], null, locale) ?? {
       reason,
       family_member_id: null,
@@ -410,20 +638,8 @@ export async function runChatTurn(
   }
 
   // 3. Agent loop.
-  const instruction = instructionFor(classification, locale);
-  const system: ContentPart[] = [
-    { type: 'text', text: args.system, cache: true },
-    ...args.contextBlocks.map((t, i, all) => ({
-      type: 'text' as const,
-      text: t,
-      ...(i === 0 && all.length > 0 ? { cache: true } : {}),
-    })),
-    ...(instruction ? [{ type: 'text' as const, text: instruction }] : []),
-  ];
-  const messages: ChatMessage[] = [
-    ...args.history,
-    { role: 'user', content: args.userContent ?? [{ type: 'text', text: args.text }] },
-  ];
+  const system = buildSystem(args, plan);
+  const messages: ChatMessage[] = spec?.messages ?? firstMessages(args, plan);
   const registry = new CitationRegistry();
   const ctx: ToolContext = {
     locale,
@@ -437,34 +653,17 @@ export async function runChatTurn(
   let draft = '';
   let finishReason: FinishReason = 'complete';
 
-  for (let step = 0; step < args.maxSteps; step++) {
+  for (let step = 0; step < plan.maxSteps; step++) {
     if (args.signal?.aborted) {
       finishReason = 'cancelled';
       break;
     }
-    const last = step === args.maxSteps - 1;
+    const last = step === plan.maxSteps - 1;
     let response;
     try {
-      ({ response } = await chatMetered(
-        args.routeKey,
-        (route) => ({
-          system,
-          messages,
-          tools: args.tools,
-          toolChoice: last || toolEscalation ? 'none' : 'auto',
-          maxOutputTokens: Math.min(
-            route.params.maxOutputTokens ?? args.maxOutputTokens,
-            args.maxOutputTokens,
-          ),
-          ...(route.params.temperature !== undefined
-            ? { temperature: route.params.temperature }
-            : {}),
-          ...(args.signal ? { signal: args.signal } : {}),
-        }),
-        metadata,
-        { overallDeadlineMs: args.overallDeadlineMs ?? 60_000 },
-        args.deps,
-      ));
+      ({ response } = await (step === 0 && spec
+        ? spec.promise
+        : callStep(args, plan, system, messages, last, !!toolEscalation, args.signal, metadata)));
     } catch (err) {
       if (args.signal?.aborted) {
         finishReason = 'cancelled';
@@ -502,7 +701,7 @@ export async function runChatTurn(
         continue;
       }
       const name = call.name;
-      if (!args.tools.some((t) => t.name === name)) {
+      if (!plan.tools.some((t) => t.name === name)) {
         // Not offered this turn (tier, contract or availability): answered to the model only, so
         // no event names a tool the client contract does not know.
         results.push({
@@ -661,6 +860,7 @@ export async function runChatTurn(
     fiqhQuestion: classification.fiqh_question,
     disclaimer: false,
     internalKcalValues: ctx.internalKcal,
+    youngNames: args.youngChildNames,
   });
   for (const f of guarded.safetyFlags) flags.add(f);
   text = guarded.text;

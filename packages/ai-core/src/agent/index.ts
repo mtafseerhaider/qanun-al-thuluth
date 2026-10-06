@@ -7,3 +7,4 @@ export * from './prompt.ts';
 export * from './memory.ts';
 export * from './turn.ts';
 export * from './ramadan.ts';
+export * from './intent.ts';

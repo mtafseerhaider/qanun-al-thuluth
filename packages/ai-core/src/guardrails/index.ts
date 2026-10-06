@@ -9,3 +9,4 @@ export * from './disclaimer.ts';
 export * from './classify.ts';
 export * from './guard.ts';
 export * from './numeric-grounding.ts';
+export * from './child-fasting.ts';

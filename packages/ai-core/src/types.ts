@@ -24,7 +24,13 @@ export type ContentPart =
       data: Uint8Array | { url: string };
     }
   | { type: 'tool_call'; id: string; name: string; input: unknown }
-  | { type: 'tool_result'; toolCallId: string; content: string; isError?: boolean };
+  | { type: 'tool_result'; toolCallId: string; content: string; isError?: boolean }
+  /**
+   * A provider block the app does not interpret but must send back unchanged within the same
+   * conversation (Anthropic `thinking` / `redacted_thinking` blocks before a `tool_use`). Only the
+   * adapter that produced it, for the same model, replays it; every other adapter drops it.
+   */
+  | { type: 'opaque'; provider: ProviderId; model: string; block: Record<string, unknown> };
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'tool';
@@ -67,11 +73,30 @@ export interface ChatRequest {
   messages: ChatMessage[];
   tools?: ToolDefinition[];
   toolChoice?: 'auto' | 'none' | { name: string };
+  /** Hard cap: adapters send `min(maxOutputTokens, route params.maxOutputTokens)` (S7-02). */
   maxOutputTokens: number;
   temperature?: number;
   stopSequences?: string[];
+  /**
+   * Mark the end of `messages` as a cache breakpoint (Anthropic `cache_control` on the last block)
+   * so later steps of the same tool loop, and the next turn, read the conversation prefix from cache.
+   */
+  cacheTail?: boolean;
   metadata: RequestMetadata;
   signal?: AbortSignal;
+}
+
+/** The output cap a provider call may use: the smaller of the request's and the route's (S7-02). */
+export function effectiveMaxOutputTokens(req: ChatRequest, params: ModelParams): number {
+  const route = params.maxOutputTokens;
+  return route !== undefined && route > 0
+    ? Math.min(route, req.maxOutputTokens)
+    : req.maxOutputTokens;
+}
+
+/** Stable key for provider-side prompt-cache routing (OpenAI `prompt_cache_key`). */
+export function promptCacheKey(req: ChatRequest): string {
+  return `thuluth:${req.route}:${req.metadata.promptKey}@${req.metadata.promptVersion}:${req.metadata.tier}`;
 }
 
 export type StopReason =
@@ -120,6 +145,10 @@ export interface ModelParams {
   priceOutPerMTokUsd: number;
   priceCacheReadPerMTokUsd?: number;
   priceCacheWritePerMTokUsd?: number;
+  /** Anthropic `output_config.effort` for models that support it (S7-02 latency/cost lever). */
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  /** Anthropic thinking mode: `between_tools` (Sonnet 5.5 only, lowest setting) or `adaptive`. */
+  thinking?: 'adaptive' | 'between_tools';
   [k: string]: unknown;
 }
 

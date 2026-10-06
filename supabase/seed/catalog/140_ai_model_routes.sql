@@ -19,9 +19,15 @@
 -- ai-chat uses 'chat.free' for free users while feature flag 'chat.free_route' is enabled
 -- (seed/catalog/160_feature_flags.sql). 'chat.summarize' and 'eval.judge' are additions from
 -- 12-ai-agent-architecture.md section 21 (05 section 22.4 notes they are seed rows, not schema).
+--
+-- S7-02 (docs/ai/s7-cost-latency.md): chat.default on Sonnet 5.5 runs with "effort":"low" and
+-- "thinking":"between_tools" (no extended thinking), so thinking tokens neither count against the
+-- 1500-token reply cap nor bill as output on every chat turn. The Anthropic adapter only sends these
+-- to models that accept them and drops "temperature" for models that reject sampling parameters
+-- (Sonnet 5.x, Opus 4.7+/5.x); other providers keep using it. Revert by removing the two keys.
 
 insert into public.ai_model_routes (route_key, provider, model, priority, enabled, params) values
-  ('chat.default',         'anthropic', 'claude-sonnet-5-5',         1, true, '{"timeoutMs":45000,"maxOutputTokens":1500,"temperature":0.4}'),
+  ('chat.default',         'anthropic', 'claude-sonnet-5-5',         1, true, '{"timeoutMs":45000,"maxOutputTokens":1500,"temperature":0.4,"effort":"low","thinking":"between_tools"}'),
   ('chat.default',         'openai',    'gpt-5',                     2, true, '{"timeoutMs":45000,"maxOutputTokens":1500,"temperature":0.4}'),
   ('chat.default',         'google',    'gemini-2.5-pro',            3, true, '{"timeoutMs":45000,"maxOutputTokens":1500,"temperature":0.4}'),
   ('chat.free',            'anthropic', 'claude-haiku-4-5-20251001', 1, true, '{"timeoutMs":30000,"maxOutputTokens":800,"temperature":0.4}'),

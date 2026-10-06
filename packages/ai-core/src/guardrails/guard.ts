@@ -1,3 +1,4 @@
+import { CHILD_NO_FASTING, findYoungChildFasting } from './child-fasting.ts';
 import { findChildRestrictionViolations } from './child-restriction.ts';
 import type { ChildRestrictionContext } from './child-restriction.ts';
 import { classifyInput, classifyOutputWithModel } from './classify.ts';
@@ -30,6 +31,8 @@ export interface GuardContext extends ChildRestrictionContext {
   fiqhQuestion?: boolean | undefined;
   /** Append the clinician disclaimer when the text has health guidance (FR-AI-10). */
   disclaimer?: boolean | undefined;
+  /** Names of members under 7: no fasting may be planned or encouraged for them (S7-10). */
+  youngNames?: readonly string[] | undefined;
 }
 
 export interface GuardResult {
@@ -39,6 +42,16 @@ export interface GuardResult {
   /** True when the draft was replaced by a template. */
   replaced: boolean;
 }
+
+/** Rule categories that always escalate, even inside a request about a child's weight (S7-10). */
+const KNOWN_RED_FLAGS = new Set([
+  'eating_disorder_signals',
+  'rapid_child_weight_loss',
+  'dehydration_signs',
+  'pregnancy_complication',
+  'severe_allergy_reaction',
+  'insulin_or_sulfonylurea_fasting',
+]);
 
 /** Deterministic output validation and repair. Pure and synchronous. */
 export function guardOutput(draft: string, ctx: GuardContext): GuardResult {
@@ -62,6 +75,17 @@ export function guardOutput(draft: string, ctx: GuardContext): GuardResult {
         flags.add('feeding_pressure_removed');
         text = pressure.text;
       }
+    }
+  }
+
+  // No fasting under 7, whoever the reply is about (an age in the text is enough).
+  if (!replaced) {
+    const fasting = findYoungChildFasting(text, { youngNames: ctx.youngNames });
+    if (fasting.length) {
+      violations.push(...fasting);
+      flags.add('child_fasting_blocked');
+      text = CHILD_NO_FASTING[ctx.locale];
+      replaced = true;
     }
   }
 
@@ -91,8 +115,17 @@ export function guardOutput(draft: string, ctx: GuardContext): GuardResult {
 }
 
 /** The instruction appended to the system prompt for a classified input (12 §13.1 diagram). */
-export function instructionFor(c: Classified, locale: Locale): string | null {
+export function instructionFor(
+  c: Classified,
+  locale: Locale,
+  extra: { youngChildFasting?: boolean | undefined } = {},
+): string | null {
   const parts: string[] = [];
+  if (extra.youngChildFasting) {
+    parts.push(
+      'The user is asking about fasting for a child under 7. Children under 7 do not fast at all, not even part of a day. Say so kindly and suggest joining suhoor and iftar with the family instead. Do not make a fasting schedule for them.',
+    );
+  }
   if (c.child_weight_request) {
     parts.push(
       'The user is asking about restricting a child. Never give a child a calorie number, a diet, a deficit, smaller portions or weight-loss advice. Explain warmly that growing children need enough food, offer family-wide habits, use the Division of Responsibility, and suggest the paediatrician.',
@@ -143,7 +176,11 @@ export async function runGuardedTurn(args: {
       safetyFlags: ['emergency_template'],
     };
   }
-  if (classification.safety === 'red_flag' && !classification.child_weight_request) {
+  const knownRedFlag = classification.categories.some((c) => KNOWN_RED_FLAGS.has(c));
+  if (
+    classification.safety === 'red_flag' &&
+    (!classification.child_weight_request || knownRedFlag)
+  ) {
     const referral = RED_FLAG_REFERRAL[args.locale];
     return {
       text: classification.fiqh_question
