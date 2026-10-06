@@ -77,6 +77,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       CFBundleAllowMixedLocalizations: true,
     },
+    // Suhoor and iftar reminders are sent with ios_interruption_level time_sensitive (OneSignal);
+    // without this entitlement iOS delivers them as active and Focus modes hold them back.
+    entitlements: {
+      'com.apple.developer.usernotifications.time-sensitive': true,
+    },
     privacyManifests: {
       NSPrivacyAccessedAPITypes: [
         {
@@ -118,6 +123,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     REVENUECAT_API_KEY_ANDROID: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
     GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    HCAPTCHA_SITE_KEY: process.env.EXPO_PUBLIC_HCAPTCHA_SITE_KEY,
     eas: { projectId: EAS_PROJECT_ID },
   },
   plugins: [

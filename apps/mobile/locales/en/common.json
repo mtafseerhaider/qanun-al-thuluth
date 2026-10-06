@@ -11,5 +11,18 @@
     "title": "You've reached the free plan limit",
     "households": "The free plan includes {{free}} household. Premium will add more households when it launches.",
     "familyMembers": "The free plan includes up to {{free}} family members per household. Premium allows up to {{premium}}."
+  },
+  "appStatus": {
+    "updateRequired": {
+      "title": "Update required",
+      "body": "This version of Thuluth is no longer supported. Update the app to keep using it. Your data is safe.",
+      "action": "Update now",
+      "openFailed": "We couldn't open the store. Please update Thuluth from the App Store or Google Play."
+    },
+    "maintenance": {
+      "title": "We'll be right back",
+      "body": "Thuluth is down for a short maintenance. Your data is safe. Please try again in a few minutes.",
+      "retry": "Try again"
+    }
   }
 }

@@ -33,6 +33,7 @@ describe('toAuthAppError', () => {
     [{ code: 'over_email_send_rate_limit', status: 429 }, 'AUTH_RATE_LIMITED'],
     [{ code: 'invalid_credentials', status: 400 }, 'AUTH_INVALID_CREDENTIALS'],
     [{ code: 'email_address_invalid', status: 400 }, 'AUTH_INVALID_EMAIL'],
+    [{ code: 'captcha_failed', status: 400 }, 'AUTH_CAPTCHA_FAILED'],
     [{ status: 403, message: 'Token has expired or is invalid' }, 'AUTH_OTP_INVALID'],
     [{ name: 'AuthRetryableFetchError', message: 'Failed to fetch' }, 'AUTH_NETWORK'],
   ])('maps %o to %s', (input, code) => {

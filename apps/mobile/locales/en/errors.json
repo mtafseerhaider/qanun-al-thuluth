@@ -19,6 +19,7 @@
     "AUTH_NETWORK": "We could not reach the server. Check your connection and try again.",
     "AUTH_SESSION_EXPIRED": "Your session has ended. Please sign in again.",
     "AUTH_PROFILE_MISSING": "Your account is still being set up. Please try again in a moment.",
+    "AUTH_CAPTCHA_FAILED": "We couldn't complete the security check. Please try again.",
     "NETWORK_ERROR": "You appear to be offline. Check your connection and try again.",
     "NOT_CONFIGURED": "This build is not connected to a server yet.",
     "FORBIDDEN": "You don't have permission to do that in this household.",

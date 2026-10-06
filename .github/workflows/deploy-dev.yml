@@ -89,12 +89,15 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+      # EXPO_PUBLIC_* values come from the EAS `development` environment (the same variables the
+      # development build profile uses), so an update keeps Supabase, Sentry, OneSignal, RevenueCat,
+      # Google and hCaptcha config. Passing a subset by hand dropped the rest (eas-builds runbook).
+      # `--environment` needs eas-cli >= 14 (eas-version: latest above).
       - if: steps.cfg.outputs.ready == 'true'
         working-directory: apps/mobile
         env:
           APP_ENV: development
-          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           UPDATE_MESSAGE: ${{ github.event.head_commit.message || 'manual' }}
-        run: eas update --channel development --message "$UPDATE_MESSAGE" --non-interactive
+        run: |
+          eas update --channel development --environment development \
+            --message "$UPDATE_MESSAGE" --non-interactive
