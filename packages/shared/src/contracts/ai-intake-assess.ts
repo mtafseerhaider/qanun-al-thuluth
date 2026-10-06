@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { RedFlagScreening } from '../domain/intake.ts';
 import { LIFE_STAGES } from '../enums.ts';
 import { Escalation, Locale, Uuid } from './common.ts';
 
@@ -9,10 +10,20 @@ export const AiIntakeAssessRequest = z.object({
   family_member_ids: z.array(Uuid).min(1).max(20).optional(), // default: all active members
   reason: z.enum(['onboarding', 'profile_changed', 'periodic']).default('onboarding'),
   locale: Locale.optional(),
+  /** Screening answers keyed by family_member_id (01 §7.6). Inputs only: just the flags are stored. */
+  red_flag_screening: z.record(Uuid, RedFlagScreening).optional(),
 });
 export type AiIntakeAssessRequest = z.infer<typeof AiIntakeAssessRequest>;
 
-export const EnergyTargets = z.object({ kcal_per_day: z.number(), method: z.string() });
+/** `kcal_per_day` is the goal-adjusted target; the breakdown fields are optional (adults only). */
+export const EnergyTargets = z.object({
+  kcal_per_day: z.number(),
+  method: z.string(),
+  bmr_kcal: z.number().optional(),
+  tdee_kcal: z.number().optional(),
+  goal_adjustment_kcal: z.number().optional(),
+  pal: z.number().optional(),
+});
 export const MacroTargets = z.object({
   protein_g: z.number(),
   carbs_g: z.number(),
