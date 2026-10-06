@@ -11,3 +11,4 @@ export * from './domain/profile.ts';
 export * from './domain/household.ts';
 export * from './domain/family-member.ts';
 export * from './domain/consent.ts';
+export * from './domain/family-modules.ts';

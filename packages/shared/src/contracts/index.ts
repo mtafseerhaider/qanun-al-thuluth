@@ -12,3 +12,8 @@ export * from './ai-chat.ts';
 export * from './ai-analyze-meal.ts';
 export * from './ai-transcribe.ts';
 export * from './ramadan-generate.ts';
+export * from './growth-compute.ts';
+export * from './export-pdf.ts';
+export * from './account-export.ts';
+export * from './account-delete.ts';
+export * from './analytics-rollup.ts';
