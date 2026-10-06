@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CHILD_AGE_YEARS } from '../constants/safety.ts';
 import { FAST_KINDS, GOAL_TYPES, SEVERITIES, TEXTURES } from '../enums.ts';
-import type { GoalType } from '../enums.ts';
+import type { GoalType, SpecialModule } from '../enums.ts';
 
 /**
  * Intake schemas for onboarding step 5 (01-product-requirements §7). Each schema is the insert
@@ -244,8 +244,21 @@ export const MINOR_ALLOWED_GOALS = [
   'maintain',
 ] as const satisfies readonly GoalType[];
 
-export function goalAllowedForAge(goal: GoalType, ageYears: number): boolean {
+/**
+ * Teens (13 to 17) with the pregnancy module may also pick `pregnancy_support` (product decision,
+ * 2026-10-06); the app always pairs it with a prompt to see their doctor. The DB guard allows it
+ * from the teen life stage.
+ */
+export const MINOR_PREGNANCY_MIN_AGE_YEARS = 13;
+
+export function goalAllowedForAge(
+  goal: GoalType,
+  ageYears: number,
+  modules: readonly SpecialModule[] = [],
+): boolean {
   if (ageYears >= CHILD_AGE_YEARS) return true;
+  if (goal === 'pregnancy_support')
+    return ageYears >= MINOR_PREGNANCY_MIN_AGE_YEARS && modules.includes('pregnancy');
   return (MINOR_ALLOWED_GOALS as readonly GoalType[]).includes(goal);
 }
 
@@ -276,8 +289,12 @@ export const NutritionGoalInput = z
 export type NutritionGoalInput = z.infer<typeof NutritionGoalInput>;
 
 /** Validates a member's goals against their age; returns the goals that are not allowed. */
-export function disallowedGoalsForAge(goals: readonly GoalType[], ageYears: number): GoalType[] {
-  return goals.filter((g) => !goalAllowedForAge(g, ageYears));
+export function disallowedGoalsForAge(
+  goals: readonly GoalType[],
+  ageYears: number,
+  modules: readonly SpecialModule[] = [],
+): GoalType[] {
+  return goals.filter((g) => !goalAllowedForAge(g, ageYears, modules));
 }
 
 // Red-flag screening (§7.6 end). Answers feed `ai-intake-assess`; only flags are stored.

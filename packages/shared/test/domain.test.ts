@@ -105,3 +105,13 @@ describe('trackers', () => {
     ).toBe('water');
   });
 });
+
+describe('pregnant teens', () => {
+  it('may pick pregnancy support only with the pregnancy module and from 13', async () => {
+    const { goalAllowedForAge } = await import('../src/domain/intake.ts');
+    expect(goalAllowedForAge('pregnancy_support', 16, ['pregnancy'])).toBe(true);
+    expect(goalAllowedForAge('pregnancy_support', 16)).toBe(false);
+    expect(goalAllowedForAge('pregnancy_support', 12, ['pregnancy'])).toBe(false);
+    expect(goalAllowedForAge('weight_loss', 16, ['pregnancy'])).toBe(false);
+  });
+});

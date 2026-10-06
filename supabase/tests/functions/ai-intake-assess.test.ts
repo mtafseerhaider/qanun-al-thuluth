@@ -548,3 +548,32 @@ Deno.test('invalid model JSON twice is AI_OUTPUT_INVALID', async () => {
   const res = await handler(post({ household_id: HH }));
   assertEquals((await res.json()).error.code, 'AI_OUTPUT_INVALID');
 });
+
+Deno.test(
+  'pregnant teen: pregnancy guidance with a see-your-doctor prompt and no numbers',
+  async () => {
+    const teen = member({
+      id: OTHER,
+      name: 'Sana',
+      date_of_birth: '2009-08-01',
+      sex_at_birth: 'female',
+      height_cm: 158,
+      weight_kg: 54,
+      special_modules: ['pregnancy'],
+      pregnancy: { trimester: 2, gestational_diabetes: false },
+      goals: [
+        { goal_type: 'pregnancy_support', is_primary: true, target_value: null, target_unit: null },
+      ],
+    });
+    const { handler } = setup({ store: memoryStore({ members: [usman, teen] }) });
+    const res = await handler(post({ household_id: HH }));
+    assertEquals(res.status, 200);
+    const a = (await assessments(res)).get(OTHER);
+    assertExists(a);
+    assertEquals(a.life_stage, 'teen');
+    assertEquals(a.energy_targets, null);
+    assertEquals(a.macro_targets, null);
+    assert(a.risk_flags.includes('teen_pregnancy'), a.risk_flags.join(','));
+    assert((a.child_guidance ?? [])[0]?.includes('doctor'));
+  },
+);

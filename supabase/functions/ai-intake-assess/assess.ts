@@ -132,6 +132,9 @@ export function computeMember(
     }
   }
 
+  // Pregnant teens get pregnancy guidance, always with a prompt to see their doctor (2026-10-06).
+  if (minor && pregnant) extraFlags.push('teen_pregnancy');
+
   const month = Number(ctx.today.slice(5, 7));
   const climate = climateBand(ctx.climateZone as ClimateZone | null, month);
   const hydration = dailyFluidTarget({
@@ -194,6 +197,8 @@ const GUIDANCE: Record<Locale, Record<string, string>> = {
       'Children under 7 do not fast; they can join suhoor or open with a date at iftar.',
     infant:
       "Breast milk or formula on demand meets your baby's needs; no water or other drinks before 6 months.",
+    teen_pregnancy:
+      'Please see a doctor or midwife soon and keep every antenatal appointment; eat regular meals and never skip them.',
   },
   ur: {
     dor: 'پیش کریں، زبردستی نہ کریں: کیا اور کب آپ طے کریں، کتنا بچہ خود طے کرے۔',
@@ -207,6 +212,8 @@ const GUIDANCE: Record<Locale, Record<string, string>> = {
     under7_fasting:
       'سات سال سے کم بچے روزہ نہیں رکھتے؛ وہ سحری میں شامل ہو سکتے ہیں یا افطار کھجور سے کر سکتے ہیں۔',
     infant: 'چھ ماہ سے پہلے ماں کا دودھ یا فارمولا ہی کافی ہے؛ پانی یا کوئی اور مشروب نہ دیں۔',
+    teen_pregnancy:
+      'جلد ڈاکٹر یا دائی سے ملیں اور حمل کے ہر چیک اپ پر جائیں؛ باقاعدگی سے کھانا کھائیں اور کوئی کھانا نہ چھوڑیں۔',
   },
 };
 
@@ -214,6 +221,8 @@ export function childGuidance(m: MemberContext, ageMonths: number, locale: Local
   const g = GUIDANCE[locale];
   if (ageMonths < 6) return [g.infant ?? ''];
   const out = [g.dor, g.seconds, g.together, g.water];
+  if (m.special_modules.includes('pregnancy') || m.pregnancy !== null)
+    out.unshift(g.teen_pregnancy);
   if (m.special_modules.includes('picky_eater')) out.push(g.picky);
   if (m.special_modules.includes('autism')) out.push(g.autism);
   if (m.special_modules.includes('adhd')) out.push(g.adhd);

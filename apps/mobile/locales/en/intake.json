@@ -511,7 +511,8 @@
     "pregnancy_complication": "Vomiting that stops fluids needs medical care today.",
     "severe_allergy_reaction": "{{name}} has a severe allergy. We'll strictly exclude it; always check labels.",
     "insulin_or_sulfonylurea_fasting": "{{name}}'s medicines make fasting risky. We won't plan fasts until a doctor has advised.",
-    "other": "Something in {{name}}'s answers is worth checking with a doctor."
+    "other": "Something in {{name}}'s answers is worth checking with a doctor.",
+    "teen_pregnancy": "{{name}} is pregnant. Please see a doctor or midwife soon; this guidance doesn't replace antenatal care."
   },
   "assessment": {
     "title": "Here's what we understood about your family",
