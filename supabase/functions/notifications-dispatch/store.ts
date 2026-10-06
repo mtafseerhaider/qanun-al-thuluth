@@ -107,7 +107,7 @@ export function supabaseNotificationsStore(admin: SupabaseClient): Notifications
       const households = (await selectAll<unknown>((a, b) =>
         admin
           .from('households')
-          .select('id, timezone, city, country_code, hijri_offset_days')
+          .select('id, timezone, city, country_code, hijri_offset_days, ai_memory_notice_at')
           .is('deleted_at', null)
           .order('id')
           .range(a, b),

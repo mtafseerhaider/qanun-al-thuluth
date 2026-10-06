@@ -92,6 +92,10 @@ export const TIER_LIMITS = {
   'ai-transcribe': { daily: { free: 0, premium: 60 }, perMinute: { free: 0, premium: 10 } },
   'grocery-generate': { daily: { free: 10, premium: 30 }, perMinute: { free: 3, premium: 3 } },
   'ramadan-generate': { daily: { free: 0, premium: 5 }, perMinute: { free: 0, premium: 1 } },
+  'growth-compute': { daily: { free: 60, premium: 60 }, perMinute: { free: 10, premium: 10 } },
+  'export-pdf': { daily: { free: 0, premium: 30 }, perMinute: { free: 0, premium: 5 } },
+  'account-export': { daily: { free: 2, premium: 2 }, perMinute: { free: 1, premium: 1 } },
+  'account-delete': { daily: { free: 5, premium: 5 }, perMinute: { free: 2, premium: 2 } },
 } as const;
 export type GatedFunction = keyof typeof TIER_LIMITS;
 

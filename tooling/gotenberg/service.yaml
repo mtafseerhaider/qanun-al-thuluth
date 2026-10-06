@@ -1,0 +1,57 @@
+# tooling/gotenberg/service.yaml
+# Cloud Run (Knative) service for the PDF renderer, region europe-west3 (Frankfurt, next to the
+# Supabase projects in eu-central-1; 04 §4, 19 §11). NOT deployed by CI: see README.md.
+# Replace PROJECT_ID and the image digest before `gcloud run services replace`.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: thuluth-pdf
+  labels:
+    app: thuluth-pdf
+  annotations:
+    run.googleapis.com/ingress: all # reachable by Supabase Edge Functions; basic auth required
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0' # 19 §13: min 0, max 5, concurrency 4
+        autoscaling.knative.dev/maxScale: '5'
+        run.googleapis.com/cpu-throttling: 'true'
+        run.googleapis.com/startup-cpu-boost: 'true'
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 4
+      timeoutSeconds: 60
+      serviceAccountName: thuluth-pdf@PROJECT_ID.iam.gserviceaccount.com # no IAM roles needed
+      containers:
+        - image: europe-west3-docker.pkg.dev/PROJECT_ID/thuluth/gotenberg@sha256:REPLACE_WITH_DIGEST
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: '2'
+              memory: 2Gi
+          env:
+            - name: GOTENBERG_API_BASIC_AUTH_USERNAME
+              value: thuluth
+            - name: GOTENBERG_API_BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gotenberg-token # Secret Manager secret; same value as GOTENBERG_TOKEN
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 30
+  traffic:
+    - percent: 100
+      latestRevision: true

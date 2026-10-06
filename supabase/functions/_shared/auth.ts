@@ -1,13 +1,19 @@
 import { HttpError } from './errors.ts';
 
+/** JWT `amr` entries: how and when the session was authenticated (11 §15.2). */
+export type AuthMethodRef = { method: string; timestamp: number };
+
 export interface AuthContext {
   userId: string;
   jwt: string;
   email?: string;
+  amr?: AuthMethodRef[];
 }
 
 /** Verifies a JWT and returns its claims, or null when invalid. Real impl: `supabase.auth.getClaims`. */
-export type ClaimsVerifier = (jwt: string) => Promise<{ sub: string; email?: string } | null>;
+export type ClaimsVerifier = (
+  jwt: string,
+) => Promise<{ sub: string; email?: string; amr?: AuthMethodRef[] } | null>;
 
 export async function requireUser(req: Request, verify: ClaimsVerifier): Promise<AuthContext> {
   const header = req.headers.get('authorization') ?? '';
@@ -16,7 +22,31 @@ export async function requireUser(req: Request, verify: ClaimsVerifier): Promise
   const claims = await verify(jwt).catch(() => null);
   if (!claims?.sub)
     throw new HttpError('UNAUTHENTICATED', 'Your session has expired. Sign in again.');
-  return { userId: claims.sub, jwt, ...(claims.email ? { email: claims.email } : {}) };
+  return {
+    userId: claims.sub,
+    jwt,
+    ...(claims.email ? { email: claims.email } : {}),
+    ...(claims.amr ? { amr: claims.amr } : {}),
+  };
+}
+
+/**
+ * Step-up re-auth for sensitive actions (11 §15): the newest `amr` timestamp must be at most
+ * `maxAgeSec` old. Token refresh keeps `amr`, a fresh OTP or Apple/Google sign-in renews it.
+ * Throws UNAUTHENTICATED with `details.reauth = true` (06 §4.12).
+ */
+export function assertRecentAuth(
+  auth: AuthContext,
+  maxAgeSec: number,
+  now: Date = new Date(),
+): void {
+  const latest = Math.max(0, ...(auth.amr ?? []).map((a) => Number(a.timestamp) || 0));
+  if (now.getTime() / 1000 - latest > maxAgeSec) {
+    throw new HttpError('UNAUTHENTICATED', 'Please confirm it is you to continue.', {
+      reauth: true,
+      max_age_seconds: maxAgeSec,
+    });
+  }
 }
 
 /** Constant-time string comparison (length leaks only). */

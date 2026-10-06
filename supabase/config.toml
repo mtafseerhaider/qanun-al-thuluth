@@ -116,8 +116,6 @@ deno_version = 2
 # ---- Edge Functions: gateway JWT verification per function (10 section 9) ----
 # Each function gets a [functions.<name>] block when its folder lands (the CLI refuses entries
 # without an index.ts). JWT modes per function are listed in docs/10-supabase-structure.md section 9.1.
-[functions.ai-smoke]
-verify_jwt = true           # Sprint 0 smoke function (00 section 11); removed when ai-chat ships
 [functions.household-invite]
 verify_jwt = true
 [functions.ai-intake-assess]
@@ -142,3 +140,15 @@ verify_jwt = true           # S5-07 photo meal analysis (06 section 4.5); premiu
 verify_jwt = true           # S5-06 voice transcription, multipart (06 section 4.6); premium
 [functions.revenuecat-webhook]
 verify_jwt = false          # S5-14 RevenueCat webhook (17 section 7): Authorization secret checked in code; /sync verifies the user JWT in code
+[functions.ai-reassess]
+verify_jwt = false          # S6-15 periodic reassessment cron (daily, 4-weekly per member); x-internal-secret checked in code
+[functions.growth-compute]
+verify_jwt = true           # S6-03 growth z-scores, percentiles and alerts (06 section 4.8)
+[functions.export-pdf]
+verify_jwt = false          # S6-08 dual mode: user JWT verified in code; action purge_expired needs x-internal-secret (cron exports-purge-expired)
+[functions.account-export]
+verify_jwt = true           # S6-10 account data export, async (06 section 4.12)
+[functions.account-delete]
+verify_jwt = false          # S6-10 dual mode: user JWT verified in code; /execute and action sweep_orphans need x-internal-secret (crons)
+[functions.analytics-rollup]
+verify_jwt = false          # S6-13 cron hourly and nightly; x-internal-secret checked in code
