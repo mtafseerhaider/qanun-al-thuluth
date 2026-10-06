@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { EXPOSURE_STAGES } from '../enums.ts';
 import { Citation, Escalation, Locale, Uuid } from './common.ts';
 
 /** `POST /functions/v1/ai-chat` (06-api-specification §4.1). Streams `ChatSseEvent`s. */
@@ -77,6 +78,25 @@ export const ChatToolCard = z.discriminatedUnion('kind', [
     kind: z.literal('log_proposal'),
     table: z.enum(['hydration_logs', 'meal_logs', 'fasting_logs', 'food_exposures']),
     values: z.record(z.unknown()),
+  }),
+  z.object({
+    // create_exposure_ladder: nothing is written until the parent confirms in the app.
+    kind: z.literal('exposure_ladder_proposal'),
+    family_member_id: Uuid,
+    target_food: z.string().min(1),
+    target_ingredient_id: Uuid.nullable(),
+    strategy: z.enum(['exposure_ladder', 'food_chaining']),
+    steps: z
+      .array(
+        z.object({
+          step_no: z.number().int().min(1),
+          stage: z.enum(EXPOSURE_STAGES),
+          food_label: z.string().min(1),
+          bridge_from_ingredient_id: Uuid.nullable(),
+          criteria: z.string(),
+        }),
+      )
+      .min(1),
   }),
 ]);
 export type ChatToolCard = z.infer<typeof ChatToolCard>;
