@@ -45,6 +45,11 @@ export const GrowthAlertCode = z.enum([
   'rapid_weight_loss',
   'bmi_for_age_above_p97',
   'height_for_age_below_p3',
+  // 15 §2.8 rules with no 06 code: BMI-for-age z < -3 (stops planning; covers over-10s, where
+  // weight-for-age is not computed), head circumference |z| > 2 under 5 years, WHO plausibility.
+  'severe_thinness',
+  'head_circumference_out_of_range',
+  'implausible_measurement',
 ]);
 export type GrowthAlertCode = z.infer<typeof GrowthAlertCode>;
 
