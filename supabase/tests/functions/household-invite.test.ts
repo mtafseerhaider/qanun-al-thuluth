@@ -5,6 +5,7 @@ import { sha256Hex } from '../../functions/_shared/crypto.ts';
 import type { InviteEmail } from '../../functions/_shared/integrations/email.ts';
 import {
   createInviteHandler,
+  INVITE_BURST_PER_MINUTE,
   MAX_APP_USERS_PER_HOUSEHOLD,
 } from '../../functions/household-invite/handler.ts';
 import type { Invitation, InviteStore } from '../../functions/household-invite/store.ts';
@@ -29,6 +30,7 @@ function memoryStore() {
   const invites: (Invitation & { token_hash: string; accepted_by?: string })[] = [];
   const audits: string[] = [];
   let extraMembers = 0;
+  const rateCounts = new Map<string, number>();
   const store: InviteStore = {
     membership: async (h, u) => members.get(`${h}:${u}`) ?? null,
     household: async (h) => (h === HH ? { id: HH, name: 'Lahore Family' } : null),
@@ -38,6 +40,15 @@ function memoryStore() {
       [...members.keys()].filter((k) => k.startsWith(h)).length + extraMembers,
     invitesCreatedSince: async () => 0,
     hasPremium: async () => false,
+    consumeRateLimit: async (key, limit) => {
+      const count = (rateCounts.get(key) ?? 0) + 1;
+      rateCounts.set(key, count);
+      return {
+        allowed: count <= limit,
+        remaining: Math.max(0, limit - count),
+        reset_at: NOW.toISOString(),
+      };
+    },
     userProfile: async () => ({ display_name: 'Tafseer', locale: 'en' }),
     pendingInvite: async (h, e) =>
       invites.find(
@@ -69,7 +80,14 @@ function memoryStore() {
       audits.push(`${e.action}:${e.entity}`);
     },
   };
-  return { store, invites, members, audits, addMembers: (n: number) => (extraMembers += n) };
+  return {
+    store,
+    invites,
+    members,
+    audits,
+    rateCounts,
+    addMembers: (n: number) => (extraMembers += n),
+  };
 }
 
 function setup(now = () => NOW) {
@@ -266,4 +284,16 @@ Deno.test('accepting again as a member reports ALREADY_MEMBER with the household
   const again = await t.call('uzma', { action: 'accept', token });
   assertEquals(again.json.error.code, 'ALREADY_MEMBER');
   assertEquals(again.json.error.details.household_id, HH);
+});
+
+Deno.test('S7-03: every action, accept included, has a per-user burst limit', async () => {
+  const t = setup();
+  for (let i = 0; i < INVITE_BURST_PER_MINUTE; i++) {
+    const r = await t.call('uzma', { action: 'accept', token: 'x'.repeat(43) });
+    assertEquals(r.json.error.code, 'INVITE_INVALID');
+  }
+  const limited = await t.call('uzma', { action: 'accept', token: 'x'.repeat(43) });
+  assertEquals(limited.status, 429);
+  assertEquals(limited.json.error.code, 'RATE_LIMITED');
+  assertEquals(t.rateCounts.get(`household-invite:${UZMA}:min`), INVITE_BURST_PER_MINUTE + 1);
 });

@@ -17,6 +17,8 @@ import type { Invitation, InviteStore } from './store.ts';
 export const MAX_APP_USERS_PER_HOUSEHOLD = 10;
 /** Daily create/resend quota (06 §2.7). */
 export const DAILY_INVITES = { free: 20, premium: 50 } as const;
+/** Burst limit per user across every action, accept included (06 §2.7; S7-03). */
+export const INVITE_BURST_PER_MINUTE = 5;
 
 export interface InviteDeps {
   verify: ClaimsVerifier;
@@ -85,6 +87,16 @@ export function createInviteHandler(deps: InviteDeps) {
     HouseholdInviteRequest,
     async ({ req, input }): Promise<HouseholdInviteResponse> => {
       const user = await requireUser(req, deps.verify);
+      const burst = await deps.store.consumeRateLimit(
+        `household-invite:${user.userId}:min`,
+        INVITE_BURST_PER_MINUTE,
+        60,
+      );
+      if (!burst.allowed) {
+        throw new HttpError('RATE_LIMITED', 'Please wait a minute and try again.', {
+          reset_at: burst.reset_at,
+        });
+      }
 
       switch (input.action) {
         case 'create': {
