@@ -5,6 +5,8 @@ import type {
   ChatRequest,
   ChatResponse,
   ContentPart,
+  EmbedRequest,
+  EmbedResponse,
   ModelParams,
   StopReason,
   StreamEvent,
@@ -13,6 +15,7 @@ import { postJson, streamFromChat, systemText, toBase64 } from './http.ts';
 import type { FetchLike } from './http.ts';
 
 const API_URL = 'https://api.openai.com/v1/responses';
+const EMBEDDINGS_URL = 'https://api.openai.com/v1/embeddings';
 
 interface OpenAiOutputItem {
   type: string;
@@ -108,6 +111,37 @@ export class OpenAiProvider implements AIProvider {
 
   stream(req: ChatRequest, model: string, params: ModelParams): AsyncIterable<StreamEvent> {
     return streamFromChat(req, this.id, model, () => this.chat(req, model, params));
+  }
+
+  /** Embeddings API with `dimensions` (text-embedding-3-large at 1536 for `embed.knowledge`). */
+  async embed(req: EmbedRequest, model: string, params: ModelParams): Promise<EmbedResponse> {
+    const apiKey = this.#apiKey ?? getEnv('OPENAI_API_KEY');
+    if (!apiKey) throw new AIError('AUTH', 'OPENAI_API_KEY is not set', { provider: this.id });
+    const started = Date.now();
+    const json = (await postJson(
+      EMBEDDINGS_URL,
+      { authorization: `Bearer ${apiKey}` },
+      { model, input: req.inputs, dimensions: req.dimensions, encoding_format: 'float' },
+      { provider: this.id, timeoutMs: params.timeoutMs, signal: req.signal, fetch: this.#fetch },
+    )) as { data: { index: number; embedding: number[] }[]; usage?: { prompt_tokens?: number } };
+    const vectors = [...json.data].sort((a, b) => a.index - b.index).map((d) => d.embedding);
+    if (vectors.length !== req.inputs.length || vectors.some((v) => v.length !== req.dimensions)) {
+      throw new AIError('INVALID_REQUEST', 'Embedding response shape mismatch', {
+        provider: this.id,
+      });
+    }
+    return {
+      provider: this.id,
+      model,
+      vectors,
+      usage: {
+        inputTokens: json.usage?.prompt_tokens ?? 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      },
+      latencyMs: Date.now() - started,
+    };
   }
 }
 

@@ -3,6 +3,8 @@ import type {
   AIProvider,
   ChatRequest,
   ChatResponse,
+  EmbedRequest,
+  EmbedResponse,
   ModelParams,
   ProviderId,
   StreamEvent,
@@ -53,4 +55,39 @@ export class FakeProvider implements AIProvider {
   stream(req: ChatRequest, model: string, params: ModelParams): AsyncIterable<StreamEvent> {
     return streamFromChat(req, this.id, model, () => this.chat(req, model, params));
   }
+
+  readonly embedCalls: { req: EmbedRequest; model: string }[] = [];
+
+  /** Deterministic unit vectors derived from the text, so equal inputs embed identically. */
+  async embed(req: EmbedRequest, model: string, _params: ModelParams): Promise<EmbedResponse> {
+    this.embedCalls.push({ req, model });
+    return {
+      provider: this.id,
+      model,
+      vectors: req.inputs.map((t) => fakeEmbedding(t, req.dimensions)),
+      usage: {
+        ...ZERO_USAGE,
+        inputTokens: req.inputs.reduce((n, t) => n + Math.ceil(t.length / 4), 0),
+      },
+      latencyMs: 1,
+    };
+  }
+}
+
+/** FNV-1a seeded pseudo-random unit vector; similar strings do not get similar vectors. */
+export function fakeEmbedding(text: string, dimensions: number): number[] {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const v: number[] = [];
+  for (let i = 0; i < dimensions; i++) {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    v.push(((h >>> 0) / 4294967296) * 2 - 1);
+  }
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+  return v.map((x) => x / norm);
 }
