@@ -390,6 +390,72 @@ export type Database = {
           },
         ];
       };
+      alpha_feedback: {
+        Row: {
+          app_version: string;
+          category: string;
+          client_created_at: string | null;
+          created_at: string;
+          device_info: NonNullable<Json>;
+          household_id: string | null;
+          id: string;
+          locale: string | null;
+          message: string;
+          platform: string | null;
+          screen: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          app_version: string;
+          category: string;
+          client_created_at?: string | null;
+          created_at?: string;
+          device_info?: NonNullable<Json>;
+          household_id?: string | null;
+          id?: string;
+          locale?: string | null;
+          message: string;
+          platform?: string | null;
+          screen?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          app_version?: string;
+          category?: string;
+          client_created_at?: string | null;
+          created_at?: string;
+          device_info?: NonNullable<Json>;
+          household_id?: string | null;
+          id?: string;
+          locale?: string | null;
+          message?: string;
+          platform?: string | null;
+          screen?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'alpha_feedback_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'alpha_feedback_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       analytics_events: {
         Row: {
           app_version: string | null;
@@ -512,6 +578,77 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      budget_entries: {
+        Row: {
+          amount_minor: number;
+          budget_profile_id: string;
+          category_id: string;
+          created_at: string;
+          currency: string;
+          grocery_list_id: string | null;
+          household_id: string;
+          id: string;
+          note: string | null;
+          spent_on: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount_minor: number;
+          budget_profile_id: string;
+          category_id: string;
+          created_at?: string;
+          currency: string;
+          grocery_list_id?: string | null;
+          household_id: string;
+          id?: string;
+          note?: string | null;
+          spent_on?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_minor?: number;
+          budget_profile_id?: string;
+          category_id?: string;
+          created_at?: string;
+          currency?: string;
+          grocery_list_id?: string | null;
+          household_id?: string;
+          id?: string;
+          note?: string | null;
+          spent_on?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'budget_entries_budget_profile_id_household_id_fkey';
+            columns: ['budget_profile_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'budget_profiles';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'budget_entries_category_id_fkey';
+            columns: ['category_id'];
+            isOneToOne: false;
+            referencedRelation: 'budget_categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'budget_entries_grocery_list_id_household_id_fkey';
+            columns: ['grocery_list_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'grocery_lists';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'budget_entries_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       budget_profiles: {
         Row: {
@@ -940,6 +1077,75 @@ export type Database = {
           },
         ];
       };
+      fasting_logs: {
+        Row: {
+          completed: boolean;
+          created_at: string;
+          ended_at: string | null;
+          exemption_reason: string | null;
+          family_member_id: string;
+          fast_date: string;
+          hijri_date: string | null;
+          household_id: string;
+          id: string;
+          is_practice_fast: boolean;
+          kind: Database['public']['Enums']['fast_kind'];
+          notes: string | null;
+          qada_for_hijri_year: number | null;
+          started_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          completed?: boolean;
+          created_at?: string;
+          ended_at?: string | null;
+          exemption_reason?: string | null;
+          family_member_id: string;
+          fast_date: string;
+          hijri_date?: string | null;
+          household_id: string;
+          id?: string;
+          is_practice_fast?: boolean;
+          kind: Database['public']['Enums']['fast_kind'];
+          notes?: string | null;
+          qada_for_hijri_year?: number | null;
+          started_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          completed?: boolean;
+          created_at?: string;
+          ended_at?: string | null;
+          exemption_reason?: string | null;
+          family_member_id?: string;
+          fast_date?: string;
+          hijri_date?: string | null;
+          household_id?: string;
+          id?: string;
+          is_practice_fast?: boolean;
+          kind?: Database['public']['Enums']['fast_kind'];
+          notes?: string | null;
+          qada_for_hijri_year?: number | null;
+          started_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fasting_logs_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'fasting_logs_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       feature_flags: {
         Row: {
           created_at: string;
@@ -1158,6 +1364,76 @@ export type Database = {
           },
         ];
       };
+      grocery_lists: {
+        Row: {
+          created_at: string;
+          currency: string;
+          deleted_at: string | null;
+          ends_on: string;
+          estimated_total_minor: number;
+          household_id: string;
+          id: string;
+          meal_plan_id: string | null;
+          period: string;
+          price_profile_id: string | null;
+          starts_on: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          currency: string;
+          deleted_at?: string | null;
+          ends_on: string;
+          estimated_total_minor?: number;
+          household_id: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          period?: string;
+          price_profile_id?: string | null;
+          starts_on: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          currency?: string;
+          deleted_at?: string | null;
+          ends_on?: string;
+          estimated_total_minor?: number;
+          household_id?: string;
+          id?: string;
+          meal_plan_id?: string | null;
+          period?: string;
+          price_profile_id?: string | null;
+          starts_on?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'grocery_lists_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'grocery_lists_meal_plan_id_household_id_fkey';
+            columns: ['meal_plan_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'meal_plans';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'grocery_lists_price_profile_id_fkey';
+            columns: ['price_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'price_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       hadith_references: {
         Row: {
           also_in: NonNullable<Json>;
@@ -1339,6 +1615,7 @@ export type Database = {
           currency: string;
           deleted_at: string | null;
           family_size: number;
+          hijri_offset_days: number;
           id: string;
           name: string;
           owner_user_id: string;
@@ -1355,6 +1632,7 @@ export type Database = {
           currency?: string;
           deleted_at?: string | null;
           family_size?: number;
+          hijri_offset_days?: number;
           id?: string;
           name: string;
           owner_user_id: string;
@@ -1371,6 +1649,7 @@ export type Database = {
           currency?: string;
           deleted_at?: string | null;
           family_size?: number;
+          hijri_offset_days?: number;
           id?: string;
           name?: string;
           owner_user_id?: string;
@@ -1393,6 +1672,57 @@ export type Database = {
             columns: ['region_id'];
             isOneToOne: false;
             referencedRelation: 'regions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      hydration_logs: {
+        Row: {
+          beverage: string;
+          created_at: string;
+          family_member_id: string;
+          household_id: string;
+          id: string;
+          logged_at: string;
+          timing: string;
+          updated_at: string;
+          volume_ml: number;
+        };
+        Insert: {
+          beverage?: string;
+          created_at?: string;
+          family_member_id: string;
+          household_id: string;
+          id?: string;
+          logged_at?: string;
+          timing?: string;
+          updated_at?: string;
+          volume_ml: number;
+        };
+        Update: {
+          beverage?: string;
+          created_at?: string;
+          family_member_id?: string;
+          household_id?: string;
+          id?: string;
+          logged_at?: string;
+          timing?: string;
+          updated_at?: string;
+          volume_ml?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hydration_logs_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'hydration_logs_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
             referencedColumns: ['id'];
           },
         ];
@@ -1585,6 +1915,63 @@ export type Database = {
           {
             foreignKeyName: 'ingredient_allergens_ingredient_id_fkey';
             columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ingredient_substitutions: {
+        Row: {
+          created_at: string;
+          culinary_fit: number;
+          from_ingredient_id: string;
+          id: string;
+          notes_i18n: NonNullable<Json>;
+          nutrient_similarity: number;
+          ratio: number;
+          reason: string;
+          region_codes: string[] | null;
+          to_ingredient_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          culinary_fit: number;
+          from_ingredient_id: string;
+          id?: string;
+          notes_i18n?: NonNullable<Json>;
+          nutrient_similarity: number;
+          ratio?: number;
+          reason: string;
+          region_codes?: string[] | null;
+          to_ingredient_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          culinary_fit?: number;
+          from_ingredient_id?: string;
+          id?: string;
+          notes_i18n?: NonNullable<Json>;
+          nutrient_similarity?: number;
+          ratio?: number;
+          reason?: string;
+          region_codes?: string[] | null;
+          to_ingredient_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ingredient_substitutions_from_ingredient_id_fkey';
+            columns: ['from_ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ingredient_substitutions_to_ingredient_id_fkey';
+            columns: ['to_ingredient_id'];
             isOneToOne: false;
             referencedRelation: 'ingredients';
             referencedColumns: ['id'];
@@ -2096,6 +2483,122 @@ export type Database = {
           },
         ];
       };
+      notification_preferences: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          id: string;
+          kind: string;
+          quiet_hours: NonNullable<Json>;
+          settings: NonNullable<Json>;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          kind: string;
+          quiet_hours?: NonNullable<Json>;
+          settings?: NonNullable<Json>;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          kind?: string;
+          quiet_hours?: NonNullable<Json>;
+          settings?: NonNullable<Json>;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_preferences_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          attempts: number;
+          body: string;
+          channel: Database['public']['Enums']['notification_channel'];
+          created_at: string;
+          data: NonNullable<Json>;
+          dedupe_key: string | null;
+          household_id: string | null;
+          id: string;
+          kind: string;
+          onesignal_id: string | null;
+          read_at: string | null;
+          scheduled_for: string;
+          sent_at: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          attempts?: number;
+          body: string;
+          channel?: Database['public']['Enums']['notification_channel'];
+          created_at?: string;
+          data?: NonNullable<Json>;
+          dedupe_key?: string | null;
+          household_id?: string | null;
+          id?: string;
+          kind: string;
+          onesignal_id?: string | null;
+          read_at?: string | null;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          attempts?: number;
+          body?: string;
+          channel?: Database['public']['Enums']['notification_channel'];
+          created_at?: string;
+          data?: NonNullable<Json>;
+          dedupe_key?: string | null;
+          household_id?: string | null;
+          id?: string;
+          kind?: string;
+          onesignal_id?: string | null;
+          read_at?: string | null;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       nutrition_goals: {
         Row: {
           created_at: string;
@@ -2149,6 +2652,124 @@ export type Database = {
             columns: ['household_id'];
             isOneToOne: false;
             referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      nutrition_journal: {
+        Row: {
+          created_at: string;
+          digestion: number | null;
+          energy: number | null;
+          family_member_id: string;
+          household_id: string;
+          id: string;
+          journal_date: string;
+          mood: number | null;
+          notes: string | null;
+          thuluth_adherence: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          digestion?: number | null;
+          energy?: number | null;
+          family_member_id: string;
+          household_id: string;
+          id?: string;
+          journal_date: string;
+          mood?: number | null;
+          notes?: string | null;
+          thuluth_adherence?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          digestion?: number | null;
+          energy?: number | null;
+          family_member_id?: string;
+          household_id?: string;
+          id?: string;
+          journal_date?: string;
+          mood?: number | null;
+          notes?: string | null;
+          thuluth_adherence?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nutrition_journal_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'nutrition_journal_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      pantry_items: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          expires_on: string | null;
+          grams: number;
+          household_id: string;
+          id: string;
+          ingredient_id: string | null;
+          label: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          expires_on?: string | null;
+          grams: number;
+          household_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          label: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          expires_on?: string | null;
+          grams?: number;
+          household_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          label?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pantry_items_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pantry_items_ingredient_id_fkey';
+            columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pantry_items_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -2332,6 +2953,114 @@ export type Database = {
             columns: ['household_id'];
             isOneToOne: false;
             referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      price_observations: {
+        Row: {
+          amount_minor: number;
+          created_at: string;
+          id: string;
+          ingredient_id: string;
+          moderation_status: string;
+          observed_on: string;
+          price_profile_id: string;
+          reporter_user_id: string | null;
+          source: Database['public']['Enums']['price_source'];
+          unit: string;
+          unit_grams: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_minor: number;
+          created_at?: string;
+          id?: string;
+          ingredient_id: string;
+          moderation_status?: string;
+          observed_on?: string;
+          price_profile_id: string;
+          reporter_user_id?: string | null;
+          source: Database['public']['Enums']['price_source'];
+          unit: string;
+          unit_grams?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_minor?: number;
+          created_at?: string;
+          id?: string;
+          ingredient_id?: string;
+          moderation_status?: string;
+          observed_on?: string;
+          price_profile_id?: string;
+          reporter_user_id?: string | null;
+          source?: Database['public']['Enums']['price_source'];
+          unit?: string;
+          unit_grams?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'price_observations_ingredient_id_fkey';
+            columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'price_observations_price_profile_id_fkey';
+            columns: ['price_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'price_profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'price_observations_reporter_user_id_fkey';
+            columns: ['reporter_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      price_profiles: {
+        Row: {
+          city: string | null;
+          created_at: string;
+          currency: string;
+          effective_from: string;
+          id: string;
+          label: string | null;
+          region_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          city?: string | null;
+          created_at?: string;
+          currency: string;
+          effective_from: string;
+          id?: string;
+          label?: string | null;
+          region_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          city?: string | null;
+          created_at?: string;
+          currency?: string;
+          effective_from?: string;
+          id?: string;
+          label?: string | null;
+          region_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'price_profiles_region_id_fkey';
+            columns: ['region_id'];
+            isOneToOne: false;
+            referencedRelation: 'regions';
             referencedColumns: ['id'];
           },
         ];
@@ -3109,6 +3838,92 @@ export type Database = {
           },
         ];
       };
+      shopping_items: {
+        Row: {
+          actual_minor: number | null;
+          aisle: string | null;
+          created_at: string;
+          estimated_minor: number | null;
+          grocery_list_id: string;
+          household_id: string;
+          id: string;
+          ingredient_id: string | null;
+          is_checked: boolean;
+          is_fresh: boolean;
+          label: string;
+          quantity: number;
+          sort_order: number;
+          substitution_for_item_id: string | null;
+          unit: string;
+          updated_at: string;
+        };
+        Insert: {
+          actual_minor?: number | null;
+          aisle?: string | null;
+          created_at?: string;
+          estimated_minor?: number | null;
+          grocery_list_id: string;
+          household_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          is_checked?: boolean;
+          is_fresh?: boolean;
+          label: string;
+          quantity?: number;
+          sort_order?: number;
+          substitution_for_item_id?: string | null;
+          unit?: string;
+          updated_at?: string;
+        };
+        Update: {
+          actual_minor?: number | null;
+          aisle?: string | null;
+          created_at?: string;
+          estimated_minor?: number | null;
+          grocery_list_id?: string;
+          household_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          is_checked?: boolean;
+          is_fresh?: boolean;
+          label?: string;
+          quantity?: number;
+          sort_order?: number;
+          substitution_for_item_id?: string | null;
+          unit?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'shopping_items_grocery_list_id_household_id_fkey';
+            columns: ['grocery_list_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'grocery_lists';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'shopping_items_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'shopping_items_ingredient_id_fkey';
+            columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'shopping_items_substitution_for_item_id_fkey';
+            columns: ['substitution_for_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'shopping_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       source_verifications: {
         Row: {
           action: string | null;
@@ -3362,6 +4177,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      weight_tracking: {
+        Row: {
+          bmi: number | null;
+          created_at: string;
+          family_member_id: string;
+          household_id: string;
+          id: string;
+          measured_on: string;
+          updated_at: string;
+          waist_cm: number | null;
+          weight_kg: number;
+        };
+        Insert: {
+          bmi?: number | null;
+          created_at?: string;
+          family_member_id: string;
+          household_id: string;
+          id?: string;
+          measured_on: string;
+          updated_at?: string;
+          waist_cm?: number | null;
+          weight_kg: number;
+        };
+        Update: {
+          bmi?: number | null;
+          created_at?: string;
+          family_member_id?: string;
+          household_id?: string;
+          id?: string;
+          measured_on?: string;
+          updated_at?: string;
+          waist_cm?: number | null;
+          weight_kg?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'weight_tracking_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'weight_tracking_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       citable_islamic_sources: {
@@ -3418,6 +4284,40 @@ export type Database = {
         };
         Relationships: [];
       };
+      fasting_logs_visible: {
+        Row: {
+          completed: boolean | null;
+          created_at: string | null;
+          ended_at: string | null;
+          exemption_reason: string | null;
+          family_member_id: string | null;
+          fast_date: string | null;
+          hijri_date: string | null;
+          household_id: string | null;
+          id: string | null;
+          is_practice_fast: boolean | null;
+          kind: Database['public']['Enums']['fast_kind'] | null;
+          qada_for_hijri_year: number | null;
+          started_at: string | null;
+          updated_at: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fasting_logs_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'fasting_logs_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       islamic_sources_public: {
         Row: {
           citation_text: string | null;
@@ -3451,6 +4351,58 @@ export type Database = {
         };
         Relationships: [];
       };
+      mv_current_prices: {
+        Row: {
+          ingredient_id: string | null;
+          price_per_kg_minor: number | null;
+          price_profile_id: string | null;
+          refreshed_at: string | null;
+          total_weight: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'price_observations_ingredient_id_fkey';
+            columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'price_observations_price_profile_id_fkey';
+            columns: ['price_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'price_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mv_ingredient_prices: {
+        Row: {
+          has_live_data: boolean | null;
+          ingredient_id: string | null;
+          last_observed_on: string | null;
+          median_minor: number | null;
+          n_observations: number | null;
+          price_profile_id: string | null;
+          unit: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'price_observations_ingredient_id_fkey';
+            columns: ['ingredient_id'];
+            isOneToOne: false;
+            referencedRelation: 'ingredients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'price_observations_price_profile_id_fkey';
+            columns: ['price_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'price_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       v_knowledge_status: {
         Row: {
           item: string | null;
@@ -3462,11 +4414,40 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_qada_balance: {
+        Row: {
+          family_member_id: string | null;
+          hijri_year: number | null;
+          household_id: string | null;
+          made_up: number | null;
+          missed: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fasting_logs_family_member_id_household_id_fkey';
+            columns: ['family_member_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'fasting_logs_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Functions: {
       accept_household_invitation: {
         Args: { p_invitation_id: string; p_user_id: string };
         Returns: undefined;
+      };
+      acquire_job_lease: {
+        Args: { p_holder: string; p_name: string; p_ttl_seconds?: number };
+        Returns: boolean;
       };
       activate_meal_plan: {
         Args: { p_meal_plan_id: string };
@@ -3575,6 +4556,14 @@ export type Database = {
         }[];
       };
       my_household_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      notification_default_enabled: {
+        Args: { p_kind: string };
+        Returns: boolean;
+      };
+      notification_kinds: {
+        Args: Record<PropertyKey, never>;
+        Returns: string[];
+      };
       plan_generation_ack: {
         Args: { p_archive?: boolean; p_msg_id: number };
         Returns: boolean;
@@ -3609,6 +4598,14 @@ export type Database = {
       };
       recompute_recipe_nutrition: {
         Args: { p_recipe_id: string };
+        Returns: undefined;
+      };
+      refresh_ingredient_prices: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      release_job_lease: {
+        Args: { p_holder: string; p_name: string };
         Returns: undefined;
       };
       search_islamic_sources: {

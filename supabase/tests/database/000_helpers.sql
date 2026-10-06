@@ -150,6 +150,28 @@ begin
   insert into public.plan_recommendations (household_id, meal_plan_id, recommendation_id)
   select v_hid, mp.id, (select r.id from public.recommendations r order by r.id limit 1)
     from public.meal_plans mp where mp.household_id = v_hid;
+  -- Sprint 4 grocery, budget, tracking and platform rows (S4-02)
+  insert into public.grocery_lists (household_id, meal_plan_id, starts_on, ends_on, currency)
+  select v_hid, mp.id, current_date, current_date + 6, 'PKR' from public.meal_plans mp where mp.household_id = v_hid;
+  insert into public.shopping_items (grocery_list_id, household_id, ingredient_id, label, quantity, unit)
+  select gl.id, v_hid, i.id, 'Onion', 2, 'kg'
+    from public.grocery_lists gl, public.ingredients i where gl.household_id = v_hid and i.name = 'Onion';
+  insert into public.budget_entries (household_id, budget_profile_id, amount_minor, currency, category_id)
+  select v_hid, bp.id, 150000, 'PKR', bc.id
+    from public.budget_profiles bp, public.budget_categories bc where bp.household_id = v_hid and bc.code = 'produce_veg';
+  insert into public.pantry_items (household_id, label, grams) values (v_hid, 'Basmati rice', 2000);
+  insert into public.hydration_logs (household_id, family_member_id, volume_ml)
+  select v_hid, fm.id, 250 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.fasting_logs (household_id, family_member_id, fast_date, kind, completed)
+  select v_hid, fm.id, current_date - 1, 'nafl', true from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.weight_tracking (household_id, family_member_id, measured_on, weight_kg)
+  select v_hid, fm.id, current_date, 68 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.nutrition_journal (household_id, family_member_id, journal_date, mood)
+  select v_hid, fm.id, current_date, 4 from public.family_members fm where fm.household_id = v_hid and fm.name = 'Adult';
+  insert into public.notifications (user_id, household_id, channel, kind, title, body)
+  values (p_owner, v_hid, 'in_app', 'plan_ready', 'Your plan is ready', 'Open Today to see it');
+  insert into public.alpha_feedback (user_id, household_id, category, message, app_version)
+  values (p_owner, v_hid, 'idea', 'Fixture feedback', '0.4.0');
   insert into public.ai_usage (user_id, household_id, route_key, provider, model)
   values (p_owner, v_hid, 'chat.free', 'anthropic', 'claude-haiku-4-5-20251001');
   insert into public.analytics_events (user_id, household_id, event, occurred_at)
@@ -162,7 +184,9 @@ begin
                              'medical_conditions','allergies','medications','supplements','food_preferences',
                              'food_dislikes','nutrition_goals','pregnancy_profiles','sensory_profiles',
                              'hydration_targets','ai_assessments','safety_events','recipes','meals','portions',
-                             'meal_plans','daily_meals','daily_meal_servings','plan_recommendations']) t
+                             'meal_plans','daily_meals','daily_meal_servings','plan_recommendations',
+                             'grocery_lists','shopping_items','budget_entries','pantry_items','hydration_logs',
+                             'fasting_logs','weight_tracking','nutrition_journal','notifications','alpha_feedback']) t
   on conflict do nothing;
   return v_hid;
 end $$;
