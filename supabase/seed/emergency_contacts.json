@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "source": "12-ai-agent-architecture.md section 8.15 and 15-family-health-modules.md section 8 (numbers listed there only)",
+  "review": {
+    "status": "pending_clinician_review",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "notes": [
+      "Numbers are copied from the design docs and must be re-checked against official sources by the clinician reviewer before launch (S5-16).",
+      "No mental-health or crisis helpline is listed yet. Pakistan's Umang helpline was left out because its number could not be verified here; the reviewer adds it, and helplines for GB, US, CA, AE and SA, with a primary source.",
+      "Labels are English only; the app localises them through i18n keys (emergency.<service>)."
+    ]
+  },
+  "countries": {
+    "PK": [
+      { "service": "rescue_1122", "label": "Rescue 1122", "number": "1122", "kind": "emergency" },
+      { "service": "edhi_ambulance", "label": "Edhi ambulance", "number": "115", "kind": "ambulance" }
+    ],
+    "GB": [
+      { "service": "emergency", "label": "Emergency services", "number": "999", "kind": "emergency" },
+      { "service": "nhs_111", "label": "NHS 111", "number": "111", "kind": "urgent_advice" }
+    ],
+    "US": [{ "service": "emergency", "label": "Emergency services", "number": "911", "kind": "emergency" }],
+    "CA": [{ "service": "emergency", "label": "Emergency services", "number": "911", "kind": "emergency" }],
+    "AE": [{ "service": "ambulance", "label": "Ambulance", "number": "998", "kind": "ambulance" }],
+    "SA": [{ "service": "ambulance", "label": "Ambulance", "number": "997", "kind": "ambulance" }]
+  }
+}

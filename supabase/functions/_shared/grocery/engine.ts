@@ -90,6 +90,8 @@ export interface PlannedServing {
   batch_multiplier: number;
   life_stage: LifeStage;
   portion_grams: number | null;
+  /** `daily_meals.meal_type`; used by Ramadan lists (iftar dates). */
+  meal_type?: string;
 }
 
 /**

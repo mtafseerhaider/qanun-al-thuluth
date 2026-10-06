@@ -1,5 +1,6 @@
 import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
+import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
 import { supabaseGroceryCatalog } from '../_shared/grocery/store.ts';
 import { supabasePlanStore } from '../_shared/plan/store.ts';
 import { createAdjustPlanHandler } from './handler.ts';
@@ -21,6 +22,7 @@ Deno.serve(
   createAdjustPlanHandler({
     verify: verifyWithSupabase,
     store: supabasePlanStore(admin),
+    entitlements: supabaseEntitlementStore(admin),
     fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
     writeUsage: async (row) => {
       const { error } = await admin.from('ai_usage').insert(row);

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { InlineMessage } from '@/components/ui/inline-message';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { UpsellCard } from '@/features/subscription';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { isAppError } from '@/lib/supabase/app-error';
@@ -153,10 +154,12 @@ export function SwapMealSheet() {
           {t('meals:swap.aiTitle')}
         </Text>
         {access === 'upsell' ? (
-          <Card variant="filled" testID="swap-meal.upsell">
-            <Text variant="bodyStrong">{t('meals:swap.upsellTitle')}</Text>
-            <Text tone="muted">{t('meals:swap.upsellBody')}</Text>
-          </Card>
+          <UpsellCard
+            trigger="plan_adjust"
+            title={t('meals:swap.upsellTitle')}
+            body={t('meals:swap.upsellBody')}
+            testID="swap-meal.upsell"
+          />
         ) : null}
         {access === 'disabled' ? (
           <Text tone="muted" testID="swap-meal.ai-disabled">

@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { analytics } from '@/lib/analytics/track';
+import { signOutPurchases } from '@/lib/purchases/purchases';
 import { logoutPush } from '@/lib/push/push';
 import { queryClient } from '@/lib/query/query-client';
 import { setSentryUser } from '@/lib/sentry/init';
@@ -99,6 +100,7 @@ export async function signOut(
     }
     // Unlink the install from the user so pushes stop arriving here (24 S4-12).
     logoutPush();
+    await settle(() => signOutPurchases());
     await purgeLocalUserData({ keepPendingInvite: opts.keepPendingInvite ?? false });
   } finally {
     userInitiated = false;

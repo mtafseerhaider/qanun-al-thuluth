@@ -5,6 +5,7 @@ import { registerFastingOutboxHandlers } from '@/features/fasting';
 import { registerGroceryOutboxHandlers } from '@/features/grocery';
 import { registerAlphaFeedbackOutboxHandler } from '@/features/help';
 import { registerHydrationOutboxHandlers } from '@/features/hydration';
+import { registerMealLogOutboxHandlers } from '@/features/meal-log';
 import { registerMealOutboxHandlers } from '@/features/meals';
 import { openNotification, registerNotificationOutboxHandlers } from '@/features/notifications';
 import { registerTrackingOutboxHandlers } from '@/features/tracking';
@@ -13,10 +14,12 @@ import { registerDevice } from '@/lib/auth/device-registration';
 import { env } from '@/lib/env';
 import { initI18n } from '@/lib/i18n/i18n';
 import { startOutboxSync } from '@/lib/offline/outbox-sync';
+import { onClientPremiumChange } from '@/lib/purchases/purchases';
 import { initPush, onPushSubscriptionChange } from '@/lib/push/push';
 import { queryClient, wireQueryManagers } from '@/lib/query/query-client';
 import { initSentry } from '@/lib/sentry/init';
 import { useSessionStore } from '@/stores/use-session-store';
+import { useSubscriptionStore } from '@/stores/use-subscription-store';
 
 let done = false;
 
@@ -24,7 +27,7 @@ let done = false;
  * Synchronous pre-render init (07 §9.2): Sentry first so later failures are captured, then i18n
  * (locale read synchronously from MMKV). The outbox replays queued writes (meal logs, Sprint 4
  * trackers, grocery, budget, journal, read receipts and alpha feedback). OneSignal starts only when
- * its app id is configured (24 S4-12); RevenueCat arrives in a later sprint.
+ * its app id is configured (24 S4-12); RevenueCat is configured after sign-in, only when its key is set (24 S5-13).
  */
 export function bootstrap(): void {
   if (done) return;
@@ -46,6 +49,7 @@ export function bootstrap(): void {
   registerBudgetOutboxHandlers(queryClient);
   registerTrackingOutboxHandlers(queryClient);
   registerNotificationOutboxHandlers(queryClient);
+  registerMealLogOutboxHandlers(queryClient);
   registerAlphaFeedbackOutboxHandler();
   startOutboxSync();
   // Push: a tap opens the notification's screen (parked until the signed-in app is mounted).
@@ -59,6 +63,8 @@ export function bootstrap(): void {
       if (userId && id) void registerDevice(userId, id);
     });
   }
+  // RevenueCat entitlement changes mirror into the client store (UI only; the server is truth).
+  onClientPremiumChange((premium) => useSubscriptionStore.getState().setClientPremium(premium));
   startAnalytics();
   track('app_opened', { cold_start: true });
 }

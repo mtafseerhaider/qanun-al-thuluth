@@ -6,8 +6,11 @@ import { FastLogSheet } from '@/features/fasting';
 import { AcceptInviteScreen, InviteCaregiverScreen } from '@/features/household';
 import { DehydrationCheckSheet } from '@/features/hydration';
 import { SourceDetailSheet } from '@/features/knowledge';
+import { MealAnalysisResultScreen, MealPhotoCaptureScreen } from '@/features/meal-log';
 import { SwapMealSheet } from '@/features/meals';
 import { PlanGenerationProgressScreen } from '@/features/plan';
+import { RamadanSetupScreen } from '@/features/ramadan';
+import { PaywallScreen } from '@/features/subscription';
 import { useSessionStore, type SessionStatus } from '@/stores/use-session-store';
 
 import { AuthStack } from './auth-stack';
@@ -106,6 +109,26 @@ export function RootNavigator() {
                   presentation: 'formSheet',
                   sheetAllowedDetents: [0.8, 1],
                 }}
+              />
+              <Stack.Screen
+                name="PaywallModal"
+                component={PaywallScreen}
+                options={{ title: t('screens.paywall'), headerShown: false }}
+              />
+              <Stack.Screen
+                name="MealPhotoCapture"
+                component={MealPhotoCaptureScreen}
+                options={{ title: t('screens.mealPhoto') }}
+              />
+              <Stack.Screen
+                name="MealAnalysisResult"
+                component={MealAnalysisResultScreen}
+                options={{ title: t('screens.mealAnalysis') }}
+              />
+              <Stack.Screen
+                name="RamadanSetup"
+                component={RamadanSetupScreen}
+                options={{ title: t('screens.ramadanSetup') }}
               />
               <Stack.Screen
                 name="DehydrationCheckSheet"

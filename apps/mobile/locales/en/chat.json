@@ -1,0 +1,153 @@
+{
+  "about": "About",
+  "caret": "▍",
+  "citationA11y": "Source: {{label}}",
+  "composer": {
+    "label": "Message",
+    "photo": "Add a meal photo",
+    "placeholder": "Ask about meals, fasting or your family's plan",
+    "send": "Send",
+    "stop": "Stop",
+    "voice": "Record a voice message"
+  },
+  "consent": {
+    "title": "Before you start",
+    "body": "Thuluth's assistant gives general food and nutrition guidance, not medical advice. Your messages are used to answer you and are kept private to you."
+  },
+  "disabled": "The assistant is paused right now. Please try again later.",
+  "disclaimer": "General guidance, not medical advice. Check with your doctor for health concerns.",
+  "empty": {
+    "title": "What would you like to ask?",
+    "starters": {
+      "picky": "My child refuses vegetables. What can I try?",
+      "suhoor": "What is a filling suhoor for our family?",
+      "honey": "Can my baby have honey?",
+      "iron": "Which foods help with iron?"
+    }
+  },
+  "errorRetry": "Something went wrong ({{code}}). Please try again.",
+  "everyone": "Everyone",
+  "loadEarlier": "Load earlier messages",
+  "memories": {
+    "about": "About {{name}}",
+    "clear": "Forget everything",
+    "clearConfirm": "Forget everything Thuluth remembers about your family? This cannot be undone.",
+    "delete": "Forget",
+    "deleteA11y": "Forget: {{fact}}",
+    "empty": "Nothing remembered yet.",
+    "intro": "Thuluth remembers a few facts from your chats to give better answers, like preferences and routines. You can remove any of them.",
+    "notUsed": "Memory is off. New chats will not use or add memories.",
+    "toggle": "Let Thuluth remember",
+    "toggleHint": "Uses facts from earlier chats in new answers",
+    "upsellBody": "With Premium, Thuluth remembers your family's preferences across chats.",
+    "upsellTitle": "Memory is a Premium feature",
+    "viewer": "Only owners and caregivers can change what is remembered."
+  },
+  "memory": {
+    "count_one": "Remembers {{count}} thing",
+    "count_other": "Remembers {{count}} things",
+    "hint": "Opens what Thuluth remembers",
+    "off": "Memory off"
+  },
+  "newChat": "New chat",
+  "newReply": "New reply",
+  "offline": "You are offline. Chat needs a connection.",
+  "premiumNeeded": "This needs Premium.",
+  "proposal": {
+    "applying": "Saving…",
+    "confirm": "Confirm",
+    "dismiss": "Not now",
+    "dismissed": "Dismissed. Nothing was changed.",
+    "failed": "Could not save ({{code}}).",
+    "fast": "Log a fast for {{name}} on {{date}}",
+    "hydration": "Log {{ml}} ml of water for {{name}}",
+    "invalid": "This suggestion could not be read.",
+    "logTitle": "Suggested log",
+    "logged": "Logged.",
+    "mealLog": "Log {{meal}} for {{name}}: {{description}}",
+    "notAvailable": "This kind of log is not available yet.",
+    "nothingYet": "Nothing is saved until you confirm.",
+    "planAdjust": "Change the plan: {{summary}}",
+    "planApplied": "Your plan is being updated.",
+    "planTitle": "Suggested plan change",
+    "practiceFast": "Log a practice fast for {{name}} on {{date}}"
+  },
+  "quota": {
+    "seePremium": "See Premium",
+    "freeBody": "You have used today's free messages. They reset tomorrow.",
+    "freeTitle": "That's all for today",
+    "left_one": "{{count}} message left today",
+    "left_other": "{{count}} messages left today",
+    "premiumBody": "You have reached today's limit. It resets tomorrow.",
+    "premiumTitle": "Daily limit reached"
+  },
+  "replyComplete": "Reply complete",
+  "retry": "Try again",
+  "sessions": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this conversation? Memories from it are forgotten too.",
+    "empty": "No conversations yet.",
+    "noMatch": "No conversations match.",
+    "rename": "Rename",
+    "renameLabel": "Conversation name",
+    "save": "Save",
+    "search": "Search conversations",
+    "title": "Conversations"
+  },
+  "stopped": "Stopped.",
+  "thinking": "Thinking…",
+  "untitled": "Untitled conversation",
+  "viewer": "Viewers can read the plan but cannot log from chat.",
+  "voice": {
+    "cancel": "Cancel",
+    "denied": "Microphone access is off. Turn it on in Settings to record.",
+    "done": "Done",
+    "failed": "Could not transcribe. Please type instead.",
+    "recording": "Recording {{elapsed}} of {{max}}",
+    "review": "Check the text before sending.",
+    "transcribing": "Turning speech into text…",
+    "problem": {
+      "too_short": "That was too short. Hold on a little longer.",
+      "too_large": "That recording is too large. Try a shorter one."
+    }
+  },
+  "feedback": {
+    "thanks": "Thanks for the feedback.",
+    "up": "Helpful",
+    "down": "Not helpful",
+    "reasons": {
+      "inaccurate": "Inaccurate",
+      "unsafe": "Unsafe",
+      "not_helpful": "Not helpful",
+      "too_long": "Too long",
+      "other": "Other"
+    }
+  },
+  "followUps": "Suggested questions",
+  "safety": {
+    "call": "Call {{service}} ({{number}})",
+    "title": "Please get help now",
+    "emergencyLead": "If this is an emergency, call now:",
+    "localServices": "Call your local emergency services.",
+    "notice": {
+      "default": "This is general guidance, not medical advice.",
+      "not_medical_advice": "This is general guidance, not medical advice."
+    },
+    "recommend": {
+      "see_gp": "Please speak to your doctor.",
+      "see_pediatrician": "Please speak to your child's doctor.",
+      "see_dietitian": "A dietitian can help with this.",
+      "urgent_care": "Please get urgent medical care today.",
+      "emergency": "Please get emergency help now."
+    },
+    "service": {
+      "emergency": "emergency",
+      "rescue": "Rescue",
+      "police": "police",
+      "ambulance": "ambulance",
+      "nonEmergency": "non-emergency line",
+      "health": "health line"
+    }
+  }
+}

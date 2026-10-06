@@ -26,17 +26,26 @@ import {
 } from '../_shared/plan/pipeline.ts';
 import type { GenerationMeta } from '../_shared/plan/pipeline.ts';
 import type { PlanStore } from '../_shared/plan/store.ts';
+import {
+  consumeTierQuota,
+  requirePremium,
+  resolveEntitlement,
+  TIER_LIMITS,
+} from '../_shared/entitlements.ts';
+import type { EntitlementStore } from '../_shared/entitlements.ts';
 
 export const SCOPE = 'ai-adjust-plan';
-/** 06 §2.7: premium only, 20/day, 3/min. */
-export const DAILY_LIMIT = 20;
-export const BURST_PER_MINUTE = 3;
+/** 06 §2.7: premium only, 20/day, 3/min (`TIER_LIMITS` in `_shared/entitlements.ts`). */
+export const DAILY_LIMIT = TIER_LIMITS['ai-adjust-plan'].daily.premium;
+export const BURST_PER_MINUTE = TIER_LIMITS['ai-adjust-plan'].perMinute.premium;
 /** 06 §4.4: sync when the affected range is 7 days or less. */
 export const SYNC_MAX_DAYS = 7;
 
 export interface AdjustPlanDeps {
   verify: ClaimsVerifier;
   store: PlanStore;
+  /** Server-side tier (17 §8-9): household scope, the owner's entitlement shared (FR-HH-06). */
+  entitlements: EntitlementStore;
   fallback: FallbackDeps;
   writeUsage: (row: AiUsageInsert) => Promise<void>;
   kick: (run: () => Promise<unknown>) => void;
@@ -74,11 +83,12 @@ export function createAdjustPlanHandler(deps: AdjustPlanDeps) {
         'Only the household owner or a caregiver can change a plan.',
       );
     }
-    if (!(await deps.store.householdPremium(parent.household_id))) {
-      throw new HttpError('PREMIUM_REQUIRED', 'Changing a plan in your own words needs Premium.', {
-        feature: 'plan.adjust',
-      });
-    }
+    const ent = await resolveEntitlement(deps.entitlements, {
+      userId: user.userId,
+      householdId: parent.household_id,
+      scope: 'household',
+    });
+    requirePremium(ent, 'plan.adjust', 'Changing a plan in your own words needs Premium.');
     if (!(await deps.store.featureEnabled('ai.plan.enabled'))) {
       throw new HttpError('FEATURE_DISABLED', 'Plan changes are paused right now.', {
         flag: 'ai.plan.enabled',
@@ -167,37 +177,9 @@ export function createAdjustPlanHandler(deps: AdjustPlanDeps) {
         );
       }
 
-      const burst = await deps.store.consumeRateLimit(
-        `${SCOPE}:${user.userId}:min`,
-        BURST_PER_MINUTE,
-        60,
-      );
-      if (!burst.allowed) {
-        throw new HttpError(
-          'RATE_LIMITED',
-          'Please wait a moment before changing the plan again.',
-          {
-            reset_at: burst.reset_at,
-          },
-        );
-      }
-      const daily = await deps.store.consumeRateLimit(
-        `${SCOPE}:${user.userId}:day`,
-        DAILY_LIMIT,
-        86_400,
-      );
-      if (!daily.allowed) {
-        throw new HttpError('QUOTA_EXCEEDED', 'You have changed plans the most times for today.', {
-          limit: DAILY_LIMIT,
-          reset_at: daily.reset_at,
-        });
-      }
       const headers = {
         ...corsHeaders,
-        'ratelimit-limit': String(BURST_PER_MINUTE),
-        'ratelimit-remaining': String(burst.remaining),
-        'x-quota-limit': String(DAILY_LIMIT),
-        'x-quota-remaining': String(daily.remaining),
+        ...(await consumeTierQuota(deps.store, SCOPE, user.userId, ent.tier)),
       };
 
       const header = req.headers.get('accept-language')?.slice(0, 2);

@@ -45,3 +45,20 @@ export function requireInternal(req: Request, secrets: InternalSecrets): void {
   const ok = given.length > 0 && secrets().some((s) => safeEqual(given, s));
   if (!ok) throw new HttpError('UNAUTHENTICATED', 'Not allowed');
 }
+
+/** RevenueCat webhook secrets (current and, during rotation, next). Short values are ignored. */
+export const revenueCatSecretsFromEnv: InternalSecrets = () =>
+  [
+    Deno.env.get('REVENUECAT_WEBHOOK_SECRET'),
+    Deno.env.get('REVENUECAT_WEBHOOK_SECRET_NEXT'),
+  ].filter((s): s is string => !!s && s.length >= 16);
+
+/**
+ * `revenuecat-webhook` (06 §2.2, §4.14): `Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>`,
+ * compared in constant time. With no secret configured every call is refused.
+ */
+export function requireRevenueCat(req: Request, secrets: InternalSecrets): void {
+  const given = req.headers.get('authorization') ?? '';
+  const ok = given.length > 0 && secrets().some((s) => safeEqual(given, `Bearer ${s}`));
+  if (!ok) throw new HttpError('WEBHOOK_UNAUTHORIZED', 'Not allowed');
+}

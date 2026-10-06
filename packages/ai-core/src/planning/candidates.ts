@@ -200,6 +200,10 @@ export function staticScore(
   if (kids.length && meal.kidFriendly) reasons.push('kid_friendly');
   const accWeight = sensitiveKids ? 0.8 : 0.3;
 
+  // Ramadan plans: curated `ramadan_suitable` recipes first (soft preference only).
+  const ramadan = req.preferRamadanSuitable && meal.ramadanSuitable ? 1 : 0;
+  if (ramadan) reasons.push('ramadan_suitable');
+
   const score =
     1.0 * plate +
     0.8 * pref +
@@ -208,6 +212,7 @@ export function staticScore(
     0.4 * prep +
     (req.sunnahEmphasis === false ? 0 : 0.3) * sunnah +
     accWeight * acceptance +
+    0.6 * ramadan +
     0.05 * hash01(req.seed, slot.ref, meal.id);
   return { score: Math.round(score * 1000) / 1000, reasons };
 }

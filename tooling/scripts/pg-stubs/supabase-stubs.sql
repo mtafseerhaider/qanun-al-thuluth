@@ -139,3 +139,56 @@ $$;
 
 grant execute on function auth.jwt(), auth.uid(), auth.role(), auth.email() to anon, authenticated, service_role;
 grant all on auth.users, auth.identities to service_role;
+
+-- storage (subset of the Supabase Storage schema that migrations, seeds and tests touch) -------
+-- Lets the plain-mode suite exercise the bucket policies (10 section 6.4). Real projects get the
+-- schema from the Storage service; migrations still guard on to_regclass('storage.objects').
+create schema if not exists storage;
+grant usage on schema storage to anon, authenticated, service_role;
+
+create table if not exists storage.buckets (
+  id                  text primary key,
+  name                text not null unique,
+  owner               uuid,
+  owner_id            text,
+  public              boolean default false,
+  avif_autodetection  boolean default false,
+  file_size_limit     bigint,
+  allowed_mime_types  text[],
+  created_at          timestamptz default now(),
+  updated_at          timestamptz default now()
+);
+
+create table if not exists storage.objects (
+  id                uuid primary key default gen_random_uuid(),
+  bucket_id         text references storage.buckets(id),
+  name              text,
+  owner             uuid,
+  owner_id          text,
+  metadata          jsonb,
+  user_metadata     jsonb,
+  version           text,
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now(),
+  last_accessed_at  timestamptz default now(),
+  unique (bucket_id, name)
+);
+alter table storage.objects enable row level security;
+alter table storage.buckets enable row level security;
+grant all on storage.objects, storage.buckets to authenticated, service_role;
+grant select on storage.buckets to anon;
+
+-- Hosted and CLI Storage refuse direct DELETE on storage.objects unless the transaction sets
+-- storage.allow_delete_query; mirror that guard so plain-mode runs catch the same failure.
+create or replace function storage.protect_delete() returns trigger
+language plpgsql as $$
+begin
+  if coalesce(current_setting('storage.allow_delete_query', true), 'false') <> 'true' then
+    raise exception 'Direct deletion from storage tables is not allowed. Use the Storage API instead.'
+      using hint = 'This prevents accidental data loss from orphaned objects.', errcode = '42501';
+  end if;
+  return null;
+end $$;
+drop trigger if exists protect_objects_delete on storage.objects;
+create trigger protect_objects_delete before delete on storage.objects
+  for each statement execute function storage.protect_delete();

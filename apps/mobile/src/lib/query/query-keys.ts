@@ -8,6 +8,10 @@ export const qk = {
   profile: () => [...qk.me(), 'profile'] as const,
   consents: () => [...qk.me(), 'consents'] as const,
   subscription: () => [...qk.me(), 'subscription'] as const,
+  /** Sprint 5: server entitlements per household context (17 §6) and the store offering. */
+  entitlements: (hid: Id | null) => [...qk.me(), 'entitlements', hid ?? 'none'] as const,
+  offering: () => [...qk.me(), 'offering'] as const,
+  memoryEnabled: () => [...qk.me(), 'ai-memory-enabled'] as const,
   households: () => [...qk.me(), 'households'] as const,
   featureFlags: () => ['feature-flags'] as const,
   household: (hid: Id) => {
@@ -43,6 +47,12 @@ export const qk = {
       qadaBalance: () => [...base, 'qada-balance'] as const,
       weightLogs: (memberId: Id) => [...base, 'weight-logs', memberId] as const,
       journal: (memberId: Id) => [...base, 'journal', memberId] as const,
+      /** Sprint 5: chat (private to the user by RLS), memories, meal logs and Ramadan. */
+      chatSessions: () => [...base, 'chat-sessions'] as const,
+      chatMessages: (sessionId: Id) => [...base, 'chat-sessions', sessionId, 'messages'] as const,
+      memories: () => [...base, 'ai-memories'] as const,
+      mealLogs: () => [...base, 'meal-logs'] as const,
+      ramadanPlan: (hijriYear: number) => [...base, 'ramadan-plan', hijriYear] as const,
     };
   },
   catalog: {

@@ -132,3 +132,13 @@ verify_jwt = true           # S4-04 grocery list from a plan (06 section 4.7)
 verify_jwt = false          # S4-06 cron (pg_cron 00:15); x-internal-secret checked in code
 [functions.notifications-dispatch]
 verify_jwt = false          # S4-13 cron every minute; x-internal-secret checked in code
+[functions.ramadan-generate]
+verify_jwt = true           # S5-10 Ramadan plan (06 section 4.x, 15 section 5); premium, async job
+[functions.ai-chat]
+verify_jwt = true           # S5-03 chat agent, SSE (06 section 4.1)
+[functions.ai-analyze-meal]
+verify_jwt = true           # S5-07 photo meal analysis (06 section 4.5); premium
+[functions.ai-transcribe]
+verify_jwt = true           # S5-06 voice transcription, multipart (06 section 4.6); premium
+[functions.revenuecat-webhook]
+verify_jwt = false          # S5-14 RevenueCat webhook (17 section 7): Authorization secret checked in code; /sync verifies the user JWT in code

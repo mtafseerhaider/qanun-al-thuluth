@@ -209,7 +209,8 @@ STD = ['PK-PB', 'PK', 'south_asia']
 
 # ---------------------------------------------------------------------------------------------------
 # Recipes. Fields: title, meal types, servings, prep min, cook min, cost tier (1 budget .. 3 premium),
-# flags (k = kid_friendly, a = autism_friendly (plain, predictable, single-texture), r = ramadan_suitable),
+# flags (k = kid_friendly, a = autism_friendly (plain, predictable, single-texture); ramadan_suitable is
+# derived by ramadan_reasons() below, never set by hand),
 # textures, colours, ingredients ("[*]alias qty unit [; prep note]", * = optional, excluded from
 # nutrition), steps ("text [N]" where [N] sets timer_min), region tags (default PK-PB).
 # ---------------------------------------------------------------------------------------------------
@@ -303,7 +304,7 @@ rec('Daal gosht', ['lunch', 'dinner'], 6, 15, 90, 3, '', ['soft', 'wet'], ['yell
     ['Fry the onion golden, add the meat, ginger and garlic and brown well. [10]',
      'Add tomato and spices, then water, and cook until the meat is nearly tender. [45]',
      'Add the soaked daal and cook until soft and the gravy thick. [30]'])
-rec('Haleem', ['lunch', 'dinner', 'iftar'], 8, 30, 240, 3, 'r', ['smooth', 'lumpy'], ['brown'],
+rec('Haleem', ['lunch', 'dinner', 'iftar'], 8, 30, 240, 3, '', ['smooth', 'lumpy'], ['brown'],
     ['beef 500 g; boneless', 'daliya 0.5 cup', 'jau 0.25 cup', 'chanadaal 0.25 cup', 'masoor 0.25 cup',
      'moong 0.25 cup', 'mash 0.25 cup', 'onion 3 medium; sliced', 'garlic 2 tbsp paste', 'ginger 2 tbsp paste',
      'salt 2.5 tsp', 'redchilli 2 tsp', 'haldi 1 tsp', 'dhaniya 2 tsp', 'oil 6 tbsp', '*lemon 2 juiced',
@@ -478,7 +479,7 @@ rec('Chicken kaleji masala', ['lunch', 'dinner'], 4, 10, 15, 1, '', ['soft'], ['
      'oil 3 tbsp', '*coriander 1 handful'],
     ['Fry onion, garlic, ginger and tomato with spices until soft. [6]',
      'Add the liver and cook on medium-high heat only until no longer pink inside. [8]'])
-rec('Chicken vegetable soup', ['dinner', 'iftar'], 4, 10, 30, 2, 'kar', ['wet'], ['yellow'],
+rec('Chicken vegetable soup', ['dinner', 'iftar'], 4, 10, 30, 2, 'ka', ['wet'], ['yellow'],
     ['breast 250 g', 'carrot 1 medium', 'cabbage 100 g', 'springonion 0.5 bunch', 'garlic 1 tbsp paste',
      'ginger 0.5 tbsp paste', 'cornflour 2 tbsp', 'egg 1 piece', 'salt 1.25 tsp', 'pepper 0.5 tsp',
      'soysauce 1 tbsp', '*vinegar 1 tbsp'],
@@ -654,7 +655,7 @@ rec('Missi roti', ['breakfast', 'lunch', 'dinner'], 6, 15, 20, 1, '', ['chewy'],
      'Roll out and cook on a tawa, brushing with ghee. [20]'])
 
 # ---- breakfast and suhoor (8) ---------------------------------------------------------------------------
-rec('Meetha daliya', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'kar', ['soft', 'lumpy'], ['beige'],
+rec('Meetha daliya', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'ka', ['soft', 'lumpy'], ['beige'],
     ['daliya 0.5 cup', 'milk 2.5 cup', 'sugar 2 tbsp', 'elaichi 2 pod', '*almonds 8 piece'],
     ['Dry-roast the broken wheat for 3 minutes.', 'Simmer with 1 cup of water until soft, then add the milk and cardamom. [15]',
      'Cook until creamy and sweeten.'])
@@ -663,7 +664,7 @@ rec('Namkeen daliya', ['breakfast', 'suhoor'], 3, 10, 25, 1, '', ['soft'], ['bei
      'haldi 0.25 tsp', 'zeera 1 tsp', 'oil 1.5 tbsp'],
     ['Fry cumin and onion, add tomato and vegetables with spices. [6]',
      'Add the roasted daliya with 2.5 cups of water and cook covered until soft. [18]'])
-rec('Oats with milk and dates', ['breakfast', 'suhoor'], 2, 3, 8, 1, 'kar', ['soft', 'lumpy'], ['beige'],
+rec('Oats with milk and dates', ['breakfast', 'suhoor'], 2, 3, 8, 1, 'ka', ['soft', 'lumpy'], ['beige'],
     ['oats 1 cup', 'milk 2 cup', 'dates 4 piece; chopped', '*walnuts 1 tbsp'],
     ['Simmer the oats in milk, stirring, until creamy. [6]', 'Stir in the dates and serve.'])
 rec('Besan cheela', ['breakfast', 'suhoor'], 3, 10, 15, 1, '', ['soft'], ['yellow'],
@@ -676,10 +677,10 @@ rec('Moong daal cheela', ['breakfast', 'suhoor'], 3, 130, 15, 1, '', ['soft'], [
      'oil 1.5 tbsp', '*coriander 0.5 handful'],
     ['Grind the soaked moong with ginger and chilli to a smooth batter. [120]',
      'Season, spread on a hot tawa and cook both sides with a little oil. [15]'])
-rec('Khajoor wala doodh', ['suhoor', 'iftar'], 2, 5, 0, 1, 'kar', ['smooth'], ['beige'],
+rec('Khajoor wala doodh', ['suhoor', 'iftar'], 2, 5, 0, 1, 'ka', ['smooth'], ['beige'],
     ['milk 2 cup', 'dates 6 piece; pitted', '*almonds 6 piece'],
     ['Soak the pitted dates in a little warm milk for 5 minutes. [5]', 'Blend with the rest of the milk until smooth.'])
-rec('Dahi with honey and banana', ['breakfast', 'suhoor', 'snack'], 2, 5, 0, 1, 'kar', ['smooth', 'soft'], ['white'],
+rec('Dahi with honey and banana', ['breakfast', 'suhoor', 'snack'], 2, 5, 0, 1, 'ka', ['smooth', 'soft'], ['white'],
     ['yogurt 1 cup', 'banana 1 medium; sliced', 'honey 1 tbsp', '*walnuts 1 tbsp'],
     ['Spoon the yogurt into bowls, top with banana and drizzle with honey.'])
 rec('Doodh pati chai', ['breakfast', 'snack'], 2, 2, 8, 1, '', ['smooth'], ['brown'],
@@ -704,60 +705,60 @@ rec('Podina chutney', ['lunch', 'dinner', 'snack'], 6, 10, 0, 1, '', ['smooth'],
     ['mint 2 handful', 'coriander 2 handful', 'chilli 3 piece', 'garlic 2 clove', 'yogurt 0.5 cup',
      'lemon 1 juiced', 'salt 0.75 tsp'],
     ['Blend the herbs, chilli, garlic, lemon and salt, then whisk into the yogurt.'])
-rec('Imli chutney', ['snack', 'iftar'], 8, 10, 15, 1, 'r', ['smooth'], ['brown'],
+rec('Imli chutney', ['snack', 'iftar'], 8, 10, 15, 1, '', ['smooth'], ['brown'],
     ['tamarind 100 g', 'shakkar 4 tbsp', 'salt 0.5 tsp', 'redchilli 0.5 tsp', 'zeera 1 tsp; roasted', 'saunf 0.5 tsp'],
     ['Soak the tamarind in hot water and strain the pulp. [10]',
      'Simmer the pulp with shakkar and spices until it coats a spoon. [12]'])
 
 # ---- iftar and snacks (10) ---------------------------------------------------------------------------------
-rec('Pakoray', ['iftar', 'snack'], 6, 15, 20, 1, 'r', ['crispy'], ['yellow'],
+rec('Pakoray', ['iftar', 'snack'], 6, 15, 20, 1, '', ['crispy'], ['yellow'],
     ['besan 1.5 cup', 'onion 2 medium; sliced', 'potato 1 medium; thin slices', 'spinach 0.25 bunch',
      'chilli 2 piece', 'coriander 1 handful', 'salt 1.25 tsp', 'redchilli 1 tsp', 'zeera 1 tsp', 'dhaniya 1 tsp',
      'oil 8 tbsp; absorbed share of deep-frying'],
     ['Mix the besan, spices and vegetables with just enough water to bind. [5]',
      'Drop spoonfuls into hot oil and fry until golden and crisp; drain well. [15]'])
-rec('Fruit chaat', ['iftar', 'snack'], 6, 15, 0, 2, 'kr', ['soft', 'wet'], ['red', 'yellow'],
+rec('Fruit chaat', ['iftar', 'snack'], 6, 15, 0, 2, 'k', ['soft', 'wet'], ['red', 'yellow'],
     ['apple 2 medium', 'banana 2 medium', 'guava 2 medium', 'kinnow 2 medium', 'pomegranate 0.5 cup',
      'lemon 1 juiced', 'sugar 1 tbsp', 'salt 0.25 tsp', '*pepper 0.25 tsp'],
     ['Cut the fruit into bite-sized pieces.', 'Toss with lemon juice, sugar, a pinch of salt and pepper and chill.'])
-rec('Chana chaat', ['iftar', 'snack'], 6, 15, 0, 1, 'r', ['soft', 'crunchy'], ['beige', 'red'],
+rec('Chana chaat', ['iftar', 'snack'], 6, 15, 0, 1, '', ['soft', 'crunchy'], ['beige', 'red'],
     ['kabuli 1 cup; soaked and boiled', 'potato 2 medium; boiled and cubed', 'onion 1 medium', 'tomato 1 medium',
      'chilli 1 piece', 'coriander 1 handful', 'tamarind 30 g; pulp', 'salt 1 tsp', 'redchilli 0.5 tsp',
      'zeera 1 tsp; roasted', 'lemon 1 juiced'],
     ['Combine the boiled chickpeas and potatoes with the chopped vegetables.',
      'Dress with tamarind pulp, lemon, salt, chilli and roasted cumin.'])
-rec('Aloo chaat', ['iftar', 'snack'], 4, 10, 20, 1, 'r', ['soft'], ['yellow'],
+rec('Aloo chaat', ['iftar', 'snack'], 4, 10, 20, 1, '', ['soft'], ['yellow'],
     ['potato 4 medium; boiled and cubed', 'onion 0.5 medium', 'tamarind 20 g; pulp', 'lemon 1 juiced',
      'salt 0.75 tsp', 'redchilli 0.5 tsp', 'zeera 1 tsp; roasted', '*coriander 0.5 handful'],
     ['Boil the potatoes until just tender, cool and cube. [20]', 'Toss with onion, tamarind, lemon and spices.'])
-rec('Dahi baray', ['iftar', 'snack'], 6, 130, 25, 1, 'r', ['soft', 'smooth'], ['white'],
+rec('Dahi baray', ['iftar', 'snack'], 6, 130, 25, 1, '', ['soft', 'smooth'], ['white'],
     ['mash 1 cup; soaked 2 hours', 'yogurt 2 cup', 'milk 0.5 cup', 'salt 1.25 tsp', 'zeera 1 tsp; roasted',
      'redchilli 0.5 tsp', 'sugar 1 tsp', 'oil 6 tbsp; absorbed share of frying'],
     ['Grind the soaked daal to a light, fluffy batter with a little salt. [120]',
      'Fry spoonfuls in hot oil until golden, then soak in warm water for 10 minutes and squeeze gently. [20]',
      'Whisk yogurt with milk, sugar and salt, pour over the baray and sprinkle with cumin and chilli.'])
-rec('Samosa (potato)', ['iftar', 'snack'], 6, 40, 30, 1, 'r', ['crispy', 'soft'], ['beige'],
+rec('Samosa (potato)', ['iftar', 'snack'], 6, 40, 30, 1, '', ['crispy', 'soft'], ['beige'],
     ['maida 1.5 cup', 'ghee 2 tbsp; for the dough', 'potato 4 medium; boiled', 'peas 0.5 cup', 'onion 0.5 medium',
      'chilli 2 piece', 'coriander 1 handful', 'salt 1.25 tsp', 'redchilli 0.5 tsp', 'zeera 1 tsp',
      'dhaniya 1 tsp', 'oil 8 tbsp; absorbed share of frying'],
     ['Rub the ghee into the flour with a little salt and knead a stiff dough; rest 20 minutes. [20]',
      'Make the filling of mashed potato, peas, onion, chilli, coriander and spices.',
      'Shape cones from half-rounds of dough, fill, seal and fry on medium heat until golden. [25]'])
-rec('Shikanjvi', ['iftar', 'snack'], 4, 5, 0, 1, 'kr', ['smooth'], ['yellow'],
+rec('Shikanjvi', ['iftar', 'snack'], 4, 5, 0, 1, 'k', ['smooth'], ['yellow'],
     ['lemon 3 juiced', 'sugar 4 tbsp', 'salt 0.25 tsp', 'water 4 cup', '*mint 0.5 handful'],
     ['Dissolve the sugar and salt in the lemon juice, add chilled water and mint.'])
-rec('Banana milkshake', ['suhoor', 'iftar', 'snack'], 2, 5, 0, 1, 'kar', ['smooth'], ['beige'],
+rec('Banana milkshake', ['suhoor', 'iftar', 'snack'], 2, 5, 0, 1, 'ka', ['smooth'], ['beige'],
     ['banana 2 medium', 'milk 2 cup', 'sugar 1 tsp', '*dates 2 piece'],
     ['Blend the banana and milk until smooth, sweetening lightly or with dates.'])
-rec('Namkeen lassi', ['lunch', 'suhoor'], 2, 5, 0, 1, 'r', ['smooth'], ['white'],
+rec('Namkeen lassi', ['lunch', 'suhoor'], 2, 5, 0, 1, '', ['smooth'], ['white'],
     ['yogurt 1.5 cup', 'water 1 cup', 'salt 0.5 tsp', 'zeera 0.5 tsp; roasted', '*mint 0.25 handful'],
     ['Whisk or blend the yogurt with chilled water, salt and roasted cumin until frothy.'])
-rec('Meethi lassi', ['suhoor', 'snack'], 2, 5, 0, 1, 'kar', ['smooth'], ['white'],
+rec('Meethi lassi', ['suhoor', 'snack'], 2, 5, 0, 1, 'ka', ['smooth'], ['white'],
     ['yogurt 1.5 cup', 'milk 0.5 cup', 'sugar 2 tbsp', '*elaichi 1 pod'],
     ['Blend the yogurt with milk and sugar until frothy and serve chilled.'])
 
 # ---- desserts (5) ------------------------------------------------------------------------------------------
-rec('Kheer', ['dinner', 'snack', 'iftar'], 6, 20, 60, 1, 'kar', ['smooth', 'soft'], ['white'],
+rec('Kheer', ['dinner', 'snack', 'iftar'], 6, 20, 60, 1, 'ka', ['smooth', 'soft'], ['white'],
     ['rice 0.33 cup; soaked and lightly crushed', 'milk 5 cup', 'sugar 0.4 cup', 'elaichi 4 pod',
      '*almonds 10 piece', '*pistachios 1 tbsp'],
     ['Simmer the rice in milk, stirring often, until the grains break down and the milk thickens. [50]',
@@ -856,7 +857,7 @@ rec('Daal ke kabab', ['lunch', 'dinner', 'snack'], 4, 120, 20, 1, 'k', ['crispy'
     ['Boil the soaked daal with very little water until just soft and dry. [15]',
      'Grind coarsely with the herbs, onion, chilli, spices and besan, then shape small patties. [10]',
      'Shallow-fry on a tawa until golden on both sides. [10]'], kind='kabab')
-rec('Talbina', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'kar', ['smooth', 'soft'], ['beige'],
+rec('Talbina', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'ka', ['smooth', 'soft'], ['beige'],
     ['jauatta 0.33 cup', 'milk 2.5 cup', 'honey 1.5 tbsp', 'dates 4 piece; chopped', '*almonds 6 piece'],
     ['Whisk the barley flour into the cold milk with a cup of water so no lumps form.',
      'Simmer on low heat, stirring, until thick and creamy. [20]',
@@ -1002,7 +1003,7 @@ rec('Chicken reshmi kabab', ['lunch', 'dinner', 'snack'], 4, 30, 20, 2, 'k', ['s
      'coriander 0.5 handful', 'oil 2 tbsp'],
     ['Mix the mince with onion, cream, ginger, garlic, herbs and spices and chill 20 minutes. [20]',
      'Shape onto skewers or into long kababs and cook on an oiled tawa, turning, until done. [15]'], kind='kabab')
-rec('Chicken corn soup', ['dinner', 'iftar'], 4, 10, 25, 2, 'kar', ['smooth', 'wet'], ['yellow'],
+rec('Chicken corn soup', ['dinner', 'iftar'], 4, 10, 25, 2, 'ka', ['smooth', 'wet'], ['yellow'],
     ['breast 200 g', 'corn 1 cup', 'egg 1 piece', 'cornflour 3 tbsp', 'salt 1 tsp', 'pepper 0.5 tsp',
      '*vinegar 1 tbsp'],
     ['Simmer the chicken in 5 cups of water until cooked, then shred it and return to the stock. [15]',
@@ -1087,7 +1088,7 @@ rec('Mutton shorba', ['lunch', 'dinner'], 5, 15, 90, 3, 'k', ['wet', 'soft'], ['
     ['Brown the meat with onion, ginger, garlic, tomato and spices. [15]',
      'Add 6 cups of water and simmer until the meat is tender, adding the potatoes for the last 20 minutes. [70]'],
     kind='curry')
-rec('Mutton yakhni', ['dinner', 'iftar'], 4, 10, 90, 3, 'kar', ['wet'], ['beige'],
+rec('Mutton yakhni', ['dinner', 'iftar'], 4, 10, 90, 3, 'ka', ['wet'], ['beige'],
     ['mutton 500 g bone-in', 'onion 1 medium', 'garlic 4 clove', 'ginger 1 inch', 'salt 1.25 tsp',
      'pepper 0.5 tsp', 'darchini 1 inch', 'laung 3 piece', 'tezpatta 1 piece'],
     ['Simmer everything in 8 cups of water, skimming, until the meat falls off the bone. [90]',
@@ -1214,7 +1215,7 @@ rec('Bajra roti', ['lunch', 'dinner'], 4, 15, 20, 1, '', ['dry', 'crispy'], ['br
     ['bajra 240 g; flour', 'salt 0.5 tsp', 'ghee 1 tbsp'],
     ['Knead the millet flour with warm water a little at a time.',
      'Pat into rounds between wet palms and cook slowly on a tawa, brushing with ghee. [20]'], kind='roti')
-rec('Jau ki roti', ['lunch', 'dinner'], 6, 15, 15, 1, 'r', ['chewy'], ['beige'],
+rec('Jau ki roti', ['lunch', 'dinner'], 6, 15, 15, 1, '', ['chewy'], ['beige'],
     ['jauatta 1 cup', 'atta 1.5 cup', 'salt 0.5 tsp'],
     ['Mix the barley and wheat flours with salt and knead with water; rest 15 minutes. [15]',
      'Roll out and cook on a hot tawa like roti. [15]'], kind='roti')
@@ -1247,18 +1248,18 @@ rec('Meethi seviyan', ['breakfast', 'snack'], 4, 5, 15, 1, 'ka', ['soft', 'smoot
     ['seviyan 1 cup', 'milk 3 cup', 'sugar 2 tbsp', 'ghee 1 tsp', 'elaichi 2 pod', '*almonds 8 piece'],
     ['Fry the vermicelli golden in ghee. [3]',
      'Add the milk and cardamom and simmer until soft and creamy; sweeten. [10]'], kind='porridge')
-rec('Dahi oats with fruit', ['breakfast', 'suhoor', 'snack'], 2, 5, 0, 1, 'kr', ['soft', 'lumpy'], ['white'],
+rec('Dahi oats with fruit', ['breakfast', 'suhoor', 'snack'], 2, 5, 0, 1, 'k', ['soft', 'lumpy'], ['white'],
     ['oats 0.5 cup', 'yogurt 1 cup', 'milk 0.5 cup', 'apple 1 medium; diced', 'honey 1 tbsp', '*walnuts 1 tbsp'],
     ['Stir the oats into the yogurt and milk and leave 10 minutes (or overnight in the fridge).',
      'Top with apple and honey.'], kind='porridge')
 rec('Cheese omelette', ['breakfast', 'suhoor'], 2, 5, 6, 2, 'k', ['soft'], ['yellow'],
     ['egg 4 piece', 'cheddar 40 g; grated', 'salt 0.25 tsp', 'pepper 0.25 tsp', 'butter 1 tbsp'],
     ['Beat the eggs with salt and pepper.', 'Cook in butter, scatter the cheese over and fold. [5]'], kind='egg')
-rec('Apple darchini daliya', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'kar', ['soft', 'lumpy'], ['beige'],
+rec('Apple darchini daliya', ['breakfast', 'suhoor'], 3, 5, 25, 1, 'ka', ['soft', 'lumpy'], ['beige'],
     ['daliya 0.5 cup', 'milk 2 cup', 'apple 1 medium; grated', 'darchini 0.5 tsp', 'honey 1 tbsp'],
     ['Simmer the roasted broken wheat in a cup of water until soft. [15]',
      'Add the milk, apple and cinnamon and cook until creamy; sweeten with honey. [8]'], kind='porridge')
-rec('Haldi doodh', ['suhoor', 'snack'], 2, 2, 6, 1, 'ar', ['smooth'], ['yellow'],
+rec('Haldi doodh', ['suhoor', 'snack'], 2, 2, 6, 1, 'a', ['smooth'], ['yellow'],
     ['milk 2 cup', 'haldi 0.5 tsp', 'pepper 0.1 tsp', 'honey 2 tsp'],
     ['Warm the milk with turmeric and a pinch of pepper, stirring. [5]', 'Sweeten with honey off the heat.'],
     kind='drink')
@@ -1290,48 +1291,48 @@ rec('Tamatar chutney', ['lunch', 'dinner', 'snack'], 6, 5, 20, 1, '', ['smooth']
     kind='chutney')
 
 # ---- iftar and snacks, Sprint 3 (9) ---------------------------------------------------------------------
-rec('Mausami phal plate', ['snack', 'iftar', 'breakfast'], 4, 10, 0, 1, 'kar', ['soft', 'crunchy'], ['red', 'yellow'],
+rec('Mausami phal plate', ['snack', 'iftar', 'breakfast'], 4, 10, 0, 1, 'ka', ['soft', 'crunchy'], ['red', 'yellow'],
     ['apple 1 medium', 'banana 2 medium', 'guava 1 medium', 'kinnow 2 medium'],
     ['Wash and cut the fruit into sticks or segments and serve on a plate.'], kind='fruit')
-rec('Shakarkandi chaat', ['snack', 'iftar'], 4, 10, 25, 1, 'kr', ['soft'], ['orange'],
+rec('Shakarkandi chaat', ['snack', 'iftar'], 4, 10, 25, 1, 'k', ['soft'], ['orange'],
     ['shakarkandi 3 medium', 'lemon 1 juiced', 'salt 0.5 tsp', 'zeera 0.5 tsp; roasted', 'redchilli 0.25 tsp'],
     ['Boil or roast the sweet potatoes until tender, peel and cube. [25]',
      'Toss with lemon, salt, roasted cumin and chilli.'], kind='chaat')
-rec('Makai chaat', ['snack', 'iftar'], 4, 10, 10, 1, 'kr', ['crunchy', 'soft'], ['yellow'],
+rec('Makai chaat', ['snack', 'iftar'], 4, 10, 10, 1, 'k', ['crunchy', 'soft'], ['yellow'],
     ['corn 2 cup', 'onion 0.5 medium', 'tomato 1 medium', 'lemon 1 juiced', 'butter 1 tbsp', 'salt 0.5 tsp',
      'redchilli 0.25 tsp'],
     ['Boil the corn kernels and toss in butter. [8]',
      'Mix with onion, tomato, lemon, salt and chilli.'], kind='chaat')
-rec('Qeema samosa', ['iftar', 'snack'], 6, 40, 30, 2, 'r', ['crispy', 'soft'], ['beige'],
+rec('Qeema samosa', ['iftar', 'snack'], 6, 40, 30, 2, '', ['crispy', 'soft'], ['beige'],
     ['maida 1.5 cup', 'mince 250 g', 'onion 1 medium', 'peas 0.25 cup', 'chilli 2 piece', 'coriander 1 handful',
      'salt 1.25 tsp', 'redchilli 0.5 tsp', 'zeera 1 tsp', 'ghee 2 tbsp; for the dough',
      'oil 8 tbsp; absorbed share of frying'],
     ['Rub the ghee into the flour with a little salt and knead a stiff dough; rest. [20]',
      'Cook the mince dry with onion, peas, chilli, coriander and spices. [15]',
      'Shape cones, fill, seal and fry on medium heat until golden. [25]'], kind='snack_piece')
-rec('Aloo tikki', ['iftar', 'snack'], 4, 20, 20, 1, 'kr', ['crispy', 'soft'], ['yellow'],
+rec('Aloo tikki', ['iftar', 'snack'], 4, 20, 20, 1, 'k', ['crispy', 'soft'], ['yellow'],
     ['potato 4 medium; boiled and mashed', 'peas 0.25 cup', 'coriander 0.5 handful', 'chilli 1 piece',
      'cornflour 2 tbsp', 'salt 1 tsp', 'zeera 0.5 tsp', 'redchilli 0.25 tsp', 'oil 3 tbsp'],
     ['Mix the potato with peas, herbs, spices and cornflour and shape patties. [10]',
      'Shallow-fry until golden on both sides. [12]'], kind='snack_piece')
-rec('Khajoor ke laddu', ['snack', 'iftar', 'suhoor'], 8, 15, 5, 2, 'kar', ['chewy'], ['brown'],
+rec('Khajoor ke laddu', ['snack', 'iftar', 'suhoor'], 8, 15, 5, 2, 'ka', ['chewy'], ['brown'],
     ['dates 20 piece; pitted', 'oats 0.5 cup', 'almonds 15 piece', 'walnuts 2 tbsp', 'coconut 2 tbsp'],
     ['Lightly toast the oats and nuts. [5]',
      'Blend with the dates, roll into small balls and coat with coconut. Children can roll them.'],
     kind='sweet_piece')
-rec('Khajoor aur badam', ['iftar', 'suhoor', 'snack'], 4, 2, 0, 2, 'ar', ['chewy', 'crunchy'], ['brown'],
+rec('Khajoor aur badam', ['iftar', 'suhoor', 'snack'], 4, 2, 0, 2, 'a', ['chewy', 'crunchy'], ['brown'],
     ['dates 12 piece', 'almonds 24 piece'],
     ['Serve dates with a few almonds to open the fast, in the Sunnah way.'], kind='sweet_piece')
-rec('Aam lassi', ['suhoor', 'snack'], 2, 5, 0, 1, 'kar', ['smooth'], ['yellow'],
+rec('Aam lassi', ['suhoor', 'snack'], 2, 5, 0, 1, 'ka', ['smooth'], ['yellow'],
     ['mango 1 cup', 'yogurt 1 cup', 'milk 0.5 cup', 'sugar 1 tsp'],
     ['Blend the mango with yogurt, milk and sugar until smooth; serve chilled.'], kind='drink')
-rec('Badam doodh', ['suhoor', 'snack'], 2, 10, 8, 2, 'kar', ['smooth'], ['white'],
+rec('Badam doodh', ['suhoor', 'snack'], 2, 10, 8, 2, 'ka', ['smooth'], ['white'],
     ['milk 2 cup', 'almonds 16 piece; soaked and peeled', 'sugar 2 tsp', 'elaichi 1 pod', '*saffron 1 pinch'],
     ['Grind the almonds with a little milk to a paste. [5]',
      'Simmer with the rest of the milk, sugar and cardamom for a few minutes; serve warm or chilled. [6]'],
     kind='drink')
 # ---- desserts, Sprint 3 (4) ------------------------------------------------------------------------------
-rec('Firni', ['dinner', 'snack', 'iftar'], 6, 15, 30, 1, 'kar', ['smooth'], ['white'],
+rec('Firni', ['dinner', 'snack', 'iftar'], 6, 15, 30, 1, 'ka', ['smooth'], ['white'],
     ['rice 0.33 cup; soaked and ground to a paste', 'milk 4 cup', 'sugar 0.33 cup', 'elaichi 4 pod',
      '*pistachios 1 tbsp'],
     ['Whisk the rice paste into cold milk.', 'Cook on low heat, stirring, until thick and smooth. [25]',
@@ -1346,14 +1347,14 @@ rec('Gur wale chawal', ['lunch', 'dinner'], 6, 30, 35, 1, 'k', ['soft', 'chewy']
     ['Boil the rice until 80 percent done and drain. [10]',
      'Melt the shakkar with a little water, fennel and cardamom, add ghee and the rice. [5]',
      'Steam covered on very low heat until the syrup is absorbed. [20]'], kind='dessert')
-rec('Fruit custard', ['dinner', 'snack', 'iftar'], 6, 10, 15, 2, 'kar', ['smooth', 'soft'], ['yellow'],
+rec('Fruit custard', ['dinner', 'snack', 'iftar'], 6, 10, 15, 2, 'ka', ['smooth', 'soft'], ['yellow'],
     ['milk 4 cup', 'cornflour 3 tbsp', 'sugar 0.33 cup', 'egg 1 piece', 'banana 2 medium', 'apple 1 medium',
      'grapes 0.5 cup'],
     ['Whisk the cornflour, sugar and egg into a cup of the cold milk.',
      'Heat the rest of the milk, stir in the mixture and cook until thick. [10]',
      'Cool, then fold in the chopped fruit.'], kind='dessert')
 # ---- soups, Sprint 3 (1) ---------------------------------------------------------------------------------
-rec('Masoor shorba', ['dinner', 'iftar'], 4, 10, 30, 1, 'kar', ['smooth', 'wet'], ['orange'],
+rec('Masoor shorba', ['dinner', 'iftar'], 4, 10, 30, 1, 'ka', ['smooth', 'wet'], ['orange'],
     ['masoor 0.75 cup', 'carrot 1 medium', 'tomato 1 medium', 'onion 0.5 medium', 'garlic 2 clove', 'salt 1 tsp',
      'zeera 0.5 tsp', 'pepper 0.25 tsp', 'lemon 1 juiced', 'olive 1 tbsp'],
     ['Simmer the lentils and vegetables in 5 cups of water until soft. [25]',
@@ -1479,10 +1480,76 @@ def build():
                 step['timer_min'] = int(m.group(1))
             steps.append(step)
         r = dict(r, ings=ings, steps=steps, nut=nutrition(ings, Decimal(r['servings']), catalog))
+        r['ramadan'] = ramadan_reasons(r)
         recipes.append(r)
     if len(recipes) != 200:
         sys.exit(f'expected 200 recipes, have {len(recipes)}')
+    if sum(1 for r in recipes if r['ramadan']) < 40:
+        sys.exit('S5-16 needs at least 40 ramadan_suitable recipes')
     return recipes, catalog
+
+
+# ---------------------------------------------------------------------------------------------------
+# ramadan_suitable (S5-16, 15 section 5.3): derived by rule so the dietitian reviews one rule set, not
+# 200 hand-set flags. A recipe is suitable when it passes every exclusion and meets at least one reason.
+# Exclusions: deep-fried (15 section 5.3 limits fried items to one small portion a week, so the planner
+# adds them by choice, not by default); sodium over 900 mg per serving (thirst through the fast); a
+# caffeinated drink; refined bread, maida or mayonnaise; added sugar (sugar, shakkar, condensed milk)
+# with more than 15 g sugar per serving. Reasons:
+#   suhoor_slow_release  suhoor or breakfast, a whole grain or legume, fibre >= 3 g, fat <= 10 g
+#   suhoor_protein       suhoor or breakfast, protein >= 10 g, fat <= 17 g
+#   hydrating            soup, shorba, yakhni, raita, lassi, doodh, shikanjvi, salad, kachumber, fruit or
+#                        chaat with a water-rich ingredient (cucumber, yogurt, milk, gourd, melon, citrus,
+#                        tomato, water), <= 300 kcal
+#   iftar_opener         an iftar dish of <= 250 kcal and <= 8 g fat
+#   light_iftar_main     dinner or iftar legume dish, <= 300 kcal, fat <= 9 g, sodium <= 800 mg,
+#                        protein >= 8 g, fibre >= 5 g
+# ---------------------------------------------------------------------------------------------------
+RAM_WHOLE = {'Chakki atta (whole wheat flour)', 'Broken wheat (daliya)', 'Oats (jai)', 'Whole barley (jau)',
+             'Barley flour (jau ka atta)', 'Millet (bajra)', 'Brown rice', 'Sorghum (jowar)',
+             'Roti (chapati), whole wheat', 'Maize flour (makai ka atta)'}
+RAM_LEGUME = {'Masoor daal', 'Whole masoor (brown lentils)', 'Chana daal (split chickpeas)', 'Kabuli chana',
+              'Mash daal (urad)', 'Moong (mung beans)', 'Black-eyed beans (lobia)', 'Red kidney beans (lal lobia)',
+              'Pigeon peas (arhar daal)', 'Besan (gram flour)'}
+RAM_WATERY = {'Cucumber (kheera)', 'Yogurt (dahi)', 'Fresh milk', 'Buttermilk (chhaach)', 'Bottle gourd (lauki)',
+              'Watermelon (tarbooz)', 'Melon (kharbooza)', 'Tomato', 'Ridge gourd (tori)', 'Lettuce (salad patta)',
+              'Orange (malta)', 'Kinnow (mandarin)', 'Water', 'Lemon (leemu)'}
+RAM_HYDRATING_TITLE = re.compile(r'soup|shorba|yakhni|raita|lassi|doodh|shikanjvi|salad|kachumber|phal|fruit|milkshake|chaat', re.I)
+RAM_CAFFEINE = {'Black tea, brewed (chai)', 'Green tea, brewed (sabz chai)'}
+RAM_REFINED = {'White bread (double roti)', 'Mayonnaise', 'Maida (white flour)'}
+RAM_ADDED_SUGAR = {'Sugar (cheeni)', 'Brown sugar (shakkar)', 'Condensed milk'}
+
+
+def ramadan_reasons(r):
+    """Return the list of reasons a recipe is ramadan_suitable (empty list = not suitable)."""
+    n = r['nut']
+
+    def v(k):
+        return float(n.get(k) or 0)
+
+    names = {i['name'] for i in r['ings'] if not i['optional']}
+    text = ' '.join(s['text_i18n']['en'] for s in r['steps']).lower()
+    if re.search(r'deep[- ]fr|into hot oil|in hot oil until golden', text) \
+            or any('deep-fr' in (i['note'] or '') for i in r['ings']):
+        return []
+    if v('sodium_mg') > 900 or names & RAM_CAFFEINE or names & RAM_REFINED:
+        return []
+    if names & RAM_ADDED_SUGAR and v('sugar_g') > 15:
+        return []
+    meals = set(r['meals'])
+    why = []
+    if meals & {'suhoor', 'breakfast'} and names & (RAM_WHOLE | RAM_LEGUME) and v('fiber_g') >= 3 and v('fat_g') <= 10:
+        why.append('suhoor_slow_release')
+    if meals & {'suhoor', 'breakfast'} and v('protein_g') >= 10 and v('fat_g') <= 17:
+        why.append('suhoor_protein')
+    if RAM_HYDRATING_TITLE.search(r['title']) and names & RAM_WATERY and v('kcal') <= 300:
+        why.append('hydrating')
+    if 'iftar' in meals and v('kcal') <= 250 and v('fat_g') <= 8:
+        why.append('iftar_opener')
+    if meals & {'dinner', 'iftar'} and names & RAM_LEGUME and v('kcal') <= 300 and v('fat_g') <= 9 \
+            and v('sodium_mg') <= 800 and v('protein_g') >= 8 and v('fiber_g') >= 5:
+        why.append('light_iftar_main')
+    return why
 
 
 HEADER = """-- supabase/seed/catalog/090_recipes.sql
@@ -1501,6 +1568,9 @@ HEADER = """-- supabase/seed/catalog/090_recipes.sql
 -- and the kid_friendly / autism_friendly / ramadan_suitable flags. title_i18n carries English only:
 -- Urdu titles need a native speaker (never machine-invented). Meat, poultry and fish recipes depend on
 -- a zabiha/halal source (ingredients.halal_status 'depends_on_source').
+-- ramadan_suitable (S5-16) is derived by rule in the generator (ramadan_reasons(); the reason per recipe is
+-- in the update block at the end of this file). The update re-applies the rule to rows that are not yet
+-- 'verified', so a database seeded before S5 picks up the flags; dietitian-verified rows are never touched.
 """
 
 
@@ -1517,7 +1587,7 @@ def render(recipes):
             arr(r['region']), arr(r['meals'], 'public.meal_type'), str(r['servings']), str(r['prep']),
             str(r['cook']), q(json.dumps(r['steps'], ensure_ascii=False)) + '::jsonb',
             arr(r['textures'], 'public.texture'), arr(r['colors']),
-            str('k' in r['flags']).lower(), str('a' in r['flags']).lower(), str('r' in r['flags']).lower(),
+            str('k' in r['flags']).lower(), str('a' in r['flags']).lower(), str(bool(r['ramadan'])).lower(),
             str(r['cost']), q(nut) + '::jsonb', q('curated'), q('in_review') + '::public.verification_status',
         ]) + ')')
     out.append(',\n'.join(vals))
@@ -1551,6 +1621,19 @@ def render(recipes):
                '  if v_bad is not null then\n'
                '    raise exception \'090_recipes: ingredient rows missing for %\', v_bad;\n'
                '  end if;\nend $$;\n')
+
+    out.append(f'-- ramadan_suitable (S5-16): {sum(1 for r in recipes if r["ramadan"])} of {len(recipes)} recipes by '
+               'rule (ramadan_reasons() in the generator).\n'
+               '-- Re-applied to rows that are not yet verified; a dietitian-verified flag is never overwritten.\n'
+               'update public.recipes r set ramadan_suitable = v.flag\nfrom (values')
+    rows = []
+    for r in recipes:
+        reason = ' -- ' + ', '.join(r['ramadan']) if r['ramadan'] else ''
+        rows.append((f'  ({q(r["title"])}, {str(bool(r["ramadan"])).lower()})', reason))
+    out.append('\n'.join(t + (',' if n < len(rows) - 1 else '') + c for n, (t, c) in enumerate(rows)))
+    out.append(') v(title, flag)\n'
+               'where lower(r.title) = lower(v.title) and r.household_id is null\n'
+               "  and r.review_status <> 'verified' and r.ramadan_suitable is distinct from v.flag;\n")
     return '\n'.join(out)
 
 

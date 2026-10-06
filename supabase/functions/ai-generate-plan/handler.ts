@@ -27,17 +27,27 @@ import {
   VISIBILITY_SECONDS,
 } from '../_shared/plan/sweeper.ts';
 import type { PlanStore } from '../_shared/plan/store.ts';
+import {
+  assertHouseholdWritable,
+  consumeTierQuota,
+  planEligibleMembers,
+  resolveEntitlement,
+  TIER_LIMITS,
+} from '../_shared/entitlements.ts';
+import type { EntitlementStore } from '../_shared/entitlements.ts';
 
 export const SCOPE = 'ai-generate-plan';
-/** 06 §2.7: 3/day free, 10/day premium, 1/min. */
-export const DAILY_LIMIT = { free: 3, premium: 10 } as const;
-export const BURST_PER_MINUTE = 1;
+/** 06 §2.7: 3/day free, 10/day premium, 1/min (`TIER_LIMITS` in `_shared/entitlements.ts`). */
+export const DAILY_LIMIT = TIER_LIMITS['ai-generate-plan'].daily;
+export const BURST_PER_MINUTE = TIER_LIMITS['ai-generate-plan'].perMinute.premium;
 export const POLL_AFTER_MS = 2000;
 
 export interface GeneratePlanDeps {
   verify: ClaimsVerifier;
   secrets: InternalSecrets;
   store: PlanStore;
+  /** Server-side tier (17 §8-9): household scope, the owner's entitlement shared (FR-HH-06). */
+  entitlements: EntitlementStore;
   fallback: FallbackDeps;
   writeUsage: (row: AiUsageInsert) => Promise<void>;
   /**
@@ -132,9 +142,21 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
           },
         );
       }
-      const members = await deps.store.members(input.household_id, input.family_member_ids);
+      // Tier rules (06 §4.3, 17): household features follow the owner's entitlement.
+      const ent = await resolveEntitlement(deps.entitlements, {
+        userId: user.userId,
+        householdId: input.household_id,
+        scope: 'household',
+      });
+      const premium = ent.premium;
+      const tier = ent.tier;
+      // Downgrade (17 §10.3, FR-SUB-06): a free owner's extra households are read-only.
+      await assertHouseholdWritable(deps.entitlements, input.household_id, ent, 'plan.generate');
+      const listed = await deps.store.members(input.household_id, input.family_member_ids);
+      // Members beyond 6 on a free household stay visible but get no new plans.
+      const { eligible: members, excluded } = planEligibleMembers(listed, ent);
       if (input.family_member_ids) {
-        const found = new Set(members.map((m) => m.id));
+        const found = new Set(listed.map((m) => m.id));
         const missing = input.family_member_ids.filter((id) => !found.has(id));
         if (missing.length) {
           throw new HttpError('NOT_FOUND', 'Some family members are not in this household.', {
@@ -158,9 +180,6 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
         throw new HttpError('CONSENT_REQUIRED', CONSENT_MESSAGE, { consents: missingConsents });
       }
 
-      // Tier rules (06 §4.3, 17): household features follow the owner's entitlement.
-      const premium = await deps.store.householdPremium(input.household_id);
-      const tier = premium ? 'premium' : 'free';
       if (!premium && input.week_count > 1) {
         throw new HttpError('PREMIUM_REQUIRED', 'Plans longer than one week need Premium.', {
           feature: 'plan.multi_week',
@@ -206,27 +225,7 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
         });
       }
 
-      const burst = await deps.store.consumeRateLimit(
-        `${SCOPE}:${user.userId}:min`,
-        BURST_PER_MINUTE,
-        60,
-      );
-      if (!burst.allowed) {
-        throw new HttpError('RATE_LIMITED', 'Please wait a minute before creating another plan.', {
-          reset_at: burst.reset_at,
-        });
-      }
-      const daily = await deps.store.consumeRateLimit(
-        `${SCOPE}:${user.userId}:day`,
-        DAILY_LIMIT[tier],
-        86_400,
-      );
-      if (!daily.allowed) {
-        throw new HttpError('QUOTA_EXCEEDED', 'You have created the most plans for today.', {
-          limit: DAILY_LIMIT[tier],
-          reset_at: daily.reset_at,
-        });
-      }
+      const quota = await consumeTierQuota(deps.store, SCOPE, user.userId, tier);
 
       // replace_active: the entitlement trigger counts the active plan, so it is archived first.
       // Its id is kept so a failed replacement restores it (worker failure path and below).
@@ -255,7 +254,9 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
         mode,
         template_key: template?.key ?? null,
         replaced_plan_id: replaced[0] ?? null,
-        family_member_ids: input.family_member_ids ?? null,
+        family_member_ids: excluded.length
+          ? members.map((m) => m.id)
+          : (input.family_member_ids ?? null),
         assessment_ids: input.assessment_ids ?? null,
         meal_types: input.meal_types,
         preferences: input.preferences,
@@ -309,10 +310,8 @@ export function createGeneratePlanHandler(deps: GeneratePlanDeps) {
         body,
         headers: {
           ...corsHeaders,
-          'ratelimit-limit': String(BURST_PER_MINUTE),
-          'ratelimit-remaining': String(burst.remaining),
-          'x-quota-limit': String(DAILY_LIMIT[tier]),
-          'x-quota-remaining': String(daily.remaining),
+          ...quota,
+          ...(excluded.length ? { 'x-members-excluded': String(excluded.length) } : {}),
         },
       };
     }

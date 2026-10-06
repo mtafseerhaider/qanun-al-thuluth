@@ -31,7 +31,10 @@
     "fasting": "Fasting",
     "weight": "Weight log",
     "budget": "Food budget",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "ramadan": "Ramadan planner",
+    "premium": "Thuluth Premium",
+    "memory": "What Thuluth remembers"
   },
   "profile": {
     "displayName": "Display name",

@@ -90,6 +90,17 @@ export interface SnapshotFast {
   exemption_reason: string | null;
 }
 
+/** A live `ramadan_plans` row overlapping the window (S5-12, 15 §5.2). */
+export interface SnapshotRamadanPlan {
+  household_id: string;
+  start_date: string;
+  end_date: string;
+  /** `[{ date, fajr, maghrib, iftar, ... }]` local `HH:mm` (ramadan-generate `DaySchedule`). */
+  prayer_times: unknown;
+  /** `{ <member_id>: { mode, days?: ['sat', ...] } }` (ramadan-generate `StoredParticipation`). */
+  child_participation: unknown;
+}
+
 export interface Snapshot {
   households: SnapshotHousehold[];
   memberships: SnapshotMembership[];
@@ -102,6 +113,8 @@ export interface Snapshot {
   /** Active plans. */
   plans: SnapshotPlan[];
   fasts: SnapshotFast[];
+  /** Ramadan plans; while one covers a date, its schedule drives suhoor and iftar reminders. */
+  ramadan?: SnapshotRamadanPlan[];
 }
 
 /** 06 §4.15 defaults: these kinds are off until the user opts in. */
@@ -295,7 +308,56 @@ function datesInWindow(ctx: Ctx, tz: string): string[] {
   return a === b ? [a] : [a, b];
 }
 
+const WEEKDAY_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+function ramadanPlanOn(
+  ctx: Ctx,
+  householdId: string,
+  date: string,
+): SnapshotRamadanPlan | undefined {
+  return (ctx.snapshot.ramadan ?? []).find(
+    (r) => r.household_id === householdId && r.start_date <= date && r.end_date >= date,
+  );
+}
+
+/** Whether a Ramadan plan has the member fasting (fully or a practice day) on `date`. */
+function ramadanFastOn(plan: SnapshotRamadanPlan, memberId: string, date: string): boolean {
+  const all = plan.child_participation;
+  if (!all || typeof all !== 'object') return false;
+  const p = (all as Record<string, unknown>)[memberId];
+  if (!p || typeof p !== 'object') return false;
+  const { mode, days } = p as { mode?: unknown; days?: unknown };
+  if (mode === 'fasting') return true;
+  if (mode !== 'practice_fast' || !Array.isArray(days)) return false;
+  const weekday = WEEKDAY_NAMES[new Date(`${date}T00:00:00Z`).getUTCDay()];
+  return days.includes(weekday);
+}
+
+/** The plan's stored Fajr and iftar for a date as instants, or null when absent or malformed. */
+function ramadanTimesOn(
+  plan: SnapshotRamadanPlan,
+  date: string,
+  timeZone: string,
+): { fajr: Date; maghrib: Date } | null {
+  if (!Array.isArray(plan.prayer_times)) return null;
+  const day = plan.prayer_times.find(
+    (d): d is Record<string, unknown> =>
+      !!d && typeof d === 'object' && (d as { date?: unknown }).date === date,
+  );
+  if (!day) return null;
+  const fajr = day.fajr;
+  const iftar = parseHhmm(day.iftar) !== null ? day.iftar : day.maghrib;
+  if (parseHhmm(fajr) === null || parseHhmm(iftar) === null) return null;
+  return {
+    fajr: zonedTimeToInstant(date, fajr as string, timeZone),
+    maghrib: zonedTimeToInstant(date, iftar as string, timeZone),
+  };
+}
+
 function fastingOn(ctx: Ctx, memberId: string, date: string): boolean {
+  const member = ctx.snapshot.family.find((m) => m.id === memberId);
+  const plan = member ? ramadanPlanOn(ctx, member.household_id, date) : undefined;
+  if (plan && ramadanFastOn(plan, memberId, date)) return true;
   return ctx.snapshot.fasts.some(
     (f) =>
       f.family_member_id === memberId &&
@@ -472,10 +534,14 @@ function fasting(ctx: Ctx, h: SnapshotHousehold) {
       (m) => m.household_id === h.id && fastingOn(ctx, m.id, date) && !tooYoungToFast(m, date),
     );
     const recipients = new Set(fasters.flatMap((m) => recipientsFor(ctx, m)));
+    // S5-12: an active Ramadan plan's own schedule (its method, location and iftar choice) wins
+    // over the default calculation; voluntary fasts keep the fasting_logs path.
+    const plan = ramadanPlanOn(ctx, h.id, date);
+    const planTimes = plan ? ramadanTimesOn(plan, date, h.timezone) : null;
     for (const userId of recipients) {
       const user = ctx.users.get(userId);
       if (!user) continue;
-      const times = prayersFor(ctx, h, date, user.tradition_preference);
+      const times = planTimes ?? prayersFor(ctx, h, date, user.tradition_preference);
       if (!times) continue;
       if (ctx.prefs.enabled(userId, 'suhoor_reminder')) {
         const before = num(
@@ -497,7 +563,11 @@ function fasting(ctx: Ctx, h: SnapshotHousehold) {
               time: formatLocalTime(times.fajr, h.timezone),
             },
             routeFor('suhoor_reminder'),
-            { fast_date: date, ends_at: times.fajr.toISOString() },
+            {
+              fast_date: date,
+              ends_at: times.fajr.toISOString(),
+              ...(planTimes ? { source: 'ramadan_plan' } : {}),
+            },
           );
         }
       }
@@ -521,7 +591,11 @@ function fasting(ctx: Ctx, h: SnapshotHousehold) {
               time: formatLocalTime(times.maghrib, h.timezone),
             },
             routeFor('iftar_reminder'),
-            { fast_date: date, iftar_at: times.maghrib.toISOString() },
+            {
+              fast_date: date,
+              iftar_at: times.maghrib.toISOString(),
+              ...(planTimes ? { source: 'ramadan_plan' } : {}),
+            },
           );
         }
       }

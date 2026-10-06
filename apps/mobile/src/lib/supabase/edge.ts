@@ -27,6 +27,41 @@ export interface InvokeEdgeOptions {
   headers?: Record<string, string>;
 }
 
+/** URL and auth headers for an Edge Function call (shared by JSON, streaming and multipart calls). */
+export async function edgeRequestInit(
+  name: string,
+  opts: Pick<InvokeEdgeOptions, 'baseUrl' | 'anonKey' | 'accessToken' | 'headers'> = {},
+): Promise<{ url: string; headers: Record<string, string> }> {
+  const baseUrl = opts.baseUrl ?? env.SUPABASE_URL;
+  const anonKey = opts.anonKey ?? env.SUPABASE_ANON_KEY;
+  if (!baseUrl || !anonKey)
+    throw new AppError('NOT_CONFIGURED', 'Supabase URL or anon key is not configured.');
+  const token = opts.accessToken !== undefined ? opts.accessToken : await getAccessToken();
+  return {
+    url: `${baseUrl.replace(/\/$/, '')}/functions/v1/${name}`,
+    headers: {
+      apikey: anonKey,
+      authorization: `Bearer ${token ?? anonKey}`,
+      'x-client-info': `thuluth-mobile/${env.APP_VERSION}`,
+      ...opts.headers,
+    },
+  };
+}
+
+/** Maps a non-2xx response body (00 §4.2 envelope, parsed leniently) to an AppError. */
+export function edgeErrorFrom(name: string, status: number, json: unknown): AppError {
+  const envelope = LenientErrorEnvelope.safeParse(json);
+  if (envelope.success) {
+    const { code, message, details } = envelope.data.error;
+    return new AppError(code as AppError['code'], message, { status, details: details ?? {} });
+  }
+  return new AppError(
+    status === 401 ? 'UNAUTHENTICATED' : 'INTERNAL',
+    `Edge function ${name} failed with ${status}.`,
+    { status },
+  );
+}
+
 /**
  * Calls a Supabase Edge Function with a JSON body and validates the response with `responseSchema`.
  * Non-2xx responses are parsed as the error envelope and thrown as AppError.

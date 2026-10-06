@@ -60,3 +60,36 @@ describe('plan contracts', () => {
     expect(r.success).toBe(false);
   });
 });
+
+describe('sprint 5 contracts', () => {
+  it('parses chat SSE events and rejects unknown tools', async () => {
+    const { ChatSseEvent } = await import('../src/contracts/ai-chat.ts');
+    expect(ChatSseEvent.parse({ type: 'message.delta', data: { text: 'Salaam' } }).type).toBe(
+      'message.delta',
+    );
+    expect(
+      ChatSseEvent.safeParse({
+        type: 'tool.call',
+        data: { tool_call_id: 't1', name: 'delete_household', display: 'x' },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('requires practice-fast details and exemption reasons', async () => {
+    const { RamadanParticipant } = await import('../src/contracts/ramadan-generate.ts');
+    const id = '00000000-0000-4000-8000-000000000001';
+    expect(
+      RamadanParticipant.safeParse({ family_member_id: id, intention: 'practice_fast' }).success,
+    ).toBe(false);
+    expect(
+      RamadanParticipant.safeParse({ family_member_id: id, intention: 'exempt' }).success,
+    ).toBe(false);
+    expect(
+      RamadanParticipant.safeParse({
+        family_member_id: id,
+        intention: 'exempt',
+        exemption_reason: 'breastfeeding',
+      }).success,
+    ).toBe(true);
+  });
+});

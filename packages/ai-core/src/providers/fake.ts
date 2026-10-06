@@ -8,10 +8,16 @@ import type {
   ModelParams,
   ProviderId,
   StreamEvent,
+  TranscribeRequest,
+  TranscribeResponse,
 } from '../types.ts';
 import { streamFromChat } from './http.ts';
 
 export type FakeScript = (req: ChatRequest, model: string) => Partial<ChatResponse> | AIError;
+export type FakeTranscript = (
+  req: TranscribeRequest,
+  model: string,
+) => { text: string; language?: string | null } | AIError;
 
 /**
  * Deterministic provider for tests and evals. By default it echoes the last user text.
@@ -29,10 +35,32 @@ export class FakeProvider implements AIProvider {
   readonly calls: { req: ChatRequest; model: string }[] = [];
 
   readonly #script: FakeScript | undefined;
+  readonly #transcript: FakeTranscript | undefined;
 
-  constructor(opts: { id?: ProviderId; script?: FakeScript } = {}) {
+  constructor(opts: { id?: ProviderId; script?: FakeScript; transcript?: FakeTranscript } = {}) {
     this.id = opts.id ?? 'anthropic';
     this.#script = opts.script;
+    this.#transcript = opts.transcript;
+  }
+
+  readonly transcribeCalls: { req: TranscribeRequest; model: string }[] = [];
+
+  /** Scripted transcription; defaults to a fixed sentence in the hinted language. */
+  async transcribe(
+    req: TranscribeRequest,
+    model: string,
+    _params: ModelParams,
+  ): Promise<TranscribeResponse> {
+    this.transcribeCalls.push({ req, model });
+    const out = this.#transcript?.(req, model) ?? { text: 'fake transcript' };
+    if (out instanceof AIError) throw out;
+    return {
+      provider: this.id,
+      model,
+      text: out.text,
+      language: out.language === undefined ? (req.languageHint ?? 'en') : out.language,
+      latencyMs: 1,
+    };
   }
 
   async chat(req: ChatRequest, model: string, _params: ModelParams): Promise<ChatResponse> {

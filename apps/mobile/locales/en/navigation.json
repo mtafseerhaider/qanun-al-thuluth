@@ -37,6 +37,14 @@
     "weightLog": "Weight log",
     "settingsNotifications": "Notifications",
     "fastLog": "Log a fast",
-    "dehydrationCheck": "Dehydration check"
+    "dehydrationCheck": "Dehydration check",
+    "chatSessions": "Conversations",
+    "paywall": "Thuluth Premium",
+    "mealPhoto": "Photo meal log",
+    "mealAnalysis": "Check your meal",
+    "ramadanPlanner": "Ramadan planner",
+    "ramadanSetup": "Set up Ramadan",
+    "subscription": "Premium",
+    "settingsMemory": "AI memory"
   }
 }

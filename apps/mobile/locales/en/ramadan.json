@@ -1,0 +1,168 @@
+{
+  "today": {
+    "day": "Ramadan day {{day}}",
+    "untilSuhoorEnd": "Suhoor ends in {{time}}",
+    "untilIftar": "Iftar in {{time}}",
+    "iftarDone": "Iftar time has passed. May your fast be accepted.",
+    "suhoorEnds": "Suhoor ends {{time}}",
+    "iftarAt": "Iftar {{time}}"
+  },
+  "planner": {
+    "title": "Ramadan {{year}}",
+    "dates": "{{start}} to {{end}}",
+    "disabled": "The Ramadan planner is not switched on yet.",
+    "scheduleTitle": "Your Ramadan schedule",
+    "generating": "Your Ramadan plan is being prepared.",
+    "viewProgress": "View progress",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "dayN": "Day {{day}}",
+    "noTimes": "Add your city in household settings to see suhoor and iftar times.",
+    "noMeals": "No meals planned for this day.",
+    "setupTitle": "Plan this Ramadan",
+    "setupBody": "Confirm the dates, choose who is fasting and get a suhoor and iftar plan for the whole family.",
+    "setup": "Set up Ramadan",
+    "readOnly": "Premium has ended, so this plan is read-only. Nothing was deleted."
+  },
+  "upsell": {
+    "title": "A full Ramadan plan is part of Premium",
+    "body": "Suhoor and iftar menus for every day, practice fasts for children and safe plans for those not fasting."
+  },
+  "tips": {
+    "title": "Ramadan tips",
+    "disclaimer": "General guidance, not medical or religious rulings. Ask your doctor about medicines and health conditions.",
+    "hydration": {
+      "title": "Spread water through the night",
+      "body": "Drink a glass or two at iftar, more through the evening and some at suhoor, rather than all at once."
+    },
+    "suhoor": {
+      "title": "Make suhoor slow and filling",
+      "body": "Whole grains, eggs or yoghurt, and fruit keep energy steadier than sugary or very salty foods."
+    },
+    "iftar": {
+      "title": "Start iftar gently",
+      "body": "Begin with something light and water, then eat the main meal after a short pause."
+    },
+    "children": {
+      "title": "Children join the family meals",
+      "body": "Young children eat normally through the day and share suhoor and iftar. Older children can try short practice fasts."
+    },
+    "pregnancy": {
+      "title": "Pregnant or breastfeeding",
+      "body": "Decide with your clinician and scholar. Either choice is fine, and Thuluth plans for both."
+    },
+    "sleep": {
+      "title": "Protect sleep",
+      "body": "A short rest in the afternoon helps when nights are short."
+    },
+    "activity": {
+      "title": "Keep activity light",
+      "body": "Gentle walks are better than hard exercise during the fast; save harder exercise for after iftar."
+    },
+    "medicines": {
+      "title": "Check medicines early",
+      "body": "If anyone takes regular medicines, especially for diabetes, talk to the doctor before Ramadan."
+    }
+  },
+  "setup": {
+    "step": "Step {{current}} of {{total}}",
+    "viewer": "Only owners and caregivers can set up Ramadan.",
+    "datesTitle": "Ramadan {{year}} dates",
+    "datesBody": "These dates are calculated. If your local moon sighting differs, move the start by a day.",
+    "startsOn": "Starts on",
+    "dayEarlier": "One day earlier",
+    "dayLater": "One day later",
+    "lengthLabel": "How many days?",
+    "lengthHint": "You can change this later if the moon is sighted earlier.",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "endsOn": "Ends on {{date}}",
+    "city": "Suhoor and iftar times for {{city}}",
+    "noCity": "Add your city in household settings so we can work out suhoor and iftar times.",
+    "datesError": {
+      "length": "Ramadan is 29 or 30 days.",
+      "past": "This Ramadan has already ended.",
+      "year": "These dates cannot be planned yet."
+    },
+    "membersTitle": "Who is fasting?",
+    "membersBody": "Choices follow each person's age and health profile. You can change them later.",
+    "reviewTitle": "Review",
+    "reviewDates": "{{start}} to {{end}}",
+    "reviewCounts": "Fasting: {{fasting}}. Practice fasts: {{practice}}.",
+    "suhoorLabel": "When do you usually have suhoor?",
+    "disclaimer": "Thuluth plans meals; it does not give religious rulings. Ask your scholar about exemptions and your doctor about health.",
+    "create": "Create Ramadan plan",
+    "offline": "You are offline. Creating the plan needs a connection.",
+    "back": "Back",
+    "cancel": "Cancel",
+    "next": "Next",
+    "continue": "Continue",
+    "escalationsTitle": "Please read before you continue",
+    "notice": {
+      "under_7": "Children under 7 do not fast. They join suhoor and iftar as family meals.",
+      "blocked": "Their health profile suggests fasting may not be safe. They are planned as exempt unless a clinician has approved fasting.",
+      "pregnancy": "Decide with your clinician and scholar. Either choice is fine; choose not fasting if you have not decided yet.",
+      "practice": "Children 7 to 12 can try gentle practice fasts: part days, a few days a week.",
+      "teen": "For teenagers, you decide together. Practice fasts are also an option."
+    },
+    "fixedNotFasting": "Not fasting. Eats normally and joins family meals.",
+    "intentionLabel": "Ramadan for {{name}}",
+    "practiceDays": "Practice days a week",
+    "practiceUntil": "Fast until",
+    "exemptionLabel": "Reason",
+    "exemptionHint": "Only shown to the person and the household owner.",
+    "clinicianAck": "A clinician has approved fasting",
+    "clinicianAckBody": "Fasting stays planned only after a doctor has said it is safe.",
+    "error": {
+      "not_allowed": "This option is not available for this person.",
+      "practice_details": "Choose practice days and how long.",
+      "exemption_reason": "Choose a reason.",
+      "clinician_ack": "Confirm a clinician has approved fasting, or choose another option."
+    }
+  },
+  "intention": {
+    "fasting": {
+      "title": "Fasting",
+      "body": "Fasts the whole day."
+    },
+    "practice_fast": {
+      "title": "Practice fast",
+      "body": "Part days on some days of the week."
+    },
+    "not_fasting": {
+      "title": "Not fasting",
+      "body": "Eats normally and joins suhoor and iftar."
+    },
+    "exempt": {
+      "title": "Exempt",
+      "body": "Not fasting for a reason, with make-up days tracked if needed."
+    }
+  },
+  "reason": {
+    "illness": "Illness",
+    "travel": "Travel",
+    "pregnancy": "Pregnancy",
+    "breastfeeding": "Breastfeeding",
+    "age": "Age",
+    "other": "Other"
+  },
+  "until": {
+    "dhuhr": "Dhuhr",
+    "asr": "Asr",
+    "maghrib": "Maghrib"
+  },
+  "suhoor": {
+    "just_before_fajr": {
+      "title": "Just before Fajr",
+      "body": "A meal shortly before suhoor ends."
+    },
+    "after_tahajjud": {
+      "title": "After night prayer",
+      "body": "An earlier meal in the last part of the night."
+    },
+    "before_sleep": {
+      "title": "Before sleeping",
+      "body": "A meal before bed, with water at Fajr."
+    }
+  }
+}

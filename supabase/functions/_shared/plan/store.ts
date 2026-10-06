@@ -374,6 +374,8 @@ interface RecipeRow {
   cook_min: number;
   kid_friendly: boolean;
   autism_friendly: boolean;
+  /** Optional so older fixtures without the column still load. */
+  ramadan_suitable?: boolean;
   review_status: ReviewStatus;
   household_id: string | null;
   recipe_ingredients: Array<{ ingredient_id: string }>;
@@ -472,6 +474,7 @@ export function buildCatalog(args: {
       prepMin: Math.max(0, ...used.map((r) => r.prep_min + r.cook_min)),
       kidFriendly: used.length > 0 && used.every((r) => r.kid_friendly),
       autismFriendly: used.length > 0 && used.every((r) => r.autism_friendly),
+      ramadanSuitable: used.length > 0 && used.every((r) => r.ramadan_suitable === true),
       portions: portions.get(m.id) ?? [],
       alternatives: alternatives.get(m.id) ?? [],
       householdId: m.household_id,
@@ -703,7 +706,7 @@ export function supabasePlanStore(admin: SupabaseClient): PlanStore {
           admin
             .from('recipes')
             .select(
-              'id, cost_tier, prep_min, cook_min, kid_friendly, autism_friendly, review_status, household_id, recipe_ingredients(ingredient_id)',
+              'id, cost_tier, prep_min, cook_min, kid_friendly, autism_friendly, ramadan_suitable, review_status, household_id, recipe_ingredients(ingredient_id)',
             )
             .is('deleted_at', null)
             .or(filter)

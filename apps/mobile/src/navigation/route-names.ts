@@ -47,6 +47,14 @@ export const ROUTES = {
   SettingsNotifications: 'SettingsNotifications',
   FastLogSheet: 'FastLogSheet',
   DehydrationCheckSheet: 'DehydrationCheckSheet',
+  ChatSessions: 'ChatSessions',
+  SettingsMemory: 'SettingsMemory',
+  Subscription: 'Subscription',
+  PaywallModal: 'PaywallModal',
+  MealPhotoCapture: 'MealPhotoCapture',
+  MealAnalysisResult: 'MealAnalysisResult',
+  RamadanPlanner: 'RamadanPlanner',
+  RamadanSetup: 'RamadanSetup',
 } as const;
 
 export type RouteName = (typeof ROUTES)[keyof typeof ROUTES];

@@ -95,3 +95,38 @@ Deno.test(
     assertEquals((await res.json()).error.details.reason, 'multi_week_or_kind');
   },
 );
+
+Deno.test('S5 guards: fasting under 7, read-only household, plain VALIDATION_FAILED', () => {
+  const fasting = fromPostgrestError({
+    code: 'P0001',
+    message: 'CHILD_RULE:fasting_under_7',
+    details: JSON.stringify({ rule: 'no_fasting_under_7', family_member_id: 'm1' }),
+  });
+  assertEquals(fasting.code, 'VALIDATION_FAILED');
+  assertEquals(fasting.details.rule, 'no_fasting_under_7');
+  assertEquals(fasting.details.family_member_id, 'm1');
+
+  const readOnly = fromPostgrestError({
+    code: 'P0001',
+    message: 'PREMIUM_REQUIRED',
+    details: JSON.stringify({ reason: 'household_read_only', household_id: 'h1' }),
+  });
+  assertEquals(readOnly.code, 'PREMIUM_REQUIRED');
+  assertEquals(readOnly.details.feature, 'household.write');
+  assertEquals(readOnly.details.reason, 'household_read_only');
+
+  const kind = fromPostgrestError({
+    code: 'P0001',
+    message: 'PREMIUM_REQUIRED',
+    details: JSON.stringify({ reason: 'multi_week_or_kind', kind: 'ramadan' }),
+  });
+  assertEquals(kind.details.feature, 'plan.multi_week_or_kind');
+
+  const foreign = fromPostgrestError({
+    code: '22023',
+    message: 'VALIDATION_FAILED',
+    details: JSON.stringify({ field: 'child_participation', reason: 'not_in_household' }),
+  });
+  assertEquals(foreign.code, 'VALIDATION_FAILED');
+  assertEquals(foreign.details.reason, 'not_in_household');
+});

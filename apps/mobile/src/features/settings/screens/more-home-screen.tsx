@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { useDebugMenuEnabled } from '@/features/debug';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import type { MoreScreenProps } from '@/navigation/types';
 import { useSessionStore } from '@/stores/use-session-store';
 
@@ -13,12 +14,14 @@ import { LanguageToggle } from '../components/language-toggle';
 import { ThemeToggle } from '../components/theme-toggle';
 
 /**
- * M1 More: trackers (water, fasting, weight, budget; Sprint 4), account and notification settings,
+ * M1 More: trackers (water, fasting, weight, budget; Sprint 4; the Ramadan planner, Sprint 5),
+ * account, Premium, AI memory and notification settings,
  * appearance and language, feedback, plus the hidden debug entry.
  */
 export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
   const { t } = useTranslation(['navigation', 'settings']);
   const debugEnabled = useDebugMenuEnabled();
+  const ramadanEnabled = useFeatureFlag('ramadan_planner');
   const isDevGuest = useSessionStore((s) => s.isDevGuest);
   const signOut = useSessionStore((s) => s.setSignedOut);
 
@@ -45,6 +48,14 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
             onPress={() => navigation.navigate('FastingTracker', {})}
             testID="settings-more-home.fasting-button"
           />
+          {ramadanEnabled ? (
+            <Button
+              label={t('settings:home.ramadan')}
+              variant="secondary"
+              onPress={() => navigation.navigate('RamadanPlanner', {})}
+              testID="settings-more-home.ramadan-button"
+            />
+          ) : null}
           <Button
             label={t('settings:home.weight')}
             variant="secondary"
@@ -75,6 +86,18 @@ export function MoreHomeScreen({ navigation }: MoreScreenProps<'MoreHome'>) {
             variant="secondary"
             onPress={() => navigation.navigate('SettingsNotifications')}
             testID="settings-more-home.notifications-button"
+          />
+          <Button
+            label={t('settings:home.premium')}
+            variant="secondary"
+            onPress={() => navigation.navigate('Subscription')}
+            testID="settings-more-home.premium-button"
+          />
+          <Button
+            label={t('settings:home.memory')}
+            variant="secondary"
+            onPress={() => navigation.navigate('SettingsMemory')}
+            testID="settings-more-home.memory-button"
           />
         </Card>
       ) : null}

@@ -5,6 +5,7 @@ import { SUPPORTED_LOCALES } from '@shared';
 import { fetchMyHouseholds } from '@/features/household';
 import { useOnboardingStore } from '@/features/onboarding';
 import { setAnalyticsContext, track } from '@/lib/analytics/track';
+import { initPurchases } from '@/lib/purchases/purchases';
 import { registerPushDevice } from '@/lib/push/push-registration';
 import { fetchProfile, type Profile } from '@/lib/auth/profile';
 import { lastAuthenticatedAt, providersFromUser, routingFlags } from '@/lib/auth/session-status';
@@ -15,6 +16,7 @@ import { setSentryUser } from '@/lib/sentry/init';
 import { useActiveHouseholdStore } from '@/stores/use-active-household-store';
 import { usePreferencesStore, type AppLocale } from '@/stores/use-preferences-store';
 import { useSessionStore } from '@/stores/use-session-store';
+import { useSubscriptionStore } from '@/stores/use-subscription-store';
 
 export type SignInMethod = 'restore' | 'signed_in';
 
@@ -81,6 +83,10 @@ function postAuthWiring(
       void changeLocale(locale);
   }
   void registerPushDevice(userId);
+  // RevenueCat (24 S5-13): a no-op until the platform key is configured.
+  void initPurchases(userId).then((premium) =>
+    useSubscriptionStore.getState().setClientPremium(premium),
+  );
   void fetchMyHouseholds(userId)
     .then((rows) => {
       queryClient.setQueryData(qk.households(), rows);

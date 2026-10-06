@@ -1,0 +1,58 @@
+# Sprint 5 (S5-05, S5-09): chat streaming, a tool confirmation and memory.
+# Sends a starter question, waits for the streamed answer to complete, rates it, and opens the
+# conversation list. A hydration question should produce a log proposal: it must stay pending until
+# Confirm is tapped (the Jest suite covers "never auto-applies"). Needs a seeded account with chat
+# consent given and `ai.chat.enabled` on (the default seed).
+appId: ${APP_ID || "app.thuluth.mobile.dev"}
+name: 13 chat stream
+tags:
+  - chat
+  - sprint-5
+---
+- runFlow: ../onboarding/03-onboarding-steps.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'today-dashboard.screen'
+    timeout: 30000
+- tapOn:
+    id: 'tab.chat'
+- extendedWaitUntil:
+    visible:
+      id: 'chat-thread.screen'
+    timeout: 10000
+
+- tapOn:
+    id: 'chat.composer.input'
+- inputText: 'Log a glass of water for me'
+- tapOn:
+    id: 'chat.composer.send'
+- assertVisible:
+    id: 'chat.turn-0.user'
+- extendedWaitUntil:
+    visible:
+      id: 'chat.turn-0.assistant.feedback'
+    timeout: 60000
+- takeScreenshot: 13-chat-answer
+
+# A proposal card waits for the user; confirming queues the log through the outbox.
+- runFlow:
+    when:
+      visible:
+        id: 'chat.turn-0.assistant.proposal-0'
+    commands:
+      - assertVisible:
+          id: 'chat.turn-0.assistant.proposal-0.confirm'
+      - tapOn:
+          id: 'chat.turn-0.assistant.proposal-0.confirm'
+      - takeScreenshot: 13-chat-proposal-confirmed
+
+- tapOn:
+    id: 'chat.turn-0.assistant.feedback.up'
+
+- tapOn:
+    id: 'chat-thread.sessions'
+- extendedWaitUntil:
+    visible:
+      id: 'chat-sessions.row-0'
+    timeout: 10000
+- takeScreenshot: 13-chat-sessions

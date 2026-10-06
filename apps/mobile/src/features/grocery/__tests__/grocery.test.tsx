@@ -28,6 +28,11 @@ import {
   type ShoppingItemView,
 } from '../utils/grocery-rules';
 
+// The upsell card opens the paywall through the navigator (Sprint 5).
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
+}));
 jest.mock('expo-crypto', () => ({
   randomUUID: () => (jest.requireActual('crypto') as { randomUUID: () => string }).randomUUID(),
 }));

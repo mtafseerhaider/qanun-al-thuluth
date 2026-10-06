@@ -68,6 +68,8 @@ import type { LifeStage } from '@thuluth/shared';
 import { matchRecommendations } from '../../ai-intake-assess/assess.ts';
 import { HttpError } from '../errors.ts';
 import { notificationRow, routeFor } from '../notifications/templates.ts';
+import { applyRamadan, ramadanThemes } from './ramadan.ts';
+import type { RamadanMeta } from './ramadan.ts';
 import type {
   AssessmentFacts,
   BudgetProfileRow,
@@ -119,6 +121,8 @@ export interface GenerationMeta {
     batch_cooking?: boolean;
     cuisines?: string[] | undefined;
   };
+  /** Ramadan jobs (`ramadan-generate`, kind 'ramadan'): schedule and participation. */
+  ramadan?: RamadanMeta;
   /** Adjust jobs. */
   change_request?: string;
   scope?: AdjustScope;
@@ -776,6 +780,10 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
     seed: seedOf(plan.id),
   });
 
+  const ramadan = plan.kind === 'ramadan' ? meta.ramadan : undefined;
+  // Ramadan plans prefer curated `ramadan_suitable` recipes (soft scoring term).
+  if (ramadan) ctx.req = { ...ctx.req, preferRamadanSuitable: true };
+
   assertAllergiesResolved(ctx);
   // S1 safety stop (12 §11): an unresolved hard red flag blocks generation.
   if (ctx.escalation) {
@@ -854,9 +862,11 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
   );
 
   const recommendations = await planRecommendations(deps, ctx);
+  const rows = weeks.flatMap((w) => plannedRows(w.draft.meals));
   const payloads = weekPayloads(
     plan.start_date,
-    weeks.flatMap((w) => plannedRows(w.draft.meals)),
+    // Ramadan: prayer-time schedule and who eats at each slot (15 §5.2-5.5).
+    ramadan ? applyRamadan(rows, ramadan) : rows,
     recommendations,
   );
   for (const p of payloads) await store.writePlanWeek(plan.id, p);
@@ -871,7 +881,9 @@ async function generate(deps: PipelineDeps, plan: MealPlanRow, meta: GenerationM
           template_key: template.key,
           title: template.title,
         }))
-      : [],
+      : ramadan
+        ? ramadanThemes(plan.week_count)
+        : [],
     generation_progress: progress('done', plan, { completed_weeks: plan.week_count }),
     generation_meta: {
       ...plan.generation_meta,

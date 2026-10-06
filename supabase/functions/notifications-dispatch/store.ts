@@ -175,6 +175,16 @@ export function supabaseNotificationsStore(admin: SupabaseClient): Notifications
           .order('id')
           .range(a, b),
       )) as Snapshot['fasts'];
+      const ramadan = (await selectAll<unknown>((a, b) =>
+        admin
+          .from('ramadan_plans')
+          .select('household_id, start_date, end_date, prayer_times, child_participation')
+          .is('deleted_at', null)
+          .lte('start_date', toDate)
+          .gte('end_date', fromDate)
+          .order('id')
+          .range(a, b),
+      )) as NonNullable<Snapshot['ramadan']>;
       return {
         households,
         memberships,
@@ -185,6 +195,7 @@ export function supabaseNotificationsStore(admin: SupabaseClient): Notifications
         meals,
         plans,
         fasts,
+        ramadan,
       };
     },
     async existingKeys(rows) {
