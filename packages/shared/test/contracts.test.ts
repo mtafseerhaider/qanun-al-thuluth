@@ -38,3 +38,25 @@ describe('money', () => {
     expect(toMinor(450.5, 'PKR')).toBe(45050);
   });
 });
+
+describe('plan contracts', () => {
+  it('applies generate-plan defaults and rejects ramadan', async () => {
+    const { AiGeneratePlanRequest } = await import('../src/contracts/ai-generate-plan.ts');
+    const base = { household_id: '00000000-0000-4000-8000-000000000001', start_date: '2026-10-12' };
+    const p = AiGeneratePlanRequest.parse(base);
+    expect(p.week_count).toBe(1);
+    expect(p.meal_types).toEqual(['breakfast', 'lunch', 'snack', 'dinner']);
+    expect(p.preferences.sunnah_foods_emphasis).toBe(true);
+    expect(AiGeneratePlanRequest.safeParse({ ...base, kind: 'ramadan' }).success).toBe(false);
+  });
+
+  it('rejects an adjust scope that ends before it starts', async () => {
+    const { AiAdjustPlanRequest } = await import('../src/contracts/ai-adjust-plan.ts');
+    const r = AiAdjustPlanRequest.safeParse({
+      meal_plan_id: '00000000-0000-4000-8000-000000000001',
+      change_request: 'less rice',
+      scope: { from_date: '2026-10-14', to_date: '2026-10-13' },
+    });
+    expect(r.success).toBe(false);
+  });
+});
