@@ -1,0 +1,27 @@
+{
+  "name": "qanun-al-thuluth",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:test": "bash tooling/scripts/db-test.sh",
+    "mobile": "pnpm --filter @thuluth/mobile start"
+  },
+  "prettier": "@thuluth/config/prettier",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@thuluth/config": "workspace:*",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.7",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1"
+  }
+}

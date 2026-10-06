@@ -1,0 +1,23 @@
+{
+  "name": "@thuluth/ai-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src evals",
+    "test": "vitest run",
+    "evals": "node --experimental-strip-types evals/run.ts"
+  },
+  "dependencies": {
+    "@thuluth/shared": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@thuluth/config": "workspace:*",
+    "vitest": "^5.0.3"
+  }
+}

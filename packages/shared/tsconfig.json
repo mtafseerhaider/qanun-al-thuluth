@@ -1,0 +1,4 @@
+{
+  "extends": "@thuluth/config/tsconfig/library.json",
+  "include": ["src"]
+}

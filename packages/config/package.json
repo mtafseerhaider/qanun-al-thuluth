@@ -1,0 +1,12 @@
+{
+  "name": "@thuluth/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/*": "./tsconfig/*",
+    "./tailwind/preset": "./tailwind/preset.js",
+    "./eslint/*": "./eslint/*",
+    "./prettier": "./prettier/index.json"
+  }
+}

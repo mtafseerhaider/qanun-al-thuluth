@@ -1,0 +1,25 @@
+node_modules/
+.turbo/
+coverage/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Expo
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+supabase/functions/.env
