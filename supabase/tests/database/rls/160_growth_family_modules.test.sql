@@ -83,8 +83,9 @@ select results_eq(format($$select weight_for_age_z, cardinality(flags), computed
 select is((select weight_kg from public.family_members where id = :'son'), 24.00::numeric(5,2), 'and re-syncs the member weight');
 select is((select height_cm from public.family_members where id = :'son' ), 122.0::numeric(5,1),
   'an older measurement (60 days ago) did not overwrite the latest height');
-select is((select diff from public.audit_log where entity = 'growth_tracking' and action = 'update' order by at desc, id limit 1) ? 'weight_kg',
-  true, 'growth edits are audited keys-only');
+-- Every row in this transaction shares one `at`, so check all update rows rather than picking one.
+select ok(exists(select 1 from public.audit_log where entity = 'growth_tracking' and action = 'update' and diff ? 'weight_kg'),
+  'growth edits are audited keys-only');
 
 -- growth_dashboard: free tier sees the latest measurement only, flags on every tier
 update public.growth_tracking set flags = '{red_flag.wfa_below_p3}', computed_at = now()
