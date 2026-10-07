@@ -47,18 +47,18 @@
 | `thuluth_premium_annual` | Auto-renewable subscription | 1 year | `premium` |
 | `thuluth_family_coach_monthly` (Phase 2) | Auto-renewable subscription | 1 month | `coach` (plus `premium`) |
 
-App Store: one subscription group `Thuluth Premium` containing monthly (level 2) and annual (level 1, higher level = better value for upgrade ordering). Google Play: one subscription `thuluth_premium` with base plans `monthly` and `annual` (product ids above are configured as RevenueCat product identifiers `thuluth_premium:monthly` and `thuluth_premium:annual` on Play; the code always refers to RevenueCat package identifiers, not raw store ids).
+App Store: one subscription group `Thuluth Premium` containing monthly (level 2) and annual (level 1, higher level = better value for upgrade ordering). Google Play: two subscriptions with the same ids as the App Store (`thuluth_premium_monthly` with base plan `monthly`, `thuluth_premium_annual` with base plan `annual`; the annual base plan carries the 7-day `free-trial` offer). In RevenueCat the Play products are `thuluth_premium_monthly:monthly` and `thuluth_premium_annual:annual`. The ids match `packages/shared/src/constants/products.ts`; the app always selects plans by RevenueCat package type (`$rc_monthly`, `$rc_annual`), not raw store ids. Setup: `docs/runbooks/google-play.md`, `docs/runbooks/revenuecat.md`.
 
 ### 2.2 RevenueCat configuration
 
 | Object | Value |
 |---|---|
 | Project | `Thuluth` |
-| Apps | iOS (`app.thuluth.mobile`), Android (`app.thuluth.mobile`) |
+| Apps | App Store and Play Store apps for `app.thuluth.mobile` (prod), `app.thuluth.mobile.staging` (staging, sandbox) and optionally `app.thuluth.mobile.dev`. Apple product ids are unique per developer account, so the staging App Store products are `thuluth_premium_monthly_staging` and `thuluth_premium_annual_staging` |
 | Entitlement | `premium` (attached to both products on both stores) |
 | App User ID | `users.id` (Supabase auth uid). Purchases configured only after sign-in; no anonymous purchases. |
 | Restore behaviour | "Keep with original App User ID" (section 11) |
-| Webhook | `https://<project>.functions.supabase.co/revenuecat-webhook`, authorization header `Bearer <RC_WEBHOOK_SECRET>`, all event types, both environments (sandbox events flagged) |
+| Webhook | One per backend. Prod: `https://api.thuluth.app/functions/v1/revenuecat-webhook`, environment filter **Production** only. Staging and dev: `https://<ref>.supabase.co/functions/v1/revenuecat-webhook`, **Sandbox** only. Authorization header `Bearer <REVENUECAT_WEBHOOK_SECRET>` (a new value per environment), all event types. The prod function also ignores any `SANDBOX` event (`docs/ops/secrets.md` §6) |
 | Subscriber attributes | `$onesignalId` (OneSignal subscription id), `country_code`, `locale`, `household_count`; never health data |
 
 ### 2.3 Offerings and packages

@@ -1,6 +1,7 @@
 import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
+import { maintenanceProbe, withMaintenance } from '../_shared/maintenance.ts';
 import { supabasePlanStore } from '../_shared/plan/store.ts';
 import { createRamadanGenerateHandler } from './handler.ts';
 import { supabaseRamadanStore } from './store.ts';
@@ -18,16 +19,19 @@ function background(run: () => Promise<unknown>): void {
 }
 
 Deno.serve(
-  createRamadanGenerateHandler({
-    verify: verifyWithSupabase,
-    store: supabasePlanStore(admin),
-    ramadan: supabaseRamadanStore(admin),
-    entitlements: supabaseEntitlementStore(admin),
-    fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
-    writeUsage: async (row) => {
-      const { error } = await admin.from('ai_usage').insert(row);
-      if (error) throw error;
-    },
-    kick: background,
-  }),
+  withMaintenance(
+    createRamadanGenerateHandler({
+      verify: verifyWithSupabase,
+      store: supabasePlanStore(admin),
+      ramadan: supabaseRamadanStore(admin),
+      entitlements: supabaseEntitlementStore(admin),
+      fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
+      writeUsage: async (row) => {
+        const { error } = await admin.from('ai_usage').insert(row);
+        if (error) throw error;
+      },
+      kick: background,
+    }),
+    maintenanceProbe(admin),
+  ),
 );

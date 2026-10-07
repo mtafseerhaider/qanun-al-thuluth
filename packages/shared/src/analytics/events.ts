@@ -489,6 +489,8 @@ export const EventSchemas = {
       target: z.enum(['islamic', 'scientific', 'recommendation']),
     })
     .strict(),
+  // Launch follow-up: settings (02 §7.13). Sensory calm mode on or off (no member or profile data).
+  sensory_calm_toggled: z.object({ enabled: z.boolean() }).strict(),
 } as const;
 
 export type EventName = keyof typeof EventSchemas;

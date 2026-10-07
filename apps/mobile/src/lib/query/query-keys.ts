@@ -14,6 +14,7 @@ export const qk = {
   memoryEnabled: () => [...qk.me(), 'ai-memory-enabled'] as const,
   households: () => [...qk.me(), 'households'] as const,
   featureFlags: () => ['feature-flags'] as const,
+  minSupportedVersion: (uid: Id | null) => ['feature-flags', 'min-supported-version', uid] as const,
   household: (hid: Id) => {
     const base = ['household', hid] as const;
     return {

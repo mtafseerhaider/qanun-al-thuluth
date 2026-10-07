@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppStatusGate } from '@/features/app-status';
 import { flushPendingNotification } from '@/features/notifications';
+import { CaptchaHost } from '@/lib/auth/captcha-host';
+import { useSensoryCalmSuggestion } from '@/features/settings';
 import { markStartup } from '@/lib/perf/startup';
 import { registerNavigationContainer, Sentry } from '@/lib/sentry/init';
 import { linking } from '@/navigation/linking';
@@ -55,6 +58,7 @@ function Navigation() {
   const [ready, setReady] = useState(false);
   usePendingInviteNavigation(ready);
   usePendingNotificationNavigation(ready);
+  useSensoryCalmSuggestion(ready);
   return (
     <NavigationContainer
       ref={navigationRef}
@@ -73,7 +77,11 @@ function Navigation() {
   );
 }
 
-/** Provider order per 07 §9.1; sheets, toast and app-lock providers arrive in later sprints. */
+/**
+ * Provider order per 07 §9.1; sheets, toast and app-lock providers arrive in later sprints.
+ * AppStatusGate swaps navigation for the Update required / maintenance interstitials; CaptchaHost
+ * shows the hCaptcha challenge for protected auth calls when a site key is configured.
+ */
 function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -84,8 +92,11 @@ function App() {
               <QueryProvider>
                 <SplashGate>
                   <AuthProvider>
-                    <Navigation />
+                    <AppStatusGate>
+                      <Navigation />
+                    </AppStatusGate>
                   </AuthProvider>
+                  <CaptchaHost />
                 </SplashGate>
               </QueryProvider>
             </ThemeProvider>

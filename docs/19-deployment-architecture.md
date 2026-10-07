@@ -29,8 +29,8 @@
 | Env | Purpose | Supabase project | Region | Mobile variant | EAS channel | OneSignal app | Sentry environment | Data |
 |---|---|---|---|---|---|---|---|---|
 | `local` | Engineer and agent workstations, CI | `supabase start` (Docker) | n/a | `development` build pointing at LAN IP | none | `Thuluth Dev` | `local` (disabled by default) | Seed fixtures (`supabase/seed.sql` + `scripts/seed/*`) |
-| `dev` | Shared integration, feature branches, preview OTA updates | `thuluth-dev` | `eu-central-1` | `development` | `development`, `pr-*` branches | `Thuluth Dev` | `dev` | Synthetic only, reset at will |
-| `staging` | Release candidates, internal testers, QA, Maestro E2E | `thuluth-staging` | `eu-central-1` | `preview` | `staging` | `Thuluth Dev` | `staging` | Synthetic + anonymised catalog; never production user data |
+| `dev` | Shared integration, feature branches, preview OTA updates | `thuluth-dev` | `eu-central-1` | `development` | `development`, `pr-*` branches | `Thuluth Dev` | `development` | Synthetic only, reset at will |
+| `staging` | Release candidates, internal testers, QA, Maestro E2E | `thuluth-staging` | `eu-central-1` | `preview` | `staging` | `Thuluth Staging` | `staging` | Synthetic + anonymised catalog; never production user data |
 | `prod` | Public users | `thuluth-prod` | `eu-central-1` | `production` | `production` | `Thuluth Prod` | `production` | Real user data |
 
 Rules:
@@ -60,7 +60,7 @@ const VARIANT = (process.env.APP_VARIANT ?? 'development') as Variant;
 
 const byVariant = {
   development: { name: 'Thuluth Dev', id: 'app.thuluth.mobile.dev', scheme: 'thuluth-dev', domain: 'dev.thuluth.app', icon: './assets/icon-dev.png' },
-  preview:     { name: 'Thuluth Beta', id: 'app.thuluth.mobile.preview', scheme: 'thuluth-preview', domain: 'staging.thuluth.app', icon: './assets/icon-preview.png' },
+  preview:     { name: 'Thuluth Beta', id: 'app.thuluth.mobile.staging', scheme: 'thuluth-preview', domain: 'staging.thuluth.app', icon: './assets/icon-preview.png' },
   production:  { name: 'Thuluth', id: 'app.thuluth.mobile', scheme: 'thuluth', domain: 'thuluth.app', icon: './assets/icon.png' },
 }[VARIANT];
 
@@ -123,6 +123,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
 });
 ```
+
+The block above is the original design sketch. `apps/mobile/app.config.ts` is the source of truth and differs in these ways: it reads `APP_ENV` (`development`, `staging`, `production`; `APP_VARIANT=preview` maps to `staging`); the bundle ids and packages are `app.thuluth.mobile.dev`, `app.thuluth.mobile.staging` and `app.thuluth.mobile`; every variant uses the scheme `thuluth` and the single domain `thuluth.app` (`associatedDomains: ['applinks:thuluth.app']`, no `webcredentials`); the Android intent filter claims only `/invite`; the `extra` block reads `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_RC_IOS_KEY` and `EXPO_PUBLIC_RC_ANDROID_KEY`; the OneSignal and Google sign-in plugins are added only when their variables are set. The configuration steps are in `docs/runbooks/eas-builds.md`.
 
 Only public values (`EXPO_PUBLIC_*`, publishable keys, DSNs) reach the bundle. No secret key, AI key or webhook secret is ever an app environment variable (enforced by a CI grep, see `20-ci-cd-pipeline.md`).
 
@@ -230,6 +232,7 @@ Build numbers: `appVersionSource: remote` with `autoIncrement` lets EAS own `bui
 |---|---|---|---|
 | `development` | `development` | Engineers, PR workflow publishes `pr-{number}` branches that testers load via the dev client's update picker | Never used by store builds |
 | `staging` | `staging` | `main` workflow | Internal testers receive every merge |
+| `internal` | `internal` | By hand (`eas update --branch internal --environment preview`) | Used by the `internal` build profile in `apps/mobile/eas.json` (staging config, its own channel) |
 | `production` | `production` | Release workflow after approval | Progressive rollout (12.2) |
 
 Channel to branch mapping is set once (`eas channel:create production`, `eas channel:edit production --branch production`); rollouts use EAS update rollout percentages on the `production` branch.
@@ -282,12 +285,14 @@ Release checklist (automated where possible, see `20-ci-cd-pipeline.md`):
 | PITR | off | off | on, 7 days |
 | Daily backups | yes (plan default) | yes | yes |
 | Auth providers | Email OTP, Google, Apple (dev client ids) | same with staging ids | prod ids |
-| Auth redirect URLs | `thuluth-dev://*`, `https://dev.thuluth.app/*` | `thuluth-preview://*`, `https://staging.thuluth.app/*` | `thuluth://*`, `https://thuluth.app/*` |
-| SMTP | Postmark sandbox server | Postmark staging server | Postmark production server |
-| Network restrictions | none | none | DB direct connections allowed only from CI runner egress and admin IPs; API through gateway |
+| Auth redirect URLs | `thuluth://auth-callback`, `https://thuluth.app/auth/callback`, `exp+thuluth://auth-callback` | `thuluth://auth-callback`, `https://thuluth.app/auth/callback` | same as staging (`supabase/config.toml` `additional_redirect_urls`) |
+| SMTP | Postmark dev server (Live type: a sandbox server never delivers, so sign-in codes would not arrive) | Postmark staging server | Postmark production server |
+| Network restrictions | none | none | none at launch (decision 2026-10-06, see below) |
 | SSL enforcement | on | on | on |
-| Spend cap | on | on | off (to avoid hard outages), with billing alerts |
+| Spend cap | off | off | off (to avoid hard outages), with billing alerts. The spend cap is an organisation setting, so with one org it is off for all three; dev and staging stay cheap through small compute |
 | Log retention | plan default | plan default | plan default + Sentry |
+
+Network restrictions on prod (default decision of 2026-10-06; the PO can override): they stay **off** at launch. `deploy-prod.yml` and `backup-prod.yml` connect to the database from GitHub-hosted runners, which have no fixed egress IPs, so an allow-list of "CI runner egress plus admin IPs" cannot work. Prod relies instead on SSL enforcement, strong unique database passwords per environment (90-day rotation), the read-only `backup_reader` role for backups, and short-lived, per-environment access tokens. Revisit when deploys move to a self-hosted runner or a static-egress proxy; then allow only that IP and the admin IPs.
 
 Project bootstrap (once per environment, scripted in `scripts/infra/bootstrap-project.sh`):
 
@@ -297,7 +302,7 @@ supabase db push                                   # all migrations
 supabase secrets set --env-file ./.env.functions.$ENV   # from 1Password, never committed
 supabase functions deploy                          # all functions
 psql "$DB_URL" -f supabase/bootstrap/cron.sql      # pg_cron schedules (env-specific URLs)
-psql "$DB_URL" -c "select vault.create_secret('$INTERNAL_CRON_SECRET', 'internal_cron_secret');"
+VAULT_CRON_SECRET="$INTERNAL_CRON_SECRET" tooling/scripts/ops/vault-secrets.sh   # Vault project_url, cron_secret, audit_ip_salt
 pnpm seed:catalog --env "$ENV"                     # ingredients, recipes, sources, price books (idempotent upserts)
 ```
 
@@ -362,12 +367,12 @@ verify_jwt = false
 | Supabase secret API key (`sb_secret_...`) | Supabase (auto-injected into functions as `SUPABASE_SECRET_KEY` / legacy service role env) | Edge Functions | On suspicion; keys are revocable individually |
 | `SUPABASE_ACCESS_TOKEN` (CLI) | GitHub environment secrets (`staging`, `production`) | CI deploys | 90 days |
 | `SUPABASE_DB_PASSWORD` | GitHub environment secrets | CI `db push` | 90 days |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY` | Supabase function secrets per env | `packages/ai-core` | 90 days, separate keys per env |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Supabase function secrets per env | `packages/ai-core` | 90 days, separate keys per env |
 | `REVENUECAT_WEBHOOK_SECRET`, `REVENUECAT_SECRET_API_KEY` | Supabase function secrets | `revenuecat-webhook`, entitlement lazy sync, account delete | 180 days |
 | `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY` | Supabase function secrets | `notifications-dispatch`, `account-delete` | 180 days |
 | `POSTMARK_SERVER_TOKEN` | Supabase function secrets; SMTP credentials in Supabase Auth settings | `household-invite`, `account-export`, Auth | 180 days |
 | `GOTENBERG_URL`, `GOTENBERG_TOKEN` | Supabase function secrets | `export-pdf` | 180 days |
-| `INTERNAL_CRON_SECRET` | Supabase function secrets and Supabase Vault (`internal_cron_secret`) | Cron and worker auth | 90 days (dual-secret window, 8.1) |
+| `INTERNAL_CRON_SECRET` | Supabase function secrets and Supabase Vault (`cron_secret`) | Cron and worker auth | 90 days (dual-secret window, 8.1) |
 | `LOG_SALT`, `SENTRY_SALT` | Supabase function secrets / EAS env (salt only) | Hashing ids in logs | Never rotated casually (breaks correlation) |
 | `SENTRY_DSN` (edge), `EXPO_PUBLIC_SENTRY_DSN` | Function secrets / EAS env | Sentry | n/a (public-ish) |
 | `SENTRY_AUTH_TOKEN` | GitHub secrets, EAS secret env | Source map upload | 180 days |
@@ -395,11 +400,12 @@ Rules:
 |---|---|---|---|
 | `thuluth.app` | CNAME (flattened) | Cloudflare Pages project `thuluth-web` | Marketing site, legal pages, `.well-known` files, invite landing page |
 | `www` | CNAME | `thuluth.app` | Redirect to apex |
-| `dev`, `staging` | CNAME | Pages preview deployments | Variant link domains |
 | `api` | CNAME | Supabase custom domain target for `thuluth-prod` | API, Auth, Storage, Functions |
 | `api.staging` | CNAME | Supabase custom domain target for `thuluth-staging` | |
-| `mail` | CNAME / TXT | Postmark return-path and DKIM records | Transactional email |
-| `@` | TXT | `v=spf1 include:spf.mtasv.net -all` | SPF |
+| `<selector>._domainkey` | TXT | Postmark DKIM key (Postmark shows the selector, for example `20261006120000pm._domainkey`) | Email signing |
+| `mail` | CNAME | `pm.mtasv.net` (Postmark custom Return-Path) | Bounce handling |
+| `@` | MX | Cloudflare Email Routing (added by Email > Email Routing), or a mailbox provider | Receives `hello@`, `support@`, `privacy@`, `security@`, `dmarc@` |
+| `@` | TXT | `v=spf1 include:spf.mtasv.net include:_spf.mx.cloudflare.net -all` (one merged record; drop the Cloudflare include if Email Routing is not used) | SPF |
 | `_dmarc` | TXT | `v=DMARC1; p=quarantine; rua=mailto:dmarc@thuluth.app` | DMARC |
 | `status` | CNAME | Status page provider | Public status page |
 
@@ -414,23 +420,21 @@ Served at `https://thuluth.app/.well-known/apple-app-site-association` with `Con
   "applinks": {
     "details": [
       {
-        "appIDs": ["APPLETEAMID.app.thuluth.mobile"],
+        "appIDs": [
+          "APPLETEAMID.app.thuluth.mobile",
+          "APPLETEAMID.app.thuluth.mobile.staging",
+          "APPLETEAMID.app.thuluth.mobile.dev"
+        ],
         "components": [
-          { "/": "/invite/*", "comment": "Household invitation acceptance" },
-          { "/": "/plan/*", "comment": "Open a shared meal plan inside the app" },
-          { "/": "/r/*", "comment": "Recipe deep links" },
-          { "/": "/legal/*", "exclude": true, "comment": "Legal pages open in the browser" }
+          { "/": "/invite/*", "comment": "Household invitation acceptance" }
         ]
       }
     ]
-  },
-  "webcredentials": {
-    "apps": ["APPLETEAMID.app.thuluth.mobile"]
   }
 }
 ```
 
-`dev.thuluth.app` and `staging.thuluth.app` serve the same file with `app.thuluth.mobile.dev` and `app.thuluth.mobile.preview` respectively.
+Every variant claims `applinks:thuluth.app` (`apps/mobile/app.config.ts`), so the one file lists all three app ids, prod first. Only `/invite` is claimed today; add a path here only after it is added to `app.config.ts`. There is no `webcredentials` entry because the app does not use shared web credentials. The file and its deployment are in `docs/runbooks/domain-and-dns.md`.
 
 ### 9.3 App links (Android)
 
@@ -439,7 +443,7 @@ Served at `https://thuluth.app/.well-known/assetlinks.json`:
 ```json
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "app.thuluth.mobile",
@@ -448,11 +452,19 @@ Served at `https://thuluth.app/.well-known/assetlinks.json`:
         "EAS_UPLOAD_KEY_SHA256_FINGERPRINT"
       ]
     }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": { "namespace": "android_app", "package_name": "app.thuluth.mobile.staging", "sha256_cert_fingerprints": ["EAS_STAGING_KEYSTORE_SHA256_FINGERPRINT"] }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": { "namespace": "android_app", "package_name": "app.thuluth.mobile.dev", "sha256_cert_fingerprints": ["EAS_DEV_KEYSTORE_SHA256_FINGERPRINT"] }
   }
 ]
 ```
 
-The Play App Signing fingerprint comes from Play Console (App integrity); the upload key fingerprint from `eas credentials`. Both are listed so internal and production installs verify.
+The Play App Signing fingerprint comes from Play Console (App integrity); the upload key fingerprint from `eas credentials`. Both are listed so internal and production installs verify. The staging and dev entries exist because every variant has the same `thuluth.app` `/invite` intent filter.
 
 ### 9.4 Deep link routing in the app
 
@@ -460,13 +472,13 @@ React Navigation `linking` config (in `apps/mobile/src/navigation/linking.ts`, s
 
 | URL | Screen | Auth required |
 |---|---|---|
-| `https://thuluth.app/invite/{token}` / `thuluth://invite/{token}` | `InviteAccept` | Yes (deferred: stored, then resumed after sign-in) |
+| `https://thuluth.app/invite/{token}` (universal / app link only; `thuluth://invite` is ignored, S7-SEC-11) | `InviteAccept` | Yes (deferred: stored, then resumed after sign-in) |
 | `thuluth://today?meal={daily_meal_id}` | `Today` with meal sheet | Yes |
-| `https://thuluth.app/plan/{meal_plan_id}` | `PlanDetail` | Yes, and household membership |
-| `https://thuluth.app/r/{recipe_id}` | `RecipeDetail` | No (catalog), prompts sign-in for actions |
+| `https://thuluth.app/plan/{meal_plan_id}` | `PlanDetail` | Yes, and household membership. Not claimed by the `.well-known` files or the intent filter today, so the OS opens it in the browser |
+| `https://thuluth.app/r/{recipe_id}` | `RecipeDetail` | No (catalog), prompts sign-in for actions. Not claimed today, as above |
 | `thuluth://paywall?source={x}` | `Paywall` | Yes |
 
-The invite landing page at `https://thuluth.app/invite/{token}` (for users without the app) shows store badges and passes the token through the store using a copy-to-clipboard fallback; no token is ever logged by the website.
+The invite landing page at `https://thuluth.app/invite/{token}` (for users without the app) shows store badges and tells the person to open the invitation link again after installing (the app has no clipboard fallback today); no token is ever logged by the website.
 
 ## 10. Backups and disaster recovery
 
@@ -484,7 +496,7 @@ The invite landing page at `https://thuluth.app/invite/{token}` (for users witho
 ### 10.2 Backup layers
 
 1. **Supabase daily backups** (plan default retention) and **PITR (7 days)** on prod.
-2. **Nightly offsite logical dump** by GitHub Action `backup-nightly.yml` (`20-ci-cd-pipeline.md`): `supabase db dump --linked` for roles, schema and data (data dump uses `--data-only` with `--use-copy`), encrypted with `age` to a public key whose private key is held offline by the product owner, uploaded to a Google Cloud Storage bucket in `europe-west3` with object versioning, lifecycle 35 days, and bucket lock (retention policy) so backups cannot be deleted early.
+2. **Nightly offsite logical dump** by GitHub Action `backup-prod.yml` ("Nightly offsite backup (prod)") (`20-ci-cd-pipeline.md`): `supabase db dump --linked` for roles, schema and data (data dump uses `--data-only` with `--use-copy`), encrypted with `age` to a public key whose private key is held offline by the product owner, uploaded to a Google Cloud Storage bucket in `europe-west3` with object versioning, lifecycle 35 days, and bucket lock (retention policy) so backups cannot be deleted early.
 3. **Weekly Storage sync** of private buckets via `rclone` (S3-compatible Supabase Storage endpoint) to the same GCS bucket under `storage/` with the same encryption at rest (CMEK) and retention.
 4. **Git** holds schema, functions, seeds, catalog, prompts (`prompt_templates` seeds) and configuration, so everything except user data is reproducible.
 
@@ -542,7 +554,7 @@ Initial flags:
 | Key | Type | Default | Purpose |
 |---|---|---|---|
 | `app.min_supported_version` | config (`value: {ios, android}`) | `1.0.0` | Forced upgrade |
-| `app.maintenance` | kill switch | off | Maintenance screen, functions return `FEATURE_DISABLED` |
+| `app.maintenance` | kill switch | off | Maintenance screen, user-facing functions return `FEATURE_DISABLED` (`details.reason = 'maintenance'`; cached up to 15 s per isolate); `health`, cron and internal routes and `revenuecat-webhook` keep running |
 | `ai.chat.enabled` | kill switch | on | Disable chat (curated content fallback) |
 | `ai.vision.enabled` | kill switch | on | Disable photo analysis |
 | `ai.voice.enabled` | kill switch | on | Disable voice input |
@@ -634,6 +646,6 @@ Ramadan readiness checklist (start 6 weeks before the expected start of Ramadan)
 | Variant identifiers `app.thuluth.mobile.dev`, `app.thuluth.mobile.preview`, schemes `thuluth-dev`, `thuluth-preview`, link domains `dev.thuluth.app`, `staging.thuluth.app` | Side-by-side installs per environment |
 | Custom domains `api.thuluth.app`, `api.staging.thuluth.app` | Stable API host for DR and branded OAuth callbacks |
 | Feature flag keys listed in section 11 | Kill switches and config |
-| GCS offsite backup bucket and `backup-nightly` workflow | DR beyond Supabase |
+| GCS offsite backup bucket and `backup-prod.yml` workflow | DR beyond Supabase |
 | Gotenberg Cloud Run service | PDF rendering (see `04-system-architecture.md`) |
 | Postmark | Email provider |

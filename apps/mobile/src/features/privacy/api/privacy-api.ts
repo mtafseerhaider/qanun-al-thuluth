@@ -4,6 +4,7 @@ import {
   type AccountDeleteReason,
 } from '@shared/contracts';
 
+import { captchaOptions } from '@/lib/auth/captcha';
 import { AppError } from '@/lib/supabase/app-error';
 import { supabase } from '@/lib/supabase/client';
 import { invokeEdge } from '@/lib/supabase/edge';
@@ -76,9 +77,10 @@ export async function withdrawConsent(consentId: string): Promise<void> {
 /* --- Step-up re-auth (11 §15.1): a fresh email OTP for the signed-in user ---------------------- */
 
 export async function sendReauthCode(email: string): Promise<void> {
-  const { error } = await client().auth.signInWithOtp({
+  const auth = client().auth;
+  const { error } = await auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false },
+    options: { shouldCreateUser: false, ...(await captchaOptions()) },
   });
   if (error) throw toAuthAppError(error);
 }

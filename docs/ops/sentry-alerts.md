@@ -12,10 +12,10 @@ Sentry rules are configured in the Sentry UI. They are written below as exact se
 | M2 | Crash-free users | Metric alert, crash-free user rate | critical < 99.0 percent, 1 h window | `production` | on-call | SEV2 |
 | M3 | New issue in new release | Issue alert | "A new issue is created" **and** "event is seen in the latest release" **and** "issue has happened at least 20 times in 1 h affecting at least 20 users" | `production` | on-call | SEV3 (escalate to SEV2 if on a launch path) |
 | M4 | Regression | Issue alert | "issue changes state from resolved to unresolved" | `production` | on-call | SEV3 |
-| M5 | OTA update group crash spike | Metric alert, number of errors | > 3x the 7-day baseline for 30 min, grouped by tag `eas_update_id` | `production` | on-call: consider `republish-ota` | SEV2. Needs the app to set the Sentry tags `eas_update_id` and `eas_channel` (20 §12). `apps/mobile/src/lib/sentry` does not set them yet (mobile follow-up) |
+| M5 | OTA update group crash spike | Metric alert, number of errors | > 3x the 7-day baseline for 30 min, grouped by tag `eas_update_id` | `production` | on-call: consider `republish-ota` | SEV2. The app sets the tags `eas_update_id` and `eas_channel` on every event (`apps/mobile/src/lib/sentry/init.ts`, 20 §12) |
 | M6 | Startup failures | Issue alert | error message contains `Updates` or `expo-updates` **and** > 10 users in 1 h | `production` | on-call | SEV2 |
 
-**Crash-free sessions (G-QUAL-1, at least 99.5 percent)** is read from Sentry, not from Postgres. Open Releases > `app.thuluth.mobile@1.0.0+<build>` > "Crash Free Sessions", with environment `production` and the last 7 days. Record the value in the go/no-go sheet with the dashboard KPIs (`analytics-launch-dashboard.md` §4). For beta, use environment `staging` on the preview builds.
+**Crash-free sessions (G-QUAL-1, at least 99.5 percent)** is read from Sentry, not from Postgres. Open Releases > `thuluth-mobile@1.0.0` (the app's release name is `thuluth-mobile@<version>`) > "Crash Free Sessions", with environment `production` and the last 7 days. Record the value in the go/no-go sheet with the dashboard KPIs (`analytics-launch-dashboard.md` §4). For beta, use environment `staging` on the preview builds.
 
 ## 2. Edge Functions (`thuluth-edge`)
 
@@ -23,8 +23,8 @@ The functions do not send events to Sentry yet. `_shared/sentry.ts`, named in 19
 
 | # | Rule | Source | Condition | Action |
 |---|---|---|---|---|
-| E1 | API down | uptime monitor on `GET /functions/v1/health` | HTTP 503 or a 10 s timeout, 3 checks in a row | page the on-call (phone), status page "major outage" |
-| E2 | Degraded | same monitor | body has `"status":"degraded"` for 10 min | on-call message (no page); check `checks.cron` / `checks.maintenance` |
+| E1 | API down | uptime Monitor A on `GET /functions/v1/health` (`docs/runbooks/uptime-and-status-page.md` step 2) | any status other than 200 (503 means `down`) or a 10 s timeout, 3 checks in a row | page the on-call (phone), status page "major outage" |
+| E2 | Degraded | uptime Monitor B, a keyword monitor on the same URL | body without `"status":"ok"` (that is, `degraded`) for 10 min | on-call message (no page); check `checks.cron` / `checks.maintenance` |
 | E3 | Edge 5xx rate | Supabase log drain to Better Stack (Logs > Alerts), or Supabase dashboard > Reports > Edge Functions | more than 2 percent 5xx over 5 min for any function (04 §12.3) | on-call |
 | E4 | Error log lines | same log drain | `level = "error"` count above 20 in 5 min | on-call |
 | E5 | `analytics-rollup` alerts | same log drain | line with `scope = "analytics-rollup"` and `level = "warn"` with a non-empty `alerts_raised` | on-call (business hours); see §3 |

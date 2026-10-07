@@ -19,6 +19,8 @@ apps/mobile/web-build/
 *.p12
 *.key
 *.mobileprovision
+# Store credentials kept out of git (19 §3), e.g. secrets/play-service-account.json
+secrets/
 
 # Supabase
 supabase/.branches/

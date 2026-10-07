@@ -282,7 +282,7 @@ enable_anonymous_sign_ins = false
 minimum_password_length = 12            # passwords are disabled for users; this guards admin accounts
 
 [auth.rate_limit]
-email_sent = 30                          # per hour, project-wide on the local stack
+email_sent = 1000                        # per hour, PROJECT-WIDE (all users share it); needs custom SMTP on hosted
 token_refresh = 150
 sign_in_sign_ups = 30
 token_verifications = 30
@@ -296,9 +296,13 @@ otp_expiry = 600
 max_frequency = "60s"
 secure_password_change = true
 
-[auth.email.template.magic_link]        # used for the OTP code email
-subject = "Your Thuluth sign-in code"
-content_path = "./templates/auth/otp.html"
+[auth.email.template.magic_link]        # OTP code email for existing users ({{ .Token }}, en + ur)
+subject = "Your Thuluth code / ثلث کوڈ"
+content_path = "./supabase/templates/auth/magic-link.html"
+
+[auth.email.template.confirmation]      # OTP code email on first sign-in (user created)
+subject = "Your Thuluth code / ثلث کوڈ"
+content_path = "./supabase/templates/auth/confirmation.html"
 
 [auth.external.google]
 enabled = true
@@ -310,6 +314,10 @@ skip_nonce_check = true                  # native Google Sign-In on iOS issues I
 enabled = true
 client_id = "app.thuluth.mobile"
 secret = "env(APPLE_OAUTH_SECRET)"
+
+[auth.hook.before_user_created]         # 11 section 3.1.1; enable by hand on hosted projects
+enabled = true
+uri = "pg-functions://postgres/public/hook_before_user_created"
 
 [auth.mfa]
 max_enrolled_factors = 10
@@ -729,12 +737,12 @@ Common environment for every function (provided automatically by Supabase or set
 
 | Function | Method | Auth | Premium gate | Reads / writes | Function-specific secrets and env | Limits |
 |---|---|---|---|---|---|---|
-| `ai-chat` | POST (SSE) | User JWT | Voice/photo attachments and long-term memory premium; daily quota 20 / 200 | R: household profile, plan, `ai_memories`, verified `islamic_sources`; W: `chat_messages`, `ai_memories`, `ai_usage`, `plan_recommendations` | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY` | 150 s wall clock; 30 requests/min/user |
+| `ai-chat` | POST (SSE) | User JWT | Voice/photo attachments and long-term memory premium; daily quota 20 / 200 | R: household profile, plan, `ai_memories`, verified `islamic_sources`; W: `chat_messages`, `ai_memories`, `ai_usage`, `plan_recommendations` | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | 150 s wall clock; 30 requests/min/user |
 | `ai-intake-assess` | POST | User JWT (editor) | No | R: family profile; W: `ai_assessments`, `hydration_targets`, `ai_usage` | AI keys | 60 s; 10/hour/household |
 | `ai-generate-plan` | POST | User JWT (plan author) | Multi-week, non-standard kinds premium (also enforced by trigger) | W: `meal_plans` (status `generating`), enqueue to pgmq `plan_generation`; the `/worker` sub-route then writes `meal_plans.generation_progress`, `meals`, `portions`, `daily_meals`, `daily_meal_servings`, `plan_recommendations`, `notifications`, `ai_usage` | AI keys | Returns 202 within 2 s; stages processed by `ai-generate-plan/worker` from the queue (400 s cap per stage), progress over Realtime channel `plan:{id}`; 5/day/household free, 20/day premium |
 | `ai-adjust-plan` | POST | User JWT (plan author) | Premium | W: new `meal_plans` version + children | AI keys | 120 s; 20/day/household |
 | `ai-analyze-meal` | POST | User JWT | Premium | R: `meal-photos` object; W: `meal_logs.estimated_nutrition`, `ai_usage` | AI keys | 60 s; 30/day/user |
-| `ai-transcribe` | POST | User JWT | Premium | R: `chat-attachments` object; W: `ai_usage` | `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY` | 60 s; audio ≤ 2 min |
+| `ai-transcribe` | POST | User JWT | Premium | R: `chat-attachments` object; W: `ai_usage` | `OPENAI_API_KEY`, `GEMINI_API_KEY` | 60 s; audio ≤ 2 min |
 | `grocery-generate` | POST | User JWT (editor) | Budget optimization, substitutions, monthly lists premium | R: plan, `mv_ingredient_prices`, `seasonal_produce`; W: `grocery_lists`, `shopping_items` | none | 30 s |
 | `growth-compute` | POST | User JWT (editor) | Percentile charts, trends and non-safety alerts premium (z-scores, latest percentile and safety alerts for faltering growth or rapid loss on every tier) | R: `growth_reference_lms`; W: `growth_tracking` computed columns, `notifications` | none | 10 s |
 | `ramadan-generate` | POST | User JWT (plan author) | Premium | W: `ramadan_plans`, `meal_plans` (`kind 'ramadan'`), `notifications` | `PRAYER_TIMES_API_BASE` (default `https://api.aladhan.com/v1`) | 120 s |
@@ -808,7 +816,7 @@ Rules:
 | Edge Function secrets (AI keys, OneSignal, RevenueCat, email, `CRON_SECRET`, `INVITE_TOKEN_PEPPER`) | Supabase project secrets (`supabase secrets set`) | Edge runtime only | CI job `secrets-sync` reads GitHub Actions environment secrets (`dev`, `staging`, `prod`) and runs `supabase secrets set --env-file` | AI keys every 90 days or on staff change; `CRON_SECRET` every 180 days (update Vault and function secret in one CI job) |
 | Database-side secrets (`project_url`, `cron_secret`, `audit_ip_salt`) | Supabase Vault (`vault.secrets`) | `security definer` functions in `private` | One-time CI step `vault-bootstrap` running `select vault.create_secret('<value>', '<name>')`; locally from `seed/local/000_local_vault.sql` | With `CRON_SECRET`; `audit_ip_salt` never (it would break hash continuity), only on compromise |
 | OAuth client secrets (Google, Apple) | Supabase Auth provider settings | Supabase Auth | Dashboard / Management API from CI | Apple client secret JWT expires every 6 months: calendar reminder plus CI check that fails 30 days before expiry |
-| Database passwords | 1Password vault "Thuluth Infra" + GitHub environment secret `SUPABASE_DB_PASSWORD` | Two maintainers, CI | Manual | On staff change |
+| Database passwords | 1Password vault "Thuluth Platform" + GitHub environment secret `SUPABASE_DB_PASSWORD` | Two maintainers, CI | Manual | On staff change |
 | `SUPABASE_ACCESS_TOKEN` (CLI) | GitHub environment secret | CI | Personal access token of a dedicated bot account | 90 days |
 | Mobile app public config (`SUPABASE_URL`, anon key, RevenueCat public SDK keys, OneSignal app id, Sentry DSN) | EAS environment variables | Public by design | `eas env:create` | On project recreation |
 

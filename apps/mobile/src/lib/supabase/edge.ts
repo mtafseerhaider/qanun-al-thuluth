@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CLIENT_CAPS_HEADER, REAUTH_CLIENT_CAP } from '@shared/contracts';
 
 import { env } from '@/lib/env';
+import { useAppStatusStore } from '@/stores/use-app-status-store';
 
 import { AppError, isAppError } from './app-error';
 import { getAccessToken } from './client';
@@ -58,11 +59,16 @@ export async function edgeRequestInit(
   };
 }
 
-/** Maps a non-2xx response body (00 §4.2 envelope, parsed leniently) to an AppError. */
+/**
+ * Maps a non-2xx response body (00 §4.2 envelope, parsed leniently) to an AppError. UPGRADE_REQUIRED
+ * and maintenance (FEATURE_DISABLED, details.reason 'maintenance') also switch the app to its
+ * blocking screen (app/app-gate.tsx).
+ */
 export function edgeErrorFrom(name: string, status: number, json: unknown): AppError {
   const envelope = LenientErrorEnvelope.safeParse(json);
   if (envelope.success) {
     const { code, message, details } = envelope.data.error;
+    useAppStatusStore.getState().noteEdgeError({ code, details: details ?? {} });
     return new AppError(code as AppError['code'], message, { status, details: details ?? {} });
   }
   return new AppError(
@@ -116,23 +122,7 @@ export async function invokeEdge<TReq, TRes>(
     json = null;
   }
 
-  if (!res.ok) {
-    const envelope = LenientErrorEnvelope.safeParse(json);
-    if (envelope.success) {
-      const { code, message, details } = envelope.data.error;
-      throw new AppError(code as AppError['code'], message, {
-        status: res.status,
-        details: details ?? {},
-      });
-    }
-    throw new AppError(
-      res.status === 401 ? 'UNAUTHENTICATED' : 'INTERNAL',
-      `Edge function ${name} failed with ${res.status}.`,
-      {
-        status: res.status,
-      },
-    );
-  }
+  if (!res.ok) throw edgeErrorFrom(name, res.status, json);
 
   const parsed = responseSchema.safeParse(json);
   if (!parsed.success) {

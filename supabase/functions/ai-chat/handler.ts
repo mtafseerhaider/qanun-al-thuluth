@@ -52,11 +52,12 @@ export const TURN_LIMITS: Record<Tier, { maxSteps: number; maxOutputTokens: numb
 /**
  * Daily cost ceilings in USD micros (S5 cost decision: strict caps). Overridable in
  * `feature_flags['ai.caps'].rules` as `{free|premium}.daily_hard_usd_micros` and
- * `global_daily_usd_micros`. The monthly ceiling is `ai_quota_check`'s. Values need PO sign-off.
+ * `global_daily_usd_micros`. The monthly ceiling is `ai_quota_check`'s. Values signed off by the
+ * PO 2026-10-06 (00 §11): free $0.10, premium $0.60 (NFR 9.8), global $100 a day.
  */
 export const DEFAULT_COST_CAPS = {
-  free: 50_000,
-  premium: 1_000_000,
+  free: 100_000,
+  premium: 600_000,
   global: 100_000_000,
 } as const;
 
@@ -484,14 +485,25 @@ export function createChatHandler(deps: ChatDeps) {
       },
     });
 
-    async function runTurn(): Promise<void> {
+    // `message.start` is sent once the turn knows the route it will be served on (the `route`
+    // event, after safety classification and S7-02 intent routing), so a light turn announces
+    // `chat.free`, not the tier's route. Nothing reaches the client before that point anyway: the
+    // reply is released only after the output validators, so first-token latency is unchanged.
+    // A turn that fails before routing announces the tier's route ahead of its `error` event.
+    let started = false;
+    const start = (route: RouteKey) => {
+      if (started) return;
+      started = true;
       send('message.start', {
         session_id: session.id,
         user_message_id: userRow.id,
         assistant_message_id: assistantRow.id,
-        model_route: routeKey,
+        model_route: route,
         quota: { limit: dailyLimit, remaining },
       });
+    };
+
+    async function runTurn(): Promise<void> {
       const records: TurnRecord[] = [];
       let outcome: TurnOutcome | null = null;
       try {
@@ -600,6 +612,7 @@ export function createChatHandler(deps: ChatDeps) {
             safety_flags: ['incomplete'],
           })
           .catch(() => {});
+        start(routeKey);
         if (code) send('error', { code, message: ERROR_TEXT[code], retryable: true });
         else
           send('done', {
@@ -610,6 +623,7 @@ export function createChatHandler(deps: ChatDeps) {
         return;
       }
 
+      start(outcome.routeKey);
       for (const c of outcome.citations) records.push({ type: 'citation', data: citationData(c) });
       await deps.store.updateMessage(assistantRow.id, {
         content: outcome.text,
@@ -639,6 +653,11 @@ export function createChatHandler(deps: ChatDeps) {
     }
 
     function relay(e: TurnEvent, records: TurnRecord[]): void {
+      if (e.type === 'route') {
+        start(e.routeKey);
+        return;
+      }
+      start(routeKey); // defensive: never emit an event ahead of message.start
       switch (e.type) {
         case 'tool.call':
           send('tool.call', { tool_call_id: e.toolCallId, name: e.name, display: e.display });

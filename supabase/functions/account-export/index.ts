@@ -1,5 +1,6 @@
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { postmarkAccountEmailSender } from '../_shared/integrations/account-emails.ts';
+import { maintenanceProbe, withMaintenance } from '../_shared/maintenance.ts';
 import { supabaseStorageAdmin } from '../_shared/storage.ts';
 import { rendererFromEnv } from '../export-pdf/renderer.ts';
 import { createAccountExportHandler } from './handler.ts';
@@ -21,12 +22,15 @@ function background(run: () => Promise<unknown>): void {
 }
 
 Deno.serve(
-  createAccountExportHandler({
-    verify: verifyWithSupabase,
-    store: supabaseAccountExportStore(admin),
-    storage: supabaseStorageAdmin(admin),
-    pdfs: renderer ? accountPdfs(admin, renderer) : null,
-    kick: background,
-    email: postmarkAccountEmailSender(Deno.env.get('POSTMARK_SERVER_TOKEN')),
-  }),
+  withMaintenance(
+    createAccountExportHandler({
+      verify: verifyWithSupabase,
+      store: supabaseAccountExportStore(admin),
+      storage: supabaseStorageAdmin(admin),
+      pdfs: renderer ? accountPdfs(admin, renderer) : null,
+      kick: background,
+      email: postmarkAccountEmailSender(Deno.env.get('POSTMARK_SERVER_TOKEN')),
+    }),
+    maintenanceProbe(admin),
+  ),
 );

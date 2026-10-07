@@ -2,8 +2,9 @@
 
 The reviewer signs in with a password instead of an email code, which stores require. The app
 shows a password field only for the exact address `reviewer@thuluth.app`
-(`apps/mobile/src/features/auth/utils/email.ts`), and the server hook rejects password sign-in
-for any other address (`11-authentication.md` §3.1.1).
+(`apps/mobile/src/features/auth/utils/email.ts`), and the database refuses to store a password
+for any other address, so no other account can sign in with one (`11-authentication.md` §3.1.1,
+migration `20261006160200_auth_signup_guard.sql`).
 
 **Never write the password in this repository, a ticket or chat.** It goes only into the stores'
 review information fields and the team password manager.

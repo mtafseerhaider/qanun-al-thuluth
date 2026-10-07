@@ -2,9 +2,9 @@
 # tooling/scripts/ops/apply-catalog-seeds.sh
 #
 # Applies the idempotent catalog seeds (supabase/seed/catalog/*.sql, in file order) to a hosted
-# project. Used by .github/workflows/deploy-prod.yml after `supabase db push`, and by hand for a
-# catalog-only release. NEVER applies supabase/seed/local/* (local vault values and dev fixtures),
-# which is why production does not use `supabase db push --include-seed`.
+# project. Used by .github/workflows/deploy-prod.yml and deploy-dev.yml after `supabase db push`, and
+# by hand for a catalog-only release. NEVER applies supabase/seed/local/* (local vault values and dev
+# fixtures), which is why no hosted deploy uses `supabase db push --include-seed`.
 #
 # Usage:  SUPABASE_DB_URL=postgresql://... tooling/scripts/ops/apply-catalog-seeds.sh [--dry-run]
 # Each file runs in its own transaction with ON_ERROR_STOP; the first failure stops the run.

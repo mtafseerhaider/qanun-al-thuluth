@@ -1,3 +1,5 @@
+import type { ComponentType, createElement as createElementFn } from 'react';
+
 // Runs before each test file's framework setup.
 // react-native-mmkv v4 swaps in an in-memory mock under Jest, but importing it still loads the Nitro
 // bridge, which has no native module here.
@@ -61,6 +63,13 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(async () => undefined),
 }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
+// hCaptcha renders a WebView (native). Tests call `onMessage` from the mocked widget's last props.
+jest.mock('@hcaptcha/react-native-hcaptcha', () => {
+  const { View } = jest.requireActual<{ View: ComponentType<{ testID?: string }> }>('react-native');
+  const { createElement } = jest.requireActual<{ createElement: typeof createElementFn }>('react');
+  const Hcaptcha = jest.fn(() => createElement(View, { testID: 'hcaptcha.widget' }));
+  return { __esModule: true, default: Hcaptcha, Hcaptcha };
+});
 
 // FlashList (24 S7-01): Jest has no layout, so give the list a fixed 400 x 900 viewport and
 // 100 pt rows (as @shopify/flash-list/jestSetup does; its FlashList alias targets an export 2.0.2

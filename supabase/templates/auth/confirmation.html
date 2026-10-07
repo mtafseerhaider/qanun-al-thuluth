@@ -1,0 +1,79 @@
+<!--
+  supabase/templates/auth/confirmation.html: Supabase Auth "Confirm signup" email (11-authentication.md section 3.1, S1-04).
+  The app signs in with a 6-digit code (signInWithOtp + verifyOtp), never a link, so this template shows
+  only {{ .Token }} and contains no {{ .ConfirmationURL }}. Subject is set in supabase/config.toml.
+  config.toml [auth.email.template.*] applies only to the local stack and `supabase config push`.
+  Hosted projects (thuluth-dev, thuluth-staging, thuluth-prod): paste the same subject and this body into
+  Dashboard > Authentication > Email Templates > Confirm signup, and keep both in sync with this file.
+  Copy follows apps/mobile/locales/{en,ur}/auth.json (code expires in 10 minutes = otp_expiry 600).
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your Thuluth sign-up code</title>
+  </head>
+  <body style="margin: 0; padding: 0; background: #ffffff; color: #1f2933">
+    <div
+      style="
+        font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px;
+      "
+    >
+      <p style="font-size: 14px; color: #52606d; margin: 0 0 16px">Thuluth</p>
+      <h1 style="font-size: 20px; margin: 0 0 12px">Your Thuluth sign-up code</h1>
+      <p style="margin: 0 0 16px">
+        Welcome to Thuluth. Enter this code in the app to finish creating your account.
+      </p>
+      <p
+        style="font-size: 32px; font-weight: 700; letter-spacing: 6px; margin: 0 0 16px"
+        aria-label="Your code"
+      >
+        {{ .Token }}
+      </p>
+      <p style="margin: 0 0 8px">It expires in 10 minutes. Never share this code with anyone.</p>
+      <p style="margin: 0 0 24px; color: #52606d">
+        If you did not ask for this code, you can ignore this email.
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #e4e7eb; max-width: 560px; margin: 0 auto" />
+    <div
+      lang="ur"
+      dir="rtl"
+      style="
+        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+        line-height: 2.2;
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px;
+        text-align: right;
+      "
+    >
+      <h2 style="font-size: 20px; margin: 0 0 12px">آپ کا ثلث سائن اَپ کوڈ</h2>
+      <p style="margin: 0 0 16px">
+        ثلث میں خوش آمدید۔ اپنا اکاؤنٹ بنانے کے لیے یہ کوڈ ایپ میں درج کریں۔
+      </p>
+      <p
+        dir="ltr"
+        style="
+          font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+          font-size: 32px;
+          font-weight: 700;
+          letter-spacing: 6px;
+          margin: 0 0 16px;
+          text-align: right;
+        "
+      >
+        {{ .Token }}
+      </p>
+      <p style="margin: 0 0 8px">یہ 10 منٹ میں ختم ہو جائے گا۔ یہ کوڈ کسی کو نہ بتائیں۔</p>
+      <p style="margin: 0; color: #52606d">
+        اگر آپ نے یہ کوڈ نہیں مانگا تو اس ای میل کو نظر انداز کر دیں۔
+      </p>
+    </div>
+  </body>
+</html>

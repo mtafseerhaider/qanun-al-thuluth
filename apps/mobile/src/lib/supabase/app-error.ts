@@ -21,6 +21,7 @@ export type ClientErrorCode =
   | 'AUTH_NETWORK'
   | 'AUTH_SESSION_EXPIRED'
   | 'AUTH_PROFILE_MISSING'
+  | 'AUTH_CAPTCHA_FAILED'
   | 'CHILD_DATA_CONSENT_REQUIRED'
   | 'UNKNOWN';
 export type AppErrorCode = ErrorCode | ClientErrorCode;

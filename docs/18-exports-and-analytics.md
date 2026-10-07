@@ -49,7 +49,7 @@ Per `00-foundations.md` section 8 there are no PDF exports on the free tier. Acc
 
 ## 2. Rendering pipeline
 
-Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only with a bearer token over TLS (canonical in `00-foundations.md` section 3; Cloud Run infrastructure in `04-system-architecture.md` and `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
+Edge Functions on Deno cannot run a headless browser, so `export-pdf` renders HTML and sends it to a **private PDF rendering service** (Gotenberg 8, Chromium engine) running as a container in the same cloud region (EU), reachable only over TLS with HTTP Basic auth (user `thuluth`, password `GOTENBERG_TOKEN`; see `supabase/functions/export-pdf/renderer.ts` and `docs/runbooks/pdf-renderer-gotenberg.md`) (canonical in `00-foundations.md` section 3; Cloud Run infrastructure in `04-system-architecture.md` and `19-deployment-architecture.md`). Chromium gives correct Urdu Nastaliq and Arabic shaping, bidi and CSS paged media.
 
 ```mermaid
 sequenceDiagram
@@ -60,14 +60,14 @@ sequenceDiagram
   participant ST as Storage bucket exports
   App->>EP: POST {householdId, kind, params, locale}
   EP->>EP: requireUser, Zod, premium_for(householdId), rate limit (10/h)
-  EP->>DB: insert exports(status='rendering')
+  EP->>DB: insert exports(status='processing')
   EP->>DB: load data with user-scoped client (RLS)
   EP->>EP: build view model, render HTML (Preact SSR), inline SVG charts
-  EP->>R: POST /forms/chromium/convert/html (index.html, fonts, css)
+  EP->>R: POST /forms/chromium/convert/html (index.html, HTTP Basic auth)
   R-->>EP: application/pdf
   EP->>ST: upload {household_id}/exports/{export_id}.pdf (service role, upload only)
   EP->>DB: update exports(status='ready', storage_path, expires_at = now()+7d)
-  EP-->>App: {exportId, signedUrl (1 h), expiresAt}
+  EP-->>App: {export_id, url (signed, 24 h), expires_at}
 ```
 
 | Step | Detail |
@@ -76,14 +76,14 @@ sequenceDiagram
 | View model | `buildViewModel(kind, data, locale)` in `supabase/functions/export-pdf/view-models/`; pure, unit-tested, no I/O |
 | HTML | Preact components rendered with `preact-render-to-string` (`npm:` pinned); all user text escaped by Preact |
 | Charts | Server-side SVG from `packages/shared/src/charts/` (growth curves, adherence bars), no JavaScript in the PDF |
-| Renderer request | Multipart: `index.html`, `styles.css`, font files (from `export-pdf/assets/fonts/`); options `paperWidth/Height` per locale (A4 default; US Letter for `en-US`), `preferCssPageSize=true`, `printBackground=true`, `emulatedMediaType=print`, `waitDelay=0`, `failOnConsoleExceptions=true` |
+| Renderer request | Multipart: `index.html` (styles inlined; fonts are installed in the renderer image, `tooling/gotenberg/Dockerfile`); options `paperWidth/Height` per locale (A4 default; US Letter for `en-US`), margins, `preferCssPageSize=false` (the paper size comes from these options), `printBackground=true`, `emulatedMediaType=print`, `waitDelay=0s`, `failOnConsoleExceptions=true`, `metadata`; header `Authorization: Basic base64("thuluth:" + GOTENBERG_TOKEN)` |
 | Network isolation | Renderer runs with outbound network disabled (all assets are inlined or uploaded with the request), so injected `<img src=http://...>` cannot exfiltrate data |
 | Timeouts | Renderer 20 s; function total 45 s; on timeout `exports.status='failed'` and `EXPORT_TIMEOUT` |
 | Size guard | Monthly meal plan for 20 members capped at 60 pages; larger requests split into per-week PDFs |
 | Metadata | PDF title, author "Thuluth", subject, `lang`; no user email or ids in metadata |
 | Observability | Duration and page count logged; no content logged |
 
-`exports.status` values: `rendering`, `ready`, `failed`, `expired` (check constraint; **Addition** of the value set).
+`exports.status` values: `processing`, `ready`, `failed`, `expired` (check constraint, default `processing`; the 06 vocabulary, S6-01; **Addition** of the value set).
 
 Request contract (`packages/shared/src/contracts/export.ts`):
 
@@ -110,7 +110,7 @@ export const ExportResponse = z.object({ exportId: z.string().uuid(), signedUrl:
 supabase/functions/export-pdf/
   index.ts                         # handler: auth, validation, orchestration
   render.ts                        # Preact SSR + renderer client
-  renderer-client.ts               # Gotenberg multipart call with token
+  renderer.ts                      # Gotenberg multipart call with HTTP Basic auth
   view-models/
     meal-plan.ts  grocery-list.ts  nutrition-report.ts  growth-report.ts  ramadan-pack.ts  family-summary.ts
   templates/
@@ -232,8 +232,8 @@ One page: members (names, ages), allergies (with severity icon), safe foods, sen
 | Bucket | `exports` (private) |
 | Path | `{household_id}/exports/{export_id}.pdf` (storage RLS checks the household folder, `16-security-architecture.md`) |
 | Row | `exports`: `household_id`, `user_id`, `kind`, `status`, `storage_path`, `expires_at` |
-| Retention | `expires_at = created_at + 7 days`; a daily `pg_cron` job deletes expired objects and sets `status='expired'` |
-| Signed URLs | `createSignedUrl(path, 3600)`; the app requests a fresh URL from `export-pdf` (`GET ?exportId=`) when the old one lapses, after re-checking membership |
+| Retention | PDF exports: `expires_at = created_at + 7 days` (`EXPORT_OBJECT_TTL_DAYS`). Account-data exports (`kind = 'account_data'`): 24 hours. The hourly `pg_cron` job `exports-purge-expired` deletes expired objects through the Storage API and sets `status='expired'` |
+| Signed URLs | `createSignedUrl(path, 86400)`: 24 hours (`EXPORT_SIGNED_URL_TTL_SECONDS`, FR-EXP-04). The app requests a fresh URL from `export-pdf` (`GET ?export_id=`) when the old one lapses, after re-checking membership; no URL is issued once the row is `expired` |
 | Sharing | The app uses the OS share sheet with the downloaded file (`expo-sharing`); we do not create public links |
 | Re-generation | Same parameters within 10 minutes return the existing ready export (dedupe on a hash of the request) |
 | Account deletion | Exports deleted with the household purge |
@@ -243,7 +243,7 @@ One page: members (names, ages), allergies (with severity icon), safe foods, sen
 | ID | Criterion |
 |---|---|
 | AC-E1 | A 1-week meal plan PDF for a family of four renders in under 8 s p95 and under 20 pages. |
-| AC-E2 | A free user calling `export-pdf` receives `PREMIUM_REQUIRED` and no `exports` row is left in `rendering`. |
+| AC-E2 | A free user calling `export-pdf` receives `PREMIUM_REQUIRED` and no `exports` row is left in `processing`. |
 | AC-E3 | Urdu PDFs render Nastaliq without clipped glyphs and with RTL table order (visual snapshot). |
 | AC-E4 | No child kcal, z-score or percentile appears in `meal_plan` or `family_summary` exports (text extraction test). |
 | AC-E5 | A user from another household cannot obtain a signed URL for the export (403). |
@@ -780,7 +780,7 @@ All internal charts suppress groups with fewer than 10 distinct users (k-anonymi
 | Addition | Kind | Purpose |
 |---|---|---|
 | PDF renderer service (Gotenberg, private, EU) | Infrastructure | HTML to PDF for `export-pdf` |
-| `exports.status` value set (`rendering`, `ready`, `failed`, `expired`) | Check constraint | Export lifecycle |
+| `exports.status` value set (`processing`, `ready`, `failed`, `expired`) | Check constraint | Export lifecycle |
 | `analytics_events.event_id`, `session_id`, `received_at`, `locale`, `country_code` | Columns | Dedupe, sessions, segmentation |
 | `analytics_event_catalog` | Table | Event and prop allowlist |
 | `track_events(jsonb)`, `analytics_filter_props(text, jsonb)` | SQL functions | Event ingestion |

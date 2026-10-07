@@ -21,6 +21,8 @@ export const EnvSchema = z.object({
   REVENUECAT_API_KEY_ANDROID: optionalString,
   GOOGLE_WEB_CLIENT_ID: optionalString,
   GOOGLE_IOS_CLIENT_ID: optionalString,
+  /** Public hCaptcha site key; set only where Supabase Auth CAPTCHA is on (staging, production). */
+  HCAPTCHA_SITE_KEY: optionalString,
 });
 export type Env = z.infer<typeof EnvSchema>;
 

@@ -13,7 +13,7 @@
 |---|---|---|---|
 | High | 0 | 0 | 0 |
 | Medium | 4 | 4 | 0 |
-| Low | 8 | 5 | 3 (PO / backend) |
+| Low | 8 | 6 | 2 (PO / backend) |
 | Informational | 9 | 1 | 8 (documented residual risk) |
 
 No finding gave cross-household read or write access to rows. The two medium data-exposure findings (S7-SEC-01 and
@@ -146,12 +146,18 @@ successful upload is refused by RLS and the outbox keeps retrying. The fix avoid
 `upsert: false`, with "already exists" (409) treated as done (`features/meal-log/api/meal-log-api.ts`,
 `utils/image-rules.ts`). **Test:** `features/meal-log/__tests__/meal-photo-upload.test.ts`.
 
-### S7-SEC-11 · Low · Open (PO decision) · Invite tokens accepted over the custom scheme
+### S7-SEC-11 · Low · Invite tokens accepted over the custom scheme (fixed; PO decision 2026-10-06)
 
-16 §15 says invite tokens are accepted only over universal links. `pending-invite.ts` also accepts
-`thuluth://invite/<token>`, which FR-AUTH-08 lists as the legacy form. Another app can register the `thuluth`
+16 §15 says invite tokens are accepted only over universal links. `pending-invite.ts` also accepted
+`thuluth://invite/<token>`, which FR-AUTH-08 listed as the legacy form. Another app can register the `thuluth`
 scheme and intercept a token. The token is bound to the invited email on accept (T15), which limits the impact.
-**Owner:** PO to decide whether to drop the custom-scheme form. If kept, update 16 §15.
+**Fix:** the PO chose to drop the custom-scheme form. `parseInviteUrl` accepts only
+`https://thuluth.app/invite/<token>` (and the `www.` and `?token=` forms); a `thuluth://invite...` link is
+swallowed without parking its token, so it never reaches the router either. `household-invite` already emails and
+shares the https form (`inviteShareUrl`). **Test:** `apps/mobile/src/lib/auth/__tests__/pending-invite.test.ts`.
+**Dependency:** invites now work only when universal links do, so `apple-app-site-association` and
+`assetlinks.json` must be live on `thuluth.app` (19 §9.2 and §9.3, 22 L2) before an invite can open the app. Until then an
+invite link opens the web fallback page.
 
 ### S7-SEC-12 · Informational · Secret scan (fixed)
 
@@ -187,9 +193,10 @@ except `.env.example`, whose header says only `EXPO_PUBLIC_*` values reach the b
   `FLAG_SECURE` to app lock, and app lock does not exist yet. Recorded as partial in the checklist.
 - **`console.*` stripping in production (16 §15).** No Babel plugin. Audited call sites are `__DEV__`-guarded or log
   no PII.
-- **Bundle scan for service keys (AC-S3).** CI has gitleaks but no scan of the exported JS bundle. Recommended CI
-  step: `npx expo export` then grep for `"role":"service_role"` JWT payloads and `sk_` / `SUPABASE_SERVICE_ROLE`
-  strings.
+- **Bundle scan for service keys (AC-S3). Closed in the launch follow-up (2026-10-06).** CI job `supply-chain` runs
+  `tooling/scripts/check-mobile-secrets.sh --bundle` (source env reads, public app config, offline `expo export`
+  bundle) and the dependency CVE gate `tooling/scripts/audit-deps.sh` (`pnpm audit --audit-level high --prod`). See
+  the checklist rows STORAGE-2 and CODE-3.
 - **Logged error text.** Functions log `String(err)` for unexpected errors. Provider and Postgres messages do not carry
   request bodies, but a provider could echo input in an error. Sentry for functions is not wired, so these stay in
   Supabase logs (retention 7 days on the platform).
@@ -268,7 +275,7 @@ caregiver, viewer, linked teen) would cover the residual risk best. Priorities:
   - Confirm `storage.allow_delete_query` stays unset.
   - Confirm asymmetric JWT signing keys, so `getClaims` verifies locally.
   - Rotate the secrets `INTERNAL_CRON_SECRET` and `REVENUECAT_WEBHOOK_SECRET`, at least 32 random characters each.
-- **PO decisions:** S7-SEC-11 (custom-scheme invites); app lock and screenshot protection timing; 0022b note
+- **PO decisions:** ~~S7-SEC-11 (custom-scheme invites)~~ decided and fixed 2026-10-06; app lock and screenshot protection timing; 0022b note
   encryption timing (AC-S8).
 - **Apply the new migration and native build:** `20261006150500` lands with the next `db push`. The
   `allowBackup: false` change needs a new EAS build (it is native config, so EAS Update does not carry it).

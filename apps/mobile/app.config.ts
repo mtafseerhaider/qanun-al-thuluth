@@ -77,6 +77,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       CFBundleAllowMixedLocalizations: true,
     },
+    // Suhoor and iftar reminders are sent with ios_interruption_level time_sensitive (OneSignal);
+    // without this entitlement iOS delivers them as active and Focus modes hold them back.
+    entitlements: {
+      'com.apple.developer.usernotifications.time-sensitive': true,
+    },
     privacyManifests: {
       NSPrivacyAccessedAPITypes: [
         {
@@ -118,12 +123,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     REVENUECAT_API_KEY_ANDROID: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
     GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    HCAPTCHA_SITE_KEY: process.env.EXPO_PUBLIC_HCAPTCHA_SITE_KEY,
     eas: { projectId: EAS_PROJECT_ID },
   },
   plugins: [
     ['expo-build-properties', { android: { minSdkVersion: 26 } }],
     'expo-localization',
-    'expo-secure-store',
+    // Biometrics are not used (the app lock is a later feature), so no Face ID purpose string:
+    // `false` removes NSFaceIDUsageDescription instead of adding the plugin's generic default.
+    ['expo-secure-store', { faceIDPermission: false }],
     // S7-09: purpose strings Apple reviews (5.1.1) for meal photos and voice questions. expo-audio
     // also adds RECORD_AUDIO on Android; image-picker must not block it. Urdu copies live in
     // locales/ur/native.json.

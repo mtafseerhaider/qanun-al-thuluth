@@ -1,6 +1,7 @@
 import { internalSecretsFromEnv } from '../_shared/auth.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
+import { maintenanceProbe, withMaintenance } from '../_shared/maintenance.ts';
 import { createExportPdfHandler } from './handler.ts';
 import { rendererFromEnv } from './renderer.ts';
 import { supabaseExportStorage, supabaseExportStore } from './store.ts';
@@ -19,13 +20,16 @@ function background(run: () => Promise<unknown>): void {
 }
 
 Deno.serve(
-  createExportPdfHandler({
-    verify: verifyWithSupabase,
-    secrets: internalSecretsFromEnv,
-    store: supabaseExportStore(admin),
-    storage: supabaseExportStorage(admin),
-    entitlements: supabaseEntitlementStore(admin),
-    renderer: rendererFromEnv(),
-    kick: background,
-  }),
+  withMaintenance(
+    createExportPdfHandler({
+      verify: verifyWithSupabase,
+      secrets: internalSecretsFromEnv,
+      store: supabaseExportStore(admin),
+      storage: supabaseExportStorage(admin),
+      entitlements: supabaseEntitlementStore(admin),
+      renderer: rendererFromEnv(),
+      kick: background,
+    }),
+    maintenanceProbe(admin),
+  ),
 );

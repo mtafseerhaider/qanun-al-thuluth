@@ -78,7 +78,7 @@ Principles:
   workflows/version.yml
   workflows/release.yml
   workflows/e2e-nightly.yml
-  workflows/backup-nightly.yml
+  workflows/backup-prod.yml
   workflows/rollback.yml
   CODEOWNERS
   pull_request_template.md
@@ -908,7 +908,7 @@ jobs:
 ```
 
 ```yaml
-# .github/workflows/backup-nightly.yml
+# .github/workflows/backup-prod.yml (design sketch; the file in the repo is the source of truth)
 name: Nightly offsite backup (prod)
 
 on:
@@ -1001,30 +1001,26 @@ GitHub environments:
 
 | Artifact | Release name | How source maps get to Sentry |
 |---|---|---|
-| Store build (EAS Build) | `app.thuluth.mobile@{version}+{buildNumber}` with `dist = buildNumber` | `@sentry/react-native/expo` config plugin uploads Hermes bundles and maps during the EAS build when `SENTRY_AUTH_TOKEN` is present |
-| OTA update (EAS Update) | Same release as the binary it targets, tagged with `eas_update_id` | `npx sentry-expo-upload-sourcemaps dist` right after `eas update` (the export lives in `apps/mobile/dist`) |
+| Store build (EAS Build) | `thuluth-mobile@{version}` (for example `thuluth-mobile@1.0.0`), set by `apps/mobile/src/app/bootstrap.ts` | `@sentry/react-native/expo` config plugin uploads Hermes bundles and maps during the EAS build when `SENTRY_AUTH_TOKEN` is present |
+| OTA update (EAS Update) | Same release as the binary it targets, told apart by the tags `eas_update_id` and `eas_channel` | `npx sentry-expo-upload-sourcemaps dist` right after `eas update` (the export lives in `apps/mobile/dist`) |
 | Edge Functions | `{git sha}` | `getsentry/action-release` creates the release, associates commits (`set_commits: auto`) and records a deploy per environment; Deno stack traces map to source paths because functions are deployed from TypeScript source |
 
-The app sets the release explicitly so OTA crashes group correctly:
+The app sets the release and environment explicitly, and tags every event with the update it came from, so OTA crashes group correctly (`apps/mobile/src/app/bootstrap.ts` and `apps/mobile/src/lib/sentry/init.ts`, abridged):
 
 ```ts
-// apps/mobile/src/lib/telemetry/sentry.ts
-import * as Sentry from '@sentry/react-native';
-import * as Updates from 'expo-updates';
-import * as Application from 'expo-application';
-import Constants from 'expo-constants';
-
-Sentry.init({
-  dsn: Constants.expoConfig?.extra?.sentryDsn,
-  environment: Constants.expoConfig?.extra?.appVariant === 'production' ? 'production' : 'staging',
-  release: `${Application.applicationId}@${Application.nativeApplicationVersion}+${Application.nativeBuildVersion}`,
-  dist: Application.nativeBuildVersion ?? undefined,
-  tracesSampleRate: 0.1,
-  sendDefaultPii: false,
-  beforeSend: scrubEvent,                  // removes emails, names, health values, request bodies
+initSentry({
+  dsn: env.SENTRY_DSN,                       // EXPO_PUBLIC_SENTRY_DSN; Sentry stays off without it
+  environment: env.APP_ENV,                  // 'development' | 'staging' | 'production'
+  release: `thuluth-mobile@${env.APP_VERSION}`,
 });
-Sentry.setTag('eas_update_id', Updates.updateId ?? 'embedded');
-Sentry.setTag('eas_channel', Updates.channel ?? 'none');
+// inside initSentry:
+Sentry.init({
+  dsn, environment, release,
+  sendDefaultPii: false,
+  tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
+  beforeSend: (event) => scrubEvent(event),  // removes emails, names, health values, request bodies
+  initialScope: { tags: easUpdateTags(Updates) }, // eas_update_id ('embedded' for the built-in bundle), eas_channel
+});
 ```
 
 ## 13. Rollback via the pipeline

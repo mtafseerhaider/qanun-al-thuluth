@@ -44,6 +44,7 @@ export function toAuthAppError(error: unknown): AppError {
   )
     return make('AUTH_RATE_LIMITED');
   if (code === 'invalid_credentials') return make('AUTH_INVALID_CREDENTIALS');
+  if (code === 'captcha_failed') return make('AUTH_CAPTCHA_FAILED');
   if (code === 'email_address_invalid' || code === 'validation_failed')
     return make('AUTH_INVALID_EMAIL');
   if (code === 'otp_disabled' || code === 'invalid_otp' || status === 400 || status === 403)
@@ -113,6 +114,7 @@ const CODES_WITH_COPY = new Set<string>([
   'AUTH_NETWORK',
   'AUTH_SESSION_EXPIRED',
   'AUTH_PROFILE_MISSING',
+  'AUTH_CAPTCHA_FAILED',
   'NETWORK_ERROR',
   'NOT_CONFIGURED',
   'FORBIDDEN',

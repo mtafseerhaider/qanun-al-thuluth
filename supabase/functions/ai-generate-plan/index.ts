@@ -2,6 +2,7 @@ import { breaker, providers, routeResolver } from '../_shared/ai/router.ts';
 import { internalSecretsFromEnv } from '../_shared/auth.ts';
 import { adminClient, verifyWithSupabase } from '../_shared/clients.ts';
 import { supabaseEntitlementStore } from '../_shared/entitlements.ts';
+import { maintenanceProbe, withMaintenance } from '../_shared/maintenance.ts';
 import { supabasePlanStore } from '../_shared/plan/store.ts';
 import { createGeneratePlanHandler } from './handler.ts';
 
@@ -18,16 +19,19 @@ function background(run: () => Promise<unknown>): void {
 }
 
 Deno.serve(
-  createGeneratePlanHandler({
-    verify: verifyWithSupabase,
-    secrets: internalSecretsFromEnv,
-    store: supabasePlanStore(admin),
-    entitlements: supabaseEntitlementStore(admin),
-    fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
-    writeUsage: async (row) => {
-      const { error } = await admin.from('ai_usage').insert(row);
-      if (error) throw error;
-    },
-    kick: background,
-  }),
+  withMaintenance(
+    createGeneratePlanHandler({
+      verify: verifyWithSupabase,
+      secrets: internalSecretsFromEnv,
+      store: supabasePlanStore(admin),
+      entitlements: supabaseEntitlementStore(admin),
+      fallback: { resolver: routeResolver(admin), providers: providers(), breaker },
+      writeUsage: async (row) => {
+        const { error } = await admin.from('ai_usage').insert(row);
+        if (error) throw error;
+      },
+      kick: background,
+    }),
+    maintenanceProbe(admin),
+  ),
 );

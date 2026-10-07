@@ -691,7 +691,7 @@ Daily message quotas per `00-foundations.md` section 8; per-request token caps; 
 | App lock | Optional biometric or 6-digit PIN (`expo-local-authentication`), auto-lock after 5 min background |
 | Screenshots | Android `FLAG_SECURE` on screens showing growth charts and health profile when app lock is on; iOS app-switcher snapshot blurred via a privacy overlay |
 | Clipboard | No automatic copy of health data; exported text copied only on explicit action |
-| Deep links | Universal links on `thuluth.app` with `apple-app-site-association` and `assetlinks.json`; deep link parameters validated with Zod; invitation tokens accepted only over universal links, not custom scheme |
+| Deep links | Universal links on `thuluth.app` with `apple-app-site-association` and `assetlinks.json`; deep link parameters validated with Zod; invitation tokens accepted only over universal links, not custom scheme (enforced in `pending-invite.ts`, S7-SEC-11; invites therefore need the AASA and `assetlinks.json` files live on `thuluth.app`) |
 | WebViews | None for authenticated content; external links open in the system browser |
 | Jailbreak or root | Detection is informational only (banner), no blocking (accessibility and false positives) |
 | Code | Hermes bytecode, release builds without dev menus, `console.*` stripped in production via Babel plugin |

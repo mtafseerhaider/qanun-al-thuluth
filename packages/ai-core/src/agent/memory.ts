@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { foldForNameMatch } from '../guardrails/names.ts';
 import { chatMetered, extractJson } from '../router/metered.ts';
 import type { MeteredDeps } from '../router/metered.ts';
 import { textOf } from '../types.ts';
@@ -83,7 +84,7 @@ export function acceptMemories(
     const key = fact.toLowerCase();
     if (seen.has(key)) continue;
     const member = c.member
-      ? members.find((m) => m.name.toLowerCase() === c.member?.trim().toLowerCase())
+      ? members.find((m) => foldForNameMatch(m.name) === foldForNameMatch(c.member ?? ''))
       : undefined;
     if (c.member && !member) continue;
     seen.add(key);

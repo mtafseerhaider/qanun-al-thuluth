@@ -13,6 +13,7 @@ import { MealAnalysisResultScreen, MealPhotoCaptureScreen } from '@/features/mea
 import { SwapMealSheet } from '@/features/meals';
 import { PlanGenerationProgressScreen } from '@/features/plan';
 import { RamadanSetupScreen } from '@/features/ramadan';
+import { SensoryCalmSuggestionSheet } from '@/features/settings';
 import { PaywallScreen } from '@/features/subscription';
 import { useSessionStore, type SessionStatus } from '@/stores/use-session-store';
 
@@ -81,6 +82,15 @@ export function RootNavigator() {
             getComponent={() => SourceDetailSheet}
             options={{
               title: t('screens.sourceDetail'),
+              presentation: 'formSheet',
+              sheetAllowedDetents: [0.6, 1],
+            }}
+          />
+          <Stack.Screen
+            name="SensoryCalmSuggestionSheet"
+            getComponent={() => SensoryCalmSuggestionSheet}
+            options={{
+              title: t('screens.sensoryCalmSuggestion'),
               presentation: 'formSheet',
               sheetAllowedDetents: [0.6, 1],
             }}

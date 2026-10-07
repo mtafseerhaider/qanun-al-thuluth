@@ -388,8 +388,11 @@ describe('chat turn engine', () => {
         executeTool: async () => ({ ok: true, data: { dailyMl: 2300 }, summary: '2300 ml' }),
       }),
     );
-    expect(events[0]).toMatchObject({ type: 'tool.call', name: 'compute_hydration_target' });
-    expect(events[1]).toMatchObject({ type: 'tool.result', ok: true, summary: '2300 ml' });
+    // The route is announced first (ai-chat sends message.start on it), then the tool events.
+    expect(events[0]).toMatchObject({ type: 'route', routeKey: 'chat.free' });
+    expect(events.filter((e) => e.type === 'route')).toHaveLength(1);
+    expect(events[1]).toMatchObject({ type: 'tool.call', name: 'compute_hydration_target' });
+    expect(events[2]).toMatchObject({ type: 'tool.result', ok: true, summary: '2300 ml' });
     expect(out).toContain('2300 ml');
     expect(out).not.toContain('9000');
     expect(outcome.safetyFlags).toContain('ungrounded_numbers_removed');

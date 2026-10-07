@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseMinSupportedVersion, type MinSupportedVersion } from '@/lib/app-status/app-version';
 import { supabase } from '@/lib/supabase/client';
 
 const Flags = z.record(z.string(), z.boolean());
@@ -24,4 +25,23 @@ export async function fetchFeatureFlags(): Promise<Record<string, boolean>> {
       if (typeof value === 'boolean') out[key] = value;
   }
   return out;
+}
+
+/**
+ * The `app.min_supported_version` row (a config flag: its rules carry the per-platform minimum,
+ * which `evaluate_feature_flags()` reduces to a boolean). `feature_flags` is readable by every
+ * authenticated user; signed out or not configured returns null (no forced upgrade until sign-in;
+ * Edge Functions still answer UPGRADE_REQUIRED).
+ */
+export async function fetchMinSupportedVersion(): Promise<MinSupportedVersion | null> {
+  if (!supabase) return null;
+  const { data: session } = await supabase.auth.getSession();
+  if (!session.session) return null;
+  const { data, error } = await supabase
+    .from('feature_flags')
+    .select('enabled, rules')
+    .eq('key', 'app.min_supported_version')
+    .maybeSingle();
+  if (error) throw new Error(`app.min_supported_version read failed: ${error.message}`);
+  return parseMinSupportedVersion(data as { enabled: boolean; rules: unknown } | null);
 }

@@ -603,10 +603,8 @@ function callMicros(c: { model: Model; in: number; cached: number; out: number }
   return Math.round(c.in * (1 - c.cached) * p.in + c.in * c.cached * p.read + c.out * p.out);
 }
 
-const DAILY_CEILING_MICROS = {
-  nfr: { free: 50_000, premium: 600_000 },
-  code: { free: 50_000, premium: 1_000_000 },
-};
+/** ai-chat `DEFAULT_COST_CAPS` and NFR 9.8 (PO decision 2026-10-06). */
+const DAILY_CEILING_MICROS = { free: 100_000, premium: 600_000 };
 
 // ---- Main ----------------------------------------------------------------------------------------
 
@@ -697,7 +695,8 @@ const worstFull = (tier: 'free' | 'premium') => {
   return pct(r.perMessageMicros, 95);
 };
 const freeDay = worstFull('free') * 20;
-const premiumDayMessages = (ceiling: number) => Math.floor(ceiling / worstFull('premium'));
+const dayMessages = (tier: 'free' | 'premium') =>
+  Math.floor(DAILY_CEILING_MICROS[tier] / worstFull(tier));
 const premiumHeavyOther =
   callMicros(CALLS.photo) * 15 +
   callMicros(CALLS.planAdjust) * 20 +
@@ -705,14 +704,10 @@ const premiumHeavyOther =
 out('| Daily ceiling check (s7, cold cache, p95 message cost) | Value |');
 out('|---|---|');
 out(
-  `| Free: 20 messages (daily cap) at p95 cost | ${usd(freeDay, 4)} vs ceiling ${usd(DAILY_CEILING_MICROS.nfr.free, 2)} |`,
+  `| Free: 20 messages (daily cap) at p95 cost | ${usd(freeDay, 4)} vs ceiling ${usd(DAILY_CEILING_MICROS.free, 2)} |`,
 );
-out(
-  `| Premium: messages until NFR ceiling $0.60 | ${premiumDayMessages(DAILY_CEILING_MICROS.nfr.premium)} |`,
-);
-out(
-  `| Premium: messages until code default $1.00 | ${premiumDayMessages(DAILY_CEILING_MICROS.code.premium)} |`,
-);
+out(`| Free: messages until ceiling $0.10 at p95 cost | ${dayMessages('free')} |`);
+out(`| Premium: messages until ceiling $0.60 | ${dayMessages('premium')} |`);
 out(
   `| Premium heavy day without chat (15 photos, 20 adjustments, 2 plans) | ${usd(premiumHeavyOther, 3)} |`,
 );

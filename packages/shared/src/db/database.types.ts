@@ -6043,6 +6043,21 @@ export type Database = {
           reset_at: string;
         }[];
       };
+      due_reassessments: {
+        Args: { p_before: string; p_household_ids?: string[]; p_limit: number };
+        Returns: {
+          created_at: string;
+          energy_targets: Json;
+          family_member_id: string;
+          household_id: string;
+          hydration_targets: Json;
+          id: string;
+          input_snapshot: Json;
+          kind: string;
+          macro_targets: Json;
+          risk_flags: string[];
+        }[];
+      };
       evaluate_feature_flags: {
         Args: Record<PropertyKey, never>;
         Returns: Json;

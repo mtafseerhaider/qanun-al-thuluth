@@ -4,6 +4,7 @@ import { useSessionStore } from '@/stores/use-session-store';
 
 import {
   clearParkedInviteToken,
+  handleInviteUrl,
   INVITE_TOKEN_KEY,
   parkInviteToken,
   parseInviteUrl,
@@ -30,11 +31,10 @@ beforeEach(() => {
 
 describe('parseInviteUrl', () => {
   it.each([
-    `thuluth://invite/${TOKEN}`,
     `https://thuluth.app/invite/${TOKEN}`,
     `https://www.thuluth.app/invite/${TOKEN}/`,
     `https://thuluth.app/invite/${TOKEN}?utm_source=whatsapp`,
-    `thuluth://invite?token=${TOKEN}`,
+    `https://thuluth.app/invite?token=${TOKEN}`,
   ])('reads the token from %s', (url) => {
     expect(parseInviteUrl(url)).toBe(TOKEN);
   });
@@ -43,12 +43,31 @@ describe('parseInviteUrl', () => {
     null,
     '',
     'thuluth://today',
+    // S7-SEC-11: the custom scheme is never accepted for invites.
+    `thuluth://invite/${TOKEN}`,
+    `thuluth://invite?token=${TOKEN}`,
+    `http://thuluth.app/invite/${TOKEN}`,
     'https://thuluth.app/invite/short',
     `https://evil.example/invite/${TOKEN}`,
     `https://thuluth.app.evil.example/invite/${TOKEN}`,
     `https://thuluth.app/invite/${TOKEN}<script>`,
   ])('rejects %s', (url) => {
     expect(parseInviteUrl(url)).toBeNull();
+  });
+});
+
+describe('handleInviteUrl', () => {
+  it('swallows custom-scheme invite links without parking the token (S7-SEC-11)', () => {
+    expect(handleInviteUrl(`thuluth://invite/${TOKEN}`)).toBe(true);
+    expect(handleInviteUrl(`thuluth://invite?token=${TOKEN}`)).toBe(true);
+    expect(useSessionStore.getState().pendingInviteToken).toBeNull();
+    expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+    expect(handleInviteUrl('thuluth://invitations')).toBe(false);
+  });
+
+  it('parks the token from a universal link', () => {
+    expect(handleInviteUrl(`https://thuluth.app/invite/${TOKEN}`)).toBe(true);
+    expect(useSessionStore.getState().pendingInviteToken).toBe(TOKEN);
   });
 });
 

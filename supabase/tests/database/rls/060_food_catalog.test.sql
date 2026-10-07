@@ -2,7 +2,7 @@
 -- Food catalog (S1-19): authenticated reads, only platform admins write, anon nothing; seed shape
 -- (05 section 19 orders 1 to 5) and the households.region_id FK (21-testing-strategy.md 6.1 "Global catalog").
 begin;
-select plan(30);
+select plan(32);
 
 select tests.create_user('cat-user@test.thuluth.app') as uid \gset
 
@@ -27,6 +27,10 @@ select is(
         'Honey (shehad)','Olive oil','Pomegranate (anaar)','Pumpkin (kaddu)','Vinegar (sirka)','Watermelon (tarbooz)',
         'Whole barley (jau)'],
   'the Sunnah foods from 05 section 19 are flagged');
+select is((select count(*) from public.ingredients where cardinality(textures) = 0), 0::bigint,
+  'every seeded ingredient has textures (food chaining, 15 section 3.6)');
+select is((select count(*) from public.ingredients where color is null), 0::bigint,
+  'every seeded ingredient has a colour (food chaining, 15 section 3.6)');
 select is((select kcal from public.ingredients where name = 'Onion'), 40.0::numeric, 'Onion kcal matches USDA SR (NDB 11282)');
 select ok(exists (select 1 from public.ingredient_allergens ia join public.ingredients i on i.id = ia.ingredient_id
                   join public.allergens a on a.id = ia.allergen_id

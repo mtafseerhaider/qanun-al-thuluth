@@ -249,6 +249,8 @@ export type RootStackParamList = {
     scientificEvidenceId?: Uuid;
     recommendationId?: Uuid;
   };
+  /** Launch follow-up (02 §7.10): one-time Sensory-calm suggestion when autism is first enabled. */
+  SensoryCalmSuggestionSheet: undefined;
   HouseholdSwitcherSheet: undefined;
   MemberPickerSheet: {
     purpose: 'filter' | 'log_meal' | 'log_hydration' | 'log_fast';

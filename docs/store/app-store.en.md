@@ -1,6 +1,6 @@
 # App Store listing (English draft)
 
-Status: draft for PO approval. The title is not yet confirmed (see README).
+Status: draft for PO approval. The title is confirmed (PO, 2026-10-06; see README).
 
 ## App name (30 characters max)
 

@@ -1,3 +1,5 @@
+import { captchaOptions } from '@/lib/auth/captcha';
+
 import { AppError } from './app-error';
 import { supabase } from './client';
 
@@ -20,6 +22,7 @@ export async function signInAsDevSeedUser(): Promise<string> {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: DEV_EMAIL,
     password: DEV_PASSWORD,
+    options: await captchaOptions(),
   });
   if (error || !data.user)
     throw new AppError('UNAUTHENTICATED', error?.message ?? 'Dev sign-in failed.');

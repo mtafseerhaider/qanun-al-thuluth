@@ -128,6 +128,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
 | Code | HTTP | Retryable | Meaning / typical details |
 |---|---|---|---|
 | `UNAUTHENTICATED` | 401 | After refresh | Missing, invalid or expired JWT |
+| `REAUTH_REQUIRED` | 401 | After a fresh sign-in | Step-up re-auth for a sensitive action (4.12, 4.13): the JWT `amr` sign-in is older than `details.max_age_seconds` (300). Sent only to clients that send `x-thuluth-client-caps: reauth_required`; older clients get `UNAUTHENTICATED` with the same `details.reauth = true` |
 | `FORBIDDEN` | 403 | No | Not a member of the household or role too low (viewer writing) |
 | `NOT_FOUND` | 404 | No | Entity missing or invisible under RLS |
 | `VALIDATION_FAILED` | 400 | No | `details.issues` = Zod `issues` array (path, message) |
@@ -140,7 +141,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
 | `LIMIT_REACHED` | 409 | No | Tier count limit (`details.resource`: `households` or `family_members`) |
 | `CONSENT_REQUIRED` | 403 | After consent | `details.consents`: missing kinds |
 | `UPGRADE_REQUIRED` | 426 | After update | App below `app.min_supported_version` |
-| `FEATURE_DISABLED` | 503 | Later | Kill switch flag off (`details.flag`) |
+| `FEATURE_DISABLED` | 503 | Later | Kill switch flag off (`details.flag`). During maintenance (`app.maintenance` on) every user-facing function answers this before any work, with `details.reason = 'maintenance'`, `details.flag = 'app.maintenance'` and `Retry-After: 300` (`supabase/functions/_shared/maintenance.ts`); `health`, cron and internal routes and `revenuecat-webhook` are exempt |
 | `SAFETY_ESCALATION` | 422 | No | Red flag; `details.escalation` (see 2.9 `Escalation`) |
 | `AI_UNAVAILABLE` | 503 | Yes | All routes failed |
 | `AI_TIMEOUT` | 504 | Yes | Route timeouts exhausted |
@@ -1141,10 +1142,16 @@ export const GrowthComputeRequest = z.union([
 ]);
 
 export const GrowthAlert = z.object({
-  code: z.enum(['weight_for_age_below_p3', 'crossed_two_major_percentiles', 'rapid_weight_loss', 'bmi_for_age_above_p97', 'height_for_age_below_p3']),
+  code: z.enum([
+    'weight_for_age_below_p3', 'crossed_two_major_percentiles', 'rapid_weight_loss', 'bmi_for_age_above_p97', 'height_for_age_below_p3',
+    // 15 §2.8 rules (S6): BMI-for-age z < -3 (stops planning; covers over-10s), head circumference |z| > 2 under 5 years,
+    // WHO plausibility limits (the measurement is kept, flagged and excluded from trends)
+    'severe_thinness', 'head_circumference_out_of_range', 'implausible_measurement',
+  ]),
   severity: z.enum(['info', 'watch', 'see_clinician']),
   message: z.string(),
   escalation: Escalation.nullable(),
+  stops_planning: z.boolean().default(false),  // red flag that pauses growth plans (needs an escalation; never for bmi_for_age_above_p97)
 });
 
 export const GrowthComputeResponse = z.object({
@@ -1274,7 +1281,7 @@ Example:
 { "status": "ready", "export_id": "x1...", "url": "https://api.thuluth.app/storage/v1/object/sign/exports/8f2d.../x1....pdf?token=...", "expires_at": "2026-10-06T15:04:00Z", "pages": 6 }
 ```
 
-The signed URL lives 1 hour; the object lives 7 days (`exports.expires_at`); the client can request a fresh URL by re-calling with the same Idempotency-Key within 24 h or by `storage.from('exports').createSignedUrl(path, 3600)` (storage RLS allows household members).
+The signed URL lives 24 hours (`EXPORT_SIGNED_URL_TTL_SECONDS`, FR-EXP-04) and `expires_at` in the response is the URL's expiry. The object lives 7 days (`exports.expires_at`, `EXPORT_OBJECT_TTL_DAYS`); after that the hourly `exports-purge-expired` cron deletes it and sets `status = 'expired'`. The client gets a fresh 24-hour URL with `GET /functions/v1/export-pdf?export_id=` (membership re-checked) or by re-calling with the same Idempotency-Key within 24 h. `exports.status` is `processing`, `ready`, `failed` or `expired`.
 
 ### 4.11 `household-invite`
 
@@ -1311,7 +1318,7 @@ Token: 32 random bytes, base64url (43 chars); only `sha256(token)` stored in `to
 | | |
 |---|---|
 | Method / path | `POST /functions/v1/account-export` |
-| Auth | User JWT (recent sign-in required: `iat` within 15 minutes, otherwise `UNAUTHENTICATED` with `details.reauth = true`) |
+| Auth | User JWT with a recent sign-in: the newest JWT `amr` entry at most 300 s old (11 §15.1), otherwise `REAUTH_REQUIRED` (401) for clients that send `x-thuluth-client-caps: reauth_required`, else `UNAUTHENTICATED`; both carry `details.reauth = true` |
 | Tier | All |
 | Rate limit | 2/day |
 | Idempotency | Required |
@@ -1325,14 +1332,14 @@ export const AccountExportRequest = z.object({
 export const AccountExportAccepted = AsyncAccepted.extend({ export_id: Uuid, export_status: z.literal('processing') });
 ```
 
-The zip contains `user.json`, one folder per household with one JSON file per table (rows readable by the user under RLS), `chat/` (the user's own sessions), `media/` (photos), `pdf/`, and `README.txt` describing the schema. The link expires after 7 days.
+The zip contains `user.json`, one folder per household with one JSON file per table (rows readable by the user under RLS), `chat/` (the user's own sessions), `media/` (photos), `pdf/`, and `README.txt` describing the schema. The zip is at `exports/account/{user_id}/{export_id}.zip`; the row turns `ready` with `expires_at` 24 hours later (`ACCOUNT_EXPORT_LINK_TTL_HOURS`) and the object is purged after that. The app fetches the 24-hour signed URL with `GET /functions/v1/export-pdf?export_id=`.
 
 ### 4.13 `account-delete`
 
 | | |
 |---|---|
 | Method / path | `POST /functions/v1/account-delete` (user); `POST /functions/v1/account-delete/execute` (internal, cron hourly) |
-| Auth | User JWT with recent sign-in (as 4.12); internal secret for `/execute` |
+| Auth | User JWT with a recent sign-in (as 4.12: `amr` at most 300 s old, `REAUTH_REQUIRED` or `UNAUTHENTICATED` with `details.reauth`); internal secret for `/execute` |
 | Rate limit | 5/day |
 | Idempotency | Required for `request` |
 | Side effects (request) | `users.deletion_scheduled_for` (Addition beyond 00-foundations), `audit_log`, Postmark confirmation email, OneSignal tag `deletion_pending` |
@@ -1340,17 +1347,19 @@ The zip contains `user.json`, one folder per household with one JSON file per ta
 
 ```ts
 export const AccountDeleteRequest = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('request'), confirm: z.literal('DELETE'), reason: z.enum(['privacy', 'not_useful', 'too_expensive', 'other']).optional() }),
+  z.object({ action: z.literal('request'), confirm: z.literal('DELETE'), reason: z.enum(['privacy', 'not_useful', 'too_expensive', 'other', 'under_age']).optional(),
+             immediate: z.boolean().default(false),                      // only with reason 'under_age' (age gate declined, 11 §13.1)
+             apple_authorization_code: z.string().min(1).max(2048).optional() }),
   z.object({ action: z.literal('cancel') }),
 ]);
 export const AccountDeleteResponse = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('request'), scheduled_for: IsoInstant, active_subscription_warning: z.boolean() }),
+  z.object({ action: z.literal('request'), scheduled_for: IsoInstant, active_subscription_warning: z.boolean() }),  // now + 30 days
   z.object({ action: z.literal('cancel'), cancelled: z.literal(true) }),
 ]);
 export const AccountDeleteExecuteResponse = z.object({ deleted_users: z.number().int(), failures: z.number().int() });
 ```
 
-Grace period is 7 days (GDPR "without undue delay" is satisfied; the user can cancel). Store subscriptions cannot be cancelled server-side; `active_subscription_warning = true` tells the app to deep-link to the store's subscription management. Errors: `OWNERSHIP_TRANSFER_REQUIRED` (user owns a household that has other caregivers: transfer ownership or remove them first), `ACCOUNT_DELETION_PENDING` (already requested).
+Grace period is 30 days (`ACCOUNT_DELETION_GRACE_DAYS`, FR-SET-05; GDPR "without undue delay" is satisfied and the user can cancel at any point inside it). Only an age-gate decline (`reason = 'under_age'`, `immediate = true`) skips the grace period. Store subscriptions cannot be cancelled server-side; `active_subscription_warning = true` tells the app to deep-link to the store's subscription management. Errors: `OWNERSHIP_TRANSFER_REQUIRED` (user owns a household that has other caregivers: transfer ownership or remove them first), `ACCOUNT_DELETION_PENDING` (already requested).
 
 ### 4.14 `revenuecat-webhook`
 

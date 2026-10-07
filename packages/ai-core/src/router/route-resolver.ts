@@ -69,6 +69,35 @@ export function toModelRoute(row: AiModelRouteRow): ModelRoute {
 export type RouteLoader = (routeKey: RouteKey) => Promise<AiModelRouteRow[]>;
 
 /**
+ * True when metering a call on this route would record $0 (12 §5.6): no input price, no output price
+ * on a generating route (embeddings have no output tokens), or no `pricePerMinuteUsd` on
+ * `speech.transcribe` (metered per audio second, `speech/transcribe.ts`). Unpriced routes make every
+ * USD cap and the daily cost alert blind, so the resolver reports them (seed: 140_ai_model_routes.sql).
+ */
+export function isUnpriced(route: ModelRoute): boolean {
+  const p = route.params;
+  if (route.routeKey === 'speech.transcribe') {
+    return !(typeof p.pricePerMinuteUsd === 'number' && p.pricePerMinuteUsd > 0);
+  }
+  if (!(p.priceInPerMTokUsd > 0)) return true;
+  return !route.routeKey.startsWith('embed.') && !(p.priceOutPerMTokUsd > 0);
+}
+
+/** Default report for an unpriced route: one structured warning (the resolver dedupes per route). */
+export function warnUnpriced(route: ModelRoute): void {
+  console.warn(
+    JSON.stringify({
+      level: 'warn',
+      msg: 'ai_route_unpriced',
+      route_key: route.routeKey,
+      provider: route.provider,
+      model: route.model,
+      detail: 'route params have no list price; ai_usage records cost 0 and USD caps do not apply',
+    }),
+  );
+}
+
+/**
  * Resolves enabled routes for a key ordered by priority, cached per isolate for 60 s
  * (12 §5.3: the TTL is the contract, there is no change notification).
  */
@@ -76,12 +105,22 @@ export class RouteResolver {
   readonly #load: RouteLoader;
   readonly #ttlMs: number;
   readonly #now: () => number;
+  readonly #onUnpriced: (route: ModelRoute) => void;
   readonly #cache = new Map<RouteKey, { at: number; routes: ModelRoute[] }>();
+  readonly #reported = new Set<string>();
 
-  constructor(load: RouteLoader, opts: { ttlMs?: number; now?: () => number } = {}) {
+  /**
+   * `onUnpriced` is called once per route (key, provider, model) per resolver whose params carry no
+   * price (`isUnpriced`); the route is still used and metered at 0, never refused.
+   */
+  constructor(
+    load: RouteLoader,
+    opts: { ttlMs?: number; now?: () => number; onUnpriced?: (route: ModelRoute) => void } = {},
+  ) {
     this.#load = load;
     this.#ttlMs = opts.ttlMs ?? 60_000;
     this.#now = opts.now ?? Date.now;
+    this.#onUnpriced = opts.onUnpriced ?? warnUnpriced;
   }
 
   async resolve(routeKey: RouteKey): Promise<ModelRoute[]> {
@@ -91,6 +130,13 @@ export class RouteResolver {
       .filter((r) => r.enabled && r.route_key === routeKey)
       .map(toModelRoute)
       .sort((a, b) => a.priority - b.priority);
+    for (const r of routes) {
+      const id = `${r.routeKey}|${r.provider}|${r.model}`;
+      if (!this.#reported.has(id) && isUnpriced(r)) {
+        this.#reported.add(id);
+        this.#onUnpriced(r);
+      }
+    }
     this.#cache.set(routeKey, { at: this.#now(), routes });
     return routes;
   }

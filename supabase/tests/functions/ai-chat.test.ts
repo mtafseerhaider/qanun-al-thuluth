@@ -3,6 +3,7 @@ import { ChatSseEvent } from '@thuluth/shared/contracts/ai-chat.ts';
 
 import {
   createChatHandler,
+  DEFAULT_COST_CAPS,
   resetGlobalCostCache,
   toHistory,
 } from '../../functions/ai-chat/handler.ts';
@@ -150,6 +151,34 @@ Deno.test('ai-chat routes premium users to chat.default and exposes premium tool
   assert(toolNames.includes('log_fasting'));
   // Tools without backing data are never offered.
   assertFalse(toolNames.includes('generate_meal_plan'));
+});
+
+Deno.test('ai-chat message.start announces the route the turn is served on', async () => {
+  // A premium greeting is a light turn: served by chat.free, and announced as chat.free.
+  let t = setup({ premium: true, script: () => textOut('Wa alaikum assalam!') });
+  let events = await readSse(await t.handler(chat({ text: 'Assalamu alaikum!' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.free');
+  assertEquals(t.ai.steps.get('chat-free'), 1);
+  assertFalse(t.ai.steps.has('chat-default'));
+  assertEquals(
+    t.ai.usage.filter((u) => u.route_key.startsWith('chat.')).map((u) => u.route_key),
+    ['chat.free'],
+  );
+
+  // A premium household question stays on chat.default and says so.
+  t = setup({ premium: true, script: () => textOut('Sure.') });
+  events = await readSse(await t.handler(chat({ text: 'How much rice for Hina?' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.default');
+  assertFalse(t.ai.steps.has('chat-free'));
+
+  // A model failure after routing still opens with message.start (the route tried), then error.
+  t = setup({ premium: true, script: () => new AIError('OVERLOADED', 'busy') });
+  events = await readSse(await t.handler(chat({ text: 'Assalamu alaikum!' })));
+  assertContract(events);
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.free');
+  assertEquals(of(events, 'error').length, 1);
 });
 
 Deno.test('ai-chat free users do not see premium tools', async () => {
@@ -436,13 +465,24 @@ Deno.test('ai-chat burst limit returns RATE_LIMITED', async () => {
 });
 
 Deno.test('ai-chat cost ceilings: free blocked, premium degraded to chat.free', async () => {
-  let t = setup({ costToday: { user: 60_000 } });
+  // PO decision 2026-10-06: free $0.10, premium $0.60, global $100 a day.
+  assertEquals(DEFAULT_COST_CAPS, { free: 100_000, premium: 600_000, global: 100_000_000 });
+
+  let t = setup({ costToday: { user: 99_999 } });
   let res = await t.handler(chat({}));
+  assertEquals(res.status, 200);
+
+  t = setup({ costToday: { user: 100_000 } });
+  res = await t.handler(chat({}));
   assertEquals(res.status, 429);
   assertEquals((await res.json()).error.details.reason, 'daily_cost');
 
-  t = setup({ premium: true, costToday: { user: 2_000_000 } });
+  t = setup({ premium: true, costToday: { user: 599_999 } });
   let events = await readSse(await t.handler(chat({})));
+  assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.default');
+
+  t = setup({ premium: true, costToday: { user: 600_000 } });
+  events = await readSse(await t.handler(chat({})));
   assertEquals(of(events, 'message.start')[0]!.data.model_route, 'chat.free');
 
   t = setup({ costToday: { global: 200_000_000 } });

@@ -116,7 +116,7 @@ Token names are the ones used by `08-component-architecture.md` §10.1 (`surface
 | `ink-muted` | `#4A5650` | `#B4BEB8` | `#535B57` | `#A9B0AC` |
 | `ink-subtle` | `#636E68` | `#8D9892` | `#646B67` | `#969D99` |
 | `line` | `#DDD5C7` | `#2C3632` | `#E1DFD8` | `#333A37` |
-| `line-strong` | `#7F8781` | `#6E7A74` | `#80867F` | `#6C7470` |
+| `line-strong` | `#7F8781` | `#6E7A74` | `#80867F` | `#767E7A` |
 | `primary` | `#1F6F5C` | `#5CC3A6` | `#4F6F66` | `#8FB3A8` |
 | `primary-pressed` | `#175546` | `#7DD3BA` | `#3E5A52` | `#A6C4BB` |
 | `on-primary` | `#FFFFFF` | `#08201A` | `#FFFFFF` | `#12201B` |
@@ -886,7 +886,7 @@ export const colors: Readonly<Record<ThemeName, ColorTheme>> = {
     'ink-muted': '#A9B0AC',
     'ink-subtle': '#969D99',
     'line': '#333A37',
-    'line-strong': '#6C7470',
+    'line-strong': '#767E7A',
     'primary': '#8FB3A8',
     'primary-pressed': '#A6C4BB',
     'on-primary': '#12201B',

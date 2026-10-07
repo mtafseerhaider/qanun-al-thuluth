@@ -1,5 +1,6 @@
 import { FASTING_MIN_AGE_YEARS } from '@thuluth/shared';
 
+import { mentionsName, nameMatcher } from './names.ts';
 import { scan } from './text.ts';
 import type { Locale, Pattern, PatternHit } from './text.ts';
 
@@ -42,18 +43,13 @@ export interface ChildFastingContext {
   youngNames?: readonly string[] | undefined;
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /** Sentences that plan or encourage fasting for a child under 7. */
 export function findYoungChildFasting(text: string, ctx: ChildFastingContext = {}): PatternHit[] {
-  const names = (ctx.youngNames ?? []).filter(Boolean).map(escapeRe);
-  const nameRe = names.length ? new RegExp(`\\b(${names.join('|')})\\b`, 'iu') : null;
+  const named = nameMatcher(ctx.youngNames);
   const hits: PatternHit[] = [];
   // Sentence by sentence: the age or name and the fasting phrase must be in the same sentence.
   for (const sentence of text.split(/(?<=[.!?۔؟])\s+|\n+/u)) {
-    if (!YOUNG_REF.test(sentence) && !nameRe?.test(sentence)) continue;
+    if (!YOUNG_REF.test(sentence) && !named(sentence)) continue;
     // A negator inside the matched span ("can never fast", "should not fast") clears the hit.
     hits.push(
       ...scan(sentence, FASTING_PATTERNS).filter(
@@ -69,10 +65,7 @@ export function detectYoungChildFastingRequest(
   text: string,
   ctx: ChildFastingContext = {},
 ): boolean {
-  const names = (ctx.youngNames ?? []).filter(Boolean).map(escapeRe);
-  const young =
-    YOUNG_REF.test(text) ||
-    (names.length > 0 && new RegExp(`\\b(${names.join('|')})\\b`, 'iu').test(text));
+  const young = YOUNG_REF.test(text) || mentionsName(text, ctx.youngNames);
   return (
     young &&
     /\b(fast|fasts|fasting|roza|rozay|roze|rozah|ramadan|ramzan)\b|(روزہ|روزے|رمضان)/iu.test(text)
